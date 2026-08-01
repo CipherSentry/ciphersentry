@@ -78,7 +78,7 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 
 | Phase | Ships | Depends |
 | --- | --- | --- |
-| B0 — Ledger | Task service + escrow gateway on Base-Sepolia; console reads real chain | audit #1 scoped |
+| B0 — Ledger | Task service + escrow gateway; **local anvil E2E green** (deploy + commit + gateway write); Base-Sepolia via same script with `PRIVATE_KEY` | audit #1 scoped |
 | B1 — Verifier alpha | 3 foundation-run daemons, slashing dry-runs | WASM sandbox hardened |
 | B2 — Verifier network | External verifiers, epoch elections, real slashes | audits #1+#2 done |
 | B3 — CENT-ready | Bond registry + slash executor + accrual ledger | gate list in DOC-05 |

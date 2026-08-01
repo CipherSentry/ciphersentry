@@ -38,8 +38,8 @@ export interface ChainCommitResult {
   error?: string;
 }
 
-/** first 4 bytes of keccak256("commit(bytes32,address,uint96,uint96)") */
-const COMMIT_SELECTOR = "bfc0b700";
+/** first 4 bytes of keccak256("commit(bytes32,address,uint96,uint96)") — cast sig */
+const COMMIT_SELECTOR = "8ecbf09f";
 
 function isAddress(s: string): boolean {
   return /^0x[0-9a-fA-F]{40}$/.test(s);
