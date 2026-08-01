@@ -471,7 +471,7 @@ function FeedbackCard({ notes, setNotes }: { runId: number; notes: string; setNo
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="what felt wrong, unclear, or surprising about how money moved here…"
-            className="mt-3 w-full resize-none border border-edge2 bg-ink px-4 py-3 font-mono text-[10.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
+            className="mt-3 w-full resize-none border border-edge2 bg-panel px-4 py-3 font-mono text-[10.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
           />
           <a
             href={`mailto:hello@ciphersentry.xyz?subject=DEMO%20EXPECTATIONS%20—&body=${encodeURIComponent(`VOTE: ${vote ?? "unanswered"}\nNOTES: ${notes || "no notes"}`)}`}

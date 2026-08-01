@@ -109,7 +109,7 @@ export default function TaskTrace({ bare = false }: { bare?: boolean }) {
             aria-hidden
             className="absolute inset-0 translate-x-2 translate-y-2 border border-edge2/60"
           />
-          <div className="relative border border-edge2 bg-ink/95 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
+          <div className="surface-code relative border shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)]">
             {/* scan beam */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               <div className="animate-scan absolute h-8 w-full bg-gradient-to-b from-transparent via-volt/[0.07] to-transparent" />
@@ -119,7 +119,7 @@ export default function TaskTrace({ bare = false }: { bare?: boolean }) {
               {/* command line */}
               <div className="whitespace-nowrap">
                 <span className="text-volt">$</span>{" "}
-                <span className="text-mist">{CMD.slice(0, typed)}</span>
+                <span className="text-code-fg">{CMD.slice(0, typed)}</span>
                 {typed < CMD.length && <BlockCursor />}
               </div>
 
@@ -127,17 +127,17 @@ export default function TaskTrace({ bare = false }: { bare?: boolean }) {
               <div className="mt-2.5">
                 {dataRows.slice(0, rows).map(([k, v]) => (
                   <div key={k} className="whitespace-nowrap">
-                    <span className="text-mute">{k}:</span>{" "}
-                    <span className={k === "escrow" ? "text-volt" : "text-mist"}>{v}</span>
+                    <span className="text-code-mute">{k}:</span>{" "}
+                    <span className={k === "escrow" ? "text-volt" : "text-code-fg"}>{v}</span>
                   </div>
                 ))}
               </div>
 
               {/* divider + verification */}
-              {rows === 4 && <div className="my-3.5 border-t border-edge2/80" />}
+              {rows === 4 && <div className="my-3.5 border-t border-code-edge" />}
 
               {checking && (
-                <div className="text-mute">
+                <div className="text-code-mute">
                   … recomputing output hash
                   <span className="animate-blink">_</span>
                 </div>
@@ -158,8 +158,8 @@ export default function TaskTrace({ bare = false }: { bare?: boolean }) {
 
               {settled && (
                 <div className="pt-2">
-                  <span className="text-mute">status:</span>{" "}
-                  <span className="font-semibold text-mist">SETTLED</span>
+                  <span className="text-code-mute">status:</span>{" "}
+                  <span className="font-semibold text-code-fg">SETTLED</span>
                   <BlockCursor />
                 </div>
               )}

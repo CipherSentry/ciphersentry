@@ -44,13 +44,14 @@ const STEPS = [
 
 /* ---------------- code styling ---------------- */
 
+/* syntax colors for surface-code (dark) only */
 const C = {
   kw: "text-volt",
-  str: "text-[#dfffa7]",
-  cm: "text-[#5c6350]",
-  pn: "text-mute/70",
-  tx: "text-mist/80",
-  fn: "text-mist font-medium",
+  str: "text-code-str",
+  cm: "text-code-mute",
+  pn: "text-code-mute/80",
+  tx: "text-code-fg/85",
+  fn: "text-code-fg font-medium",
 };
 
 function CodeBlock() {
@@ -222,8 +223,10 @@ export default function Protocol() {
             </span>
           </div>
           <div className="grid lg:grid-cols-[1.3fr_1fr]">
-            <CodeBlock />
-            <div className="border-t border-edge lg:border-l lg:border-t-0">
+            <div className="surface-code border-0 border-r-0 lg:border-r lg:border-code-edge">
+              <CodeBlock />
+            </div>
+            <div className="border-t border-edge lg:border-l-0 lg:border-t-0">
               {SPEC_POINTS.map((p, i) => (
                 <div
                   key={p.k}

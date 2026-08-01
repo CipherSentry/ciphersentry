@@ -325,7 +325,7 @@ export default function ExplorerPage() {
                         sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
                       }`}
                     >
-                      <span className="truncate text-[#fff1e6]">{r.id}</span>
+                      <span className={`truncate ${sel ? "text-code-fg" : "text-mist"}`}>{r.id}</span>
                       <span className="flex min-w-0 items-center gap-1.5 text-[9px] text-mute">
                         <span className="truncate">{r.buyer.replace("agent:", "")}→{r.worker.replace("agent:", "")}</span>
                         <span className="truncate text-mist/80">{r.spec}</span>

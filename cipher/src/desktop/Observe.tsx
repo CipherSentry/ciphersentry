@@ -52,7 +52,7 @@ export default function Observe() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* KPI strip */}
-      <div className="grid shrink-0 grid-cols-5 divide-x divide-edge border-b border-edge bg-[#0a0d08]">
+      <div className="grid shrink-0 grid-cols-5 divide-x divide-edge border-b border-edge bg-code">
         <Kpi label="TASKS / MIN" value={String(throughput[throughput.length - 1]).padStart(2, "0")} sub="ROLLING 60S · ATLAS FLEET" />
         <Kpi label="ESCROW LOCKED" value={d.wallet.escrow.toFixed(1)} sub="USDC · NON-CUSTODIAL" />
         <Kpi label="SETTLED 24H" value={d.wallet.earned.toFixed(0)} sub="USDC EARNED · NET +" tone="text-volt" />
@@ -100,7 +100,7 @@ export default function Observe() {
                     }`}
                   >
                     <span className="tabular-nums text-mute/60">{clock(t.at)}</span>
-                    <span className="truncate text-[#fff1e6]">{t.id}</span>
+                    <span className="truncate text-code-fg">{t.id}</span>
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="truncate text-[9.5px] text-mute">
                         {t.agent.replace("agent:", "")}

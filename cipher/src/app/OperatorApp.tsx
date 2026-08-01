@@ -196,7 +196,7 @@ export default function OperatorApp() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.97 }}
                 transition={{ duration: 0.3, ease: EASE }}
-                className="flex items-center gap-2.5 border border-volt/50 bg-ink/95 px-4 py-3 font-mono text-[9px] tracking-[0.18em] text-mist shadow-[0_10px_40px_rgba(0,0,0,0.7)]"
+                className="flex items-center gap-2.5 border border-volt/50 bg-code/95 px-4 py-3 font-mono text-[9px] tracking-[0.18em] text-code-fg shadow-[0_10px_40px_rgba(0,0,0,0.35)]"
               >
                 <span className="flex h-4 w-4 items-center justify-center bg-volt">
                   <Check size={10} strokeWidth={3.5} className="text-void" />

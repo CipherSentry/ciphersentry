@@ -24,7 +24,7 @@ export default function Verifiers() {
       <div className="no-scrollbar min-h-0 overflow-y-auto p-5">
         {/* epoch banner */}
         <div className="grid grid-cols-4 gap-px border border-edge bg-edge">
-          <div className="col-span-2 bg-[#0a0d08] p-4">
+          <div className="col-span-2 bg-code p-4">
             <div className="flex items-center gap-2 font-mono text-[8px] tracking-[0.22em] text-mute">
               <Gauge size={10} className="text-volt/70" /> CURRENT EPOCH
             </div>
@@ -41,14 +41,14 @@ export default function Verifiers() {
               </div>
             </div>
           </div>
-          <div className="bg-[#0a0d08] p-4">
+          <div className="bg-code p-4">
             <div className="font-mono text-[8px] tracking-[0.22em] text-mute">BONDED CAPITAL</div>
             <div className="mt-2 font-display text-[24px] font-medium tabular-nums leading-none text-mist">
               {(bonded / 1e6).toFixed(2)}M
             </div>
             <div className="mt-2 font-mono text-[7.5px] tracking-[0.16em] text-mute/50">CENT · PRE-TGE BONDS</div>
           </div>
-          <div className="bg-[#0a0d08] p-4">
+          <div className="bg-code p-4">
             <div className="font-mono text-[8px] tracking-[0.22em] text-mute">SLASHES / LAUNCH GATE</div>
             <div className={`mt-2 font-display text-[24px] font-medium tabular-nums leading-none ${d.slashLog.length > 0 ? "text-amber-300" : "text-mist"}`}>
               {d.slashLog.length}
@@ -69,7 +69,7 @@ export default function Verifiers() {
                 return s + (vv ? weight(vv) : 0);
               }, 0);
               return (
-                <div key={id} className="bg-[#0a0d08] p-3.5">
+                <div key={id} className="bg-code p-3.5">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10.5px] text-volt">{id}</span>
                     <span className="font-mono text-[7.5px] tracking-[0.14em] text-mute/50">SEAT {i + 1}</span>

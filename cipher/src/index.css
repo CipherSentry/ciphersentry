@@ -1,25 +1,46 @@
 @import "tailwindcss";
 
 @theme {
-  /* ——— light world — behind the canvas ——— */
+  /* ——— light world — canvas / chrome ——— */
   --color-void: #fbf3ec; /* warm peach page base */
-  --color-ink: #0a0d08; /* dark engineering cells stay dark */
-  --color-panel: #fffdf9; /* warm white panels */
+  --color-panel: #fffdf9; /* warm white elevated surface */
+  --color-edge: #eadcc7; /* warm beige hairline on light */
+  --color-edge2: #dbc4a8; /* stronger beige border */
 
-  --color-deepgreen: #0b4420; /* Deep Green — surface tier */
-  --color-edge: #eadcc7; /* warm beige hairline */
-  --color-edge2: #dbc4a8; /* deeper beige border */
+  --color-mist: #080a07; /* near-black body text on light */
+  --color-mute: #756d60; /* warm caption on light */
 
-  --color-volt: #12c94b; /* emerald accent for light canvas (state-dots bright variant below) */
-  --color-volthot: #3dff36; /* state-dot / button fill grade (bright green) */
-  --color-mist: #080a07; /* near-black body text */
-  --color-mute: #756d60; /* warm-beige caption voice */
+  --color-volt: #12c94b; /* emerald accent on light canvas */
+  --color-volthot: #3dff36; /* hot state-dot / key fills */
+  --color-deepgreen: #0b4420; /* solid success / elevated meaning */
+
+  /* ——— terminal / code — always dark, never use mist here ———
+     mist is body-ink (black). On code surfaces use code-fg / code-mute. */
+  --color-ink: #0a0d08; /* alias of code (legacy class name) */
+  --color-code: #0a0d08; /* terminal panel fill */
+  --color-code-fg: #edf1e5; /* primary glyphs on code */
+  --color-code-mute: #8b927c; /* comments, chrome labels on code */
+  --color-code-edge: #2a3224; /* hairline on code panels */
+  --color-code-str: #c8f0a0; /* string literals in syntax */
 
   --tracking-landing: -0.045em;
 
   --font-display: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Instrument Serif", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Dark engineering surfaces: pair bg-code with text-code-fg only */
+.surface-code {
+  background-color: var(--color-code);
+  color: var(--color-code-fg);
+  border-color: var(--color-code-edge);
+}
+.surface-code .text-on-code {
+  color: var(--color-code-fg);
+}
+.surface-code .text-on-code-mute {
+  color: var(--color-code-mute);
 }
 
 html {

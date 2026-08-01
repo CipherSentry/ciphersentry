@@ -50,7 +50,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
   };
 
   const inputCls =
-    "w-full border border-edge2 bg-ink px-3.5 py-3 font-mono text-[12px] text-[#fff1e6] placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none";
+    "w-full border border-edge2 bg-panel px-3.5 py-3 font-mono text-[12px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none";
 
   return (
     <AnimatePresence>
@@ -99,11 +99,11 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
 
                 <div className="mt-6 space-y-4">
                   <div>
-                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">HANDLE</label>
+                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-mute">HANDLE</label>
                     <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="atlas-labs" spellCheck={false} className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">EMAIL</label>
+                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-mute">EMAIL</label>
                     <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="ops@yourdomain.xyz" spellCheck={false} className={inputCls} />
                   </div>
                   <div>
@@ -128,7 +128,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">USE CASE</label>
+                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-mute">USE CASE</label>
                     <textarea value={useCase} onChange={(e) => setUseCase(e.target.value)} rows={3} placeholder="what are your agents buying or selling…" spellCheck={false} className={`${inputCls} resize-none`} />
                   </div>
 
@@ -173,9 +173,9 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                 </div>
                 {sig && (
                   <div className="mt-5 w-full border border-volt/40 bg-deepgreen p-3.5 text-left font-mono text-[9px] leading-[1.9]">
-                    <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-[#fff1e6]">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-mist">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
                     <div className="flex justify-between gap-4"><span className="text-mute">KEY</span><span className="text-volt">{sig.fp}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-mute">RAIL</span><span className="text-[#fff1e6]">{rail}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-mute">RAIL</span><span className="text-mist">{rail}</span></div>
                     <div className="mt-1.5 flex items-center justify-between border-t border-volt/25 pt-1.5">
                       <span className="text-mute">LOCAL VERIFY</span>
                       <span className="flex items-center gap-1 text-volt"><Check size={10} strokeWidth={3} /> VALID</span>

@@ -34,10 +34,10 @@ export default function Guardrails() {
     ["fleet.daily_cap_usdc", <span className="text-volt">{L.global}</span>],
     ["escrow.auto_approve_below_usdc", <span className="text-volt">{L.requireAbove}</span>],
     ["auto_pause.failures_per_hr", <span className="text-volt">{L.autoPause ? 2 : 0}</span>],
-    ["routing.min_tier", <span className="text-[#e3ffa8]">{L.minTier ? '"T1"' : '"T0"'}</span>],
+    ["routing.min_tier", <span className="text-code-str">{L.minTier ? '"T1"' : '"T0"'}</span>],
     ["rate_limit.tasks_per_min_per_agent", <span className="text-volt">{L.ratePerMin}</span>],
-    ["region.allowlist", <span className="text-[#e3ffa8]">{`["${L.region}"]`}</span>],
-    ["signing.key", <span className="text-[#e3ffa8]">"op:0x71be…e8d3"</span>],
+    ["region.allowlist", <span className="text-code-str">{`["${L.region}"]`}</span>],
+    ["signing.key", <span className="text-code-str">"op:0x71be…e8d3"</span>],
   ];
 
   return (
@@ -98,19 +98,19 @@ export default function Guardrails() {
         right={<span className="font-mono text-[7.5px] tracking-[0.18em] text-volt">SIG ✓</span>}
         bodyClass="no-scrollbar overflow-y-auto"
       >
-        <pre className="p-4 font-mono text-[11px] leading-[2]">
-          <div className="text-mute/70">{"{"}</div>
+        <pre className="surface-code border-0 p-4 font-mono text-[11px] leading-[2]">
+          <div className="text-code-mute">{"{"}</div>
           {jsonLines.map(([k, v], i) => (
             <div key={k} className="whitespace-pre">
-              <span className="text-mist/80">  "{k}"</span>
-              <span className="text-mute/70">: </span>
+              <span className="text-code-fg/90">  "{k}"</span>
+              <span className="text-code-mute">: </span>
               {v}
-              {i < jsonLines.length - 1 && <span className="text-mute/70">,</span>}
+              {i < jsonLines.length - 1 && <span className="text-code-mute">,</span>}
             </div>
           ))}
-          <div className="text-mute/70">{"}"}</div>
+          <div className="text-code-mute">{"}"}</div>
         </pre>
-        <div className="border-t border-edge px-4 py-3 font-mono text-[8px] leading-[1.9] tracking-[0.16em] text-mute/50">
+        <div className="border-t border-edge px-4 py-3 font-mono text-[8px] leading-[1.9] tracking-[0.16em] text-mute">
           LAST WRITE: 3S AGO · BY op:0x71be…e8d3
           <br />
           PROPAGATION: 214 NODES · &lt; 500MS
