@@ -5,7 +5,7 @@
  *   { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data } }
  */
 
-import type { SimDriver, BatchRowPacket, TaskRow } from "./sim";
+import type { SimDriver, BatchRowPacket, TaskRow } from "./sim.ts";
 
 export interface SocketLike {
   send(payload: string): void;
@@ -17,6 +17,10 @@ export interface SocketLike {
 
 export class SubscriptionHub {
   private clients = new Map<SocketLike, Set<string>>();
+
+  get clientCount(): number {
+    return this.clients.size;
+  }
 
   attachEvents(sim: SimDriver): void {
     sim.onTask = (t: TaskRow) => this.broadcast("tasks", { jsonrpc: "2.0", method: "task.event", params: { topic: "tasks", data: t } });

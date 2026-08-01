@@ -1,10 +1,11 @@
 /**
  * JSON-RPC dispatch — handlers for the wire surface defined in
- * docs/architecture.md §5 and consumed by src/sdk/rpc.ts WRITE-POINT #2.
+ * docs/architecture.md §5 and consumed by src/sdk/rpc.ts.
  * Errors are the six CEN_E_* codes. Nothing else escapes.
  */
 
-import { SimDriver, randHex, sh, type ReceiptRow, type TaskRow } from "./sim";
+import { SimDriver, randHex, sh, type TaskRow } from "./sim.ts";
+import type { EscrowGateway } from "./escrow.ts";
 
 export interface Envelope {
   jsonrpc: "2.0";
@@ -54,31 +55,65 @@ const REGISTRY = [
 
 const TIER_ORDER = ["T0", "T1", "T2", "T3"] as const;
 
+/** B0 ledger — committed tasks keyed by id (system of record for RPC path). */
+export class TaskLedger {
+  private byId = new Map<string, TaskRow & { reportedHash?: string; buyer?: string }>();
+
+  put(t: TaskRow & { reportedHash?: string; buyer?: string }): void {
+    this.byId.set(t.id, t);
+  }
+
+  get(id: string): (TaskRow & { reportedHash?: string; buyer?: string }) | undefined {
+    return this.byId.get(id);
+  }
+
+  update(id: string, patch: Partial<TaskRow & { reportedHash?: string }>): TaskRow | undefined {
+    const cur = this.byId.get(id);
+    if (!cur) return undefined;
+    const next = { ...cur, ...patch };
+    this.byId.set(id, next);
+    return next;
+  }
+
+  all(): TaskRow[] {
+    return [...this.byId.values()];
+  }
+}
+
 export interface RpcContext {
   sim: SimDriver;
+  ledger: TaskLedger;
+  escrow: EscrowGateway;
   emitTask: (t: TaskRow) => void;
   epoch: number;
 }
 
 export function makeDispatcher(ctx: RpcContext) {
-  const { sim } = ctx;
+  const { sim, ledger, escrow } = ctx;
 
-  const addTask = (partial: Partial<TaskRow>): TaskRow => {
+  const addTask = (partial: Partial<TaskRow> & { buyer?: string }): TaskRow => {
     const t: TaskRow = {
       id: partial.id ?? `cent_${randHex(7)}`,
       agent: String(partial.agent ?? "agent:atlas-01"),
-      counterparty: String(partial.counterparty ?? "agent:orbit-2"),
+      counterparty: String(partial.counterparty ?? partial.buyer ?? "agent:orbit-2"),
       role: (partial.role as TaskRow["role"]) ?? "buy",
       spec: String(partial.spec ?? "render.sequence.4k"),
       amount: String(partial.amount ?? "10.00"),
-      state: "RUNNING",
+      state: (partial.state as TaskRow["state"]) ?? "RUNNING",
       at: Date.now(),
       hash: String(partial.hash ?? `0x${randHex(6)}…${randHex(4)}`),
     };
     const snap = sim.snapshots();
     snap.tasks.unshift(t);
+    // also park on sim's live list
+    sim.state.tasks = [t, ...sim.state.tasks].slice(0, 48);
+    ledger.put({ ...t, buyer: partial.buyer });
     ctx.emitTask(t);
     return t;
+  };
+
+  const findTask = (id: string): TaskRow | undefined => {
+    return ledger.get(id) ?? sim.settleTask(id);
   };
 
   return async function dispatch(env: Envelope): Promise<OkResult | ErrResult> {
@@ -100,8 +135,7 @@ export function makeDispatcher(ctx: RpcContext) {
           (a) =>
             a.trust >= minTrust &&
             TIER_ORDER.indexOf(a.tier as (typeof TIER_ORDER)[number]) >= minTierIdx &&
-            a.rate <= maxPrice &&
-            (!filter.spec || a.id.includes(filter.spec.split(".")[0]) || filter.spec.startsWith("render") === a.id.includes("vector") || true),
+            a.rate <= maxPrice,
         )
           .sort((a, b) => b.trust - a.trust)
           .slice(0, filter.limit ?? 10);
@@ -109,35 +143,68 @@ export function makeDispatcher(ctx: RpcContext) {
       }
 
       case "task.commit": {
-        const params = p as { spec?: string; worker?: string; escrow?: { amount?: string }; buyer?: string };
+        const params = p as {
+          spec?: string;
+          worker?: string;
+          escrow?: { amount?: string; asset?: string };
+          buyer?: string;
+          input?: Record<string, unknown>;
+        };
         if (!params.spec || !params.worker) return err(M.SCHEMA, "commit requires spec and worker");
         if (parseFloat(String(params.escrow?.amount ?? "0")) <= 0) return err(M.SCHEMA, "escrow.amount must be > 0");
+
+        const amount = String(params.escrow!.amount);
         const t = addTask({
           agent: params.worker,
           counterparty: params.buyer ?? "agent:atlas-01",
+          buyer: params.buyer ?? "agent:atlas-01",
           spec: params.spec,
-          amount: String(params.escrow!.amount),
+          amount,
           role: "work",
+          state: "RUNNING",
         });
-        return ok({ task_id: t.id, state: t.state, worker: t.agent, amount: t.amount });
+
+        // Optional on-chain escrow lock (B0 write path)
+        const chain = await escrow.commit({
+          taskIdHint: t.id,
+          worker: params.worker,
+          buyer: params.buyer,
+          amountUsdc: amount,
+          spec: params.spec,
+        });
+
+        return ok({
+          task_id: t.id,
+          state: "COMMITTED",
+          worker: t.agent,
+          amount: t.amount,
+          chain: {
+            mode: chain.mode,
+            tx: chain.txHash ?? null,
+            error: chain.error ?? null,
+            escrow: escrow.mode,
+          },
+        });
       }
 
       case "task.report": {
         const { task_id, hash } = p as { task_id?: string; hash?: string };
         if (!task_id || !hash) return err(M.SCHEMA, "report requires task_id and hash");
-        const t = sim.settleTask(task_id);
-        if (!t) return err(M.TIMEOUT, `task ${task_id} unknown outside sim window`);
+        const t = findTask(task_id);
+        if (!t) return err(M.TIMEOUT, `task ${task_id} unknown`);
+        if (t.state === "SETTLED" || t.state === "FAILED") return err(M.QUORUM_SLOW, `task is terminal (${t.state})`);
         t.state = "VERIFYING";
         t.hash = String(hash);
+        ledger.put({ ...t, reportedHash: String(hash) });
         ctx.emitTask({ ...t });
-        return ok({ task_id, state: t.state });
+        return ok({ task_id, state: t.state, hash: t.hash });
       }
 
       case "verify": {
         const { task_id, quorum = 3 } = p as { task_id?: string; quorum?: number };
         if (!task_id) return err(M.SCHEMA, "verify requires task_id");
-        const t = sim.settleTask(task_id);
-        if (!t) return err(M.TIMEOUT, `task ${task_id} unknown outside sim window`);
+        const t = findTask(task_id);
+        if (!t) return err(M.TIMEOUT, `task ${task_id} unknown`);
         if (t.state !== "VERIFYING") return err(M.QUORUM_SLOW, `task is ${t.state}, wait for report`);
 
         const ms = 380 + Math.floor(Math.random() * 220);
@@ -145,11 +212,15 @@ export function makeDispatcher(ctx: RpcContext) {
         const fault = Math.random() < 0.04;
         if (fault) {
           t.state = "DISPUTED";
+          ledger.put(t);
           ctx.emitTask({ ...t });
           return err(M.HASH_MISMATCH, "quorum rejected the reported output hash");
         }
         const honest = sh(`${t.id}:${t.spec}:${t.amount}`);
         t.state = "SETTLED";
+        t.hash = honest;
+        ledger.put(t);
+        sim.state.pending.push(t);
         ctx.emitTask({ ...t });
         return ok({
           task_id,
@@ -166,7 +237,7 @@ export function makeDispatcher(ctx: RpcContext) {
       case "task.settle": {
         const { task_id } = p as { task_id?: string };
         if (!task_id) return err(M.SCHEMA, "settle requires task_id");
-        const t = sim.settleTask(task_id);
+        const t = findTask(task_id);
         if (!t) return err(M.TIMEOUT, `task ${task_id} unknown`);
         if (t.state !== "SETTLED") return err(M.QUORUM_SLOW, `cannot settle while state is ${t.state}`);
         return ok({ task_id, state: t.state });
@@ -175,9 +246,10 @@ export function makeDispatcher(ctx: RpcContext) {
       case "dispute.open": {
         const { task_id, evidence } = p as { task_id?: string; evidence?: unknown };
         if (!task_id) return err(M.SCHEMA, "dispute.open requires task_id");
-        const t = sim.settleTask(task_id);
+        const t = findTask(task_id);
         if (!t) return err(M.TIMEOUT, `task ${task_id} unknown`);
         t.state = "DISPUTED";
+        ledger.put(t);
         ctx.emitTask({ ...t });
         return ok({ task_id, state: t.state, evidence_received: !!evidence });
       }
@@ -185,9 +257,10 @@ export function makeDispatcher(ctx: RpcContext) {
       case "operator.rule": {
         const { task_id, ruling, sig } = p as { task_id?: string; ruling?: string; sig?: string };
         if (!task_id || !ruling || !sig) return err(M.SCHEMA, "operator.rule requires task_id, ruling, sig");
-        const t = sim.settleTask(task_id);
+        const t = findTask(task_id);
         if (!t) return err(M.TIMEOUT, `task ${task_id} unknown`);
-        t.state = ruling === "REFUND BUYER" ? "FAILED" : "SETTLED";
+        t.state = ruling === "REFUND BUYER" || ruling === "REFUND" ? "FAILED" : "SETTLED";
+        ledger.put(t);
         ctx.emitTask({ ...t });
         return ok({ task_id, state: t.state, ruling });
       }
@@ -203,6 +276,15 @@ export function makeDispatcher(ctx: RpcContext) {
         return ok({ subscribed: (p.topics as string[]) ?? [] });
       }
 
+      case "node.info": {
+        return ok({
+          service: "ciphersentry-gateway",
+          epoch: ctx.epoch,
+          escrow: escrow.mode,
+          ledger_tasks: ledger.all().length,
+        });
+      }
+
       default:
         return err(M.SCHEMA, `unknown method: ${env.method}`);
     }
@@ -210,5 +292,3 @@ export function makeDispatcher(ctx: RpcContext) {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-export type { ReceiptRow };

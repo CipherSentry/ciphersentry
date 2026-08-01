@@ -1,8 +1,9 @@
 # CipherSentry Backend — Architecture Brainstorm
 
-Status: **pre-implementation sketch** for V0.2 (Verifier Network). The front
-end in this repo already speaks the wire surface below; the sim in
-`src/sdk/ciphersentry.ts` is the reference client behavior.
+Status: **B0 in progress** — edge gateway + RpcTransport live against an
+in-memory ledger; optional Base-Sepolia watch/write via env. V0.2 verifier
+network remains the next slice. Reference client: `src/sdk/ciphersentry.ts`
+(`?net=rpc|sim`).
 
 ---
 
