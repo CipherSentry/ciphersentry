@@ -73,11 +73,11 @@ contract VestingVault {
     function vestedAt(uint256 id, uint64 epoch) public view returns (uint96) {
         Grant memory g = grants[id];
         if (g.amount == 0) return 0;
-        if (epoch <= g.cliff) return 0; // strictly before cliff+1
-        uint64 past = epoch - g.cliff;
-        if (past > g.linear) past = g.linear;
-        // amount * past / linear — bounded integers, no Dw sequence needed
-        return uint96((uint256(g.amount) * uint256(past)) / uint256(g.linear));
+        if (uint256(epoch) <= uint256(g.cliff)) return 0; // strictly before cliff+1
+        uint256 past = uint256(epoch) - uint256(g.cliff);
+        if (past > uint256(g.linear)) past = uint256(g.linear);
+        // amount * past / linear - bounded integers, no Dw sequence needed
+        return uint96((uint256(g.amount) * past) / uint256(g.linear));
     }
 
     function claimable(uint256 id) external view returns (uint96) {

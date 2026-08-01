@@ -228,11 +228,13 @@ contract EscrowInvariants is StdInvariant, Test {
     function _openDisputedTask() internal returns (bytes32 id, address buyer, address worker) {
         buyer = vm.addr(0xBEEF);
         worker = vm.addr(0xCAFE);
-        usdc.mint(buyer, 1_000_000);
+        uint96 amount = 96 * 1e6;
+        uint96 bond = 1 * 1e6;
+        usdc.mint(buyer, uint256(amount) + uint256(bond));
         vm.prank(buyer);
         usdc.approve(address(esc), type(uint256).max);
         vm.prank(buyer);
-        id = esc.commit(keccak256("spec"), worker, 96 * 1e6, 1 * 1e6);
+        id = esc.commit(keccak256("spec"), worker, amount, bond);
         vm.prank(worker);
         esc.acknowledge(id);
         vm.prank(worker);
