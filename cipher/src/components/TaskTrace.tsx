@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 
 const TASKS = [
-  { id: "mrc_8f5a2c0", buyer: "agent:atlas-01", worker: "agent:vector-7", escrow: "42.80" },
-  { id: "mrc_3c91be4", buyer: "agent:helix-3", worker: "agent:probe-9", escrow: "128.00" },
-  { id: "mrc_f002a17", buyer: "agent:orbit-2", worker: "agent:antenna-4", escrow: "06.25" },
-  { id: "mrc_77d93c1", buyer: "agent:nomad-6", worker: "agent:forge-11", escrow: "310.50" },
+  { id: "cent_8f5a2c0", buyer: "agent:atlas-01", worker: "agent:vector-7", escrow: "42.80" },
+  { id: "cent_3c91be4", buyer: "agent:helix-3", worker: "agent:probe-9", escrow: "128.00" },
+  { id: "cent_f002a17", buyer: "agent:orbit-2", worker: "agent:antenna-4", escrow: "06.25" },
+  { id: "cent_77d93c1", buyer: "agent:nomad-6", worker: "agent:forge-11", escrow: "310.50" },
 ];
 
 const CMD = "ciphersentry.task.execute";

@@ -11,11 +11,11 @@ import { StdInvariant } from "forge-std/StdInvariant.sol";
 import { VerifierRegistry } from "../src/VerifierRegistry.sol";
 import { QuorumElection } from "../src/QuorumElection.sol";
 
-/* ------------------------------ mock MARC ---------------------------------- */
+/* ------------------------------ mock CENT ---------------------------------- */
 
-contract MockMARC {
-    string public constant name = "Machinarc";
-    string public constant symbol = "MARC";
+contract MockCENT {
+    string public constant name = "CipherSentry";
+    string public constant symbol = "CENT";
     uint8 public constant decimals = 18;
 
     uint256 public totalSupply;
@@ -56,7 +56,7 @@ contract MockMARC {
 
 contract RegistryHandler is Test {
     VerifierRegistry public reg;
-    MockMARC public marc;
+    MockCENT public cent;
     address public slasher;
 
     address[] public actors;
@@ -65,9 +65,9 @@ contract RegistryHandler is Test {
     uint256 public ghostSlashedOut;
     uint256 public ghostWithdrawnOut;
 
-    constructor(VerifierRegistry _reg, MockMARC _marc, address _slasher, address[] memory _actors) {
+    constructor(VerifierRegistry _reg, MockCENT _cent, address _slasher, address[] memory _actors) {
         reg = _reg;
-        marc = _marc;
+        cent = _cent;
         slasher = _slasher;
         actors = _actors;
     }
@@ -76,9 +76,9 @@ contract RegistryHandler is Test {
         if (actors.length == 0) return;
         address a = actors[actorIx % actors.length];
         uint256 amount = bound(amountSeed, 20_000 ether, 60_000 ether);
-        marc.mint(a, amount);
+        cent.mint(a, amount);
         vm.prank(a);
-        marc.approve(address(reg), type(uint256).max);
+        cent.approve(address(reg), type(uint256).max);
         vm.prank(a);
         try reg.stake(amount) returns () {
             ghostBondedIn += amount;
@@ -89,9 +89,9 @@ contract RegistryHandler is Test {
         address a = actors[actorIx % actors.length];
         uint128 amount = uint128(bound(amountSeed, 0, 5_000 ether));
         if (amount == 0) return;
-        marc.mint(a, amount);
+        cent.mint(a, amount);
         vm.prank(a);
-        marc.approve(address(reg), type(uint256).max);
+        cent.approve(address(reg), type(uint256).max);
         vm.prank(a);
         try reg.topUpBond(amount) {
             ghostBondedIn += amount;
@@ -139,7 +139,7 @@ contract RegistryHandler is Test {
 /* ------------------------------ invariants -------------------------------- */
 
 contract RegistryElectionInvariants is StdInvariant, Test {
-    MockMARC internal marc;
+    MockCENT internal cent;
     VerifierRegistry internal reg;
     QuorumElection internal qi;
     RegistryHandler internal handler;
@@ -150,15 +150,15 @@ contract RegistryElectionInvariants is StdInvariant, Test {
     address[] internal seats;
 
     function setUp() public {
-        marc = new MockMARC();
+        cent = new MockCENT();
         seats = [vm.addr(0xBEEF), vm.addr(0xCAFE), vm.addr(0xF00D), vm.addr(0x1234), vm.addr(0x2345)];
-        reg = new VerifierRegistry(address(marc), oracle, slasher);
+        reg = new VerifierRegistry(address(cent), oracle, slasher);
         qi = new QuorumElection(address(reg));
         for (uint256 i; i < seats.length; i++) {
             vm.prank(oracle);
             reg.setAccuracy(seats[i], uint16(8_000 + i * 500));
         }
-        handler = new RegistryHandler(reg, marc, slasher, seats);
+        handler = new RegistryHandler(reg, cent, slasher, seats);
         targetContract(address(handler));
     }
 
@@ -191,9 +191,9 @@ contract RegistryElectionInvariants is StdInvariant, Test {
     function testFuzz_jailBlocksMovement(bytes calldata junk) public {
         junk;
         address v = seats[0];
-        marc.mint(v, 40_000 ether);
+        cent.mint(v, 40_000 ether);
         vm.prank(v);
-        marc.approve(address(reg), type(uint256).max);
+        cent.approve(address(reg), type(uint256).max);
         vm.prank(v);
         reg.stake(40_000 ether);
 
@@ -245,9 +245,9 @@ contract RegistryElectionInvariants is StdInvariant, Test {
         _seedSeats();
         address whale = vm.addr(0xDEAD);
         uint256 amount = bound(bondSeed, 50_000 ether, 1_000_000_000 ether);
-        marc.mint(whale, amount);
+        cent.mint(whale, amount);
         vm.prank(whale);
-        marc.approve(address(reg), type(uint256).max);
+        cent.approve(address(reg), type(uint256).max);
         vm.prank(whale);
         reg.stake(amount);
         vm.prank(oracle);
@@ -276,9 +276,9 @@ contract RegistryElectionInvariants is StdInvariant, Test {
     function _seedSeats() internal {
         for (uint256 i; i < seats.length; i++) {
             uint256 amount = 30_000 ether * (i + 1);
-            marc.mint(seats[i], amount);
+            cent.mint(seats[i], amount);
             vm.prank(seats[i]);
-            marc.approve(address(reg), type(uint256).max);
+            cent.approve(address(reg), type(uint256).max);
             vm.prank(seats[i]);
             reg.stake(amount);
         }

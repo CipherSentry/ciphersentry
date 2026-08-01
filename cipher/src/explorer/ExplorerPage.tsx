@@ -6,9 +6,9 @@ import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
 import { Tag } from "../app/ui";
 import { agentReceipts, search, sh } from "./data";
 import type { ExBatch, Receipt } from "./data";
-import { Machinarc } from "../sdk/machinarc";
+import { CipherSentry } from "../sdk/ciphersentry";
 
-const mrc = Machinarc.shared();
+const cent = CipherSentry.shared();
 
 const SUB_START = Date.now();
 const clamp = (s: string, l: number) => (s.length > l ? `${s.slice(0, l)}…` : s);
@@ -62,9 +62,9 @@ function ProofLadder({ r, verifyStep }: { r: Receipt; verifyStep: number }) {
 
 export default function ExplorerPage() {
   const [now, setNow] = useState(SUB_START);
-  const [batches, setBatches] = useState<ExBatch[]>(() => mrc.ledger.batches());
+  const [batches, setBatches] = useState<ExBatch[]>(() => cent.ledger.batches());
   const [counters, setCounters] = useState({ tasks: 48_200, volume: 1_204_500 });
-  const [selBatchId, setSelBatchId] = useState(() => mrc.ledger.batches().at(-1)?.id ?? "");
+  const [selBatchId, setSelBatchId] = useState(() => cent.ledger.batches().at(-1)?.id ?? "");
   const [selReceiptId, setSelReceiptId] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [hint, setHint] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export default function ExplorerPage() {
 
   /* subscribe to the shared network ledger */
   useEffect(() => {
-    return mrc.ledger.onBatch((b) => {
+    return cent.ledger.onBatch((b) => {
       setBatches((bs) =>
         [
           ...bs.map((x) => ({ ...x, state: (x.state === "SETTLING" ? "SETTLED" : x.state) as ExBatch["state"] })),
@@ -120,7 +120,7 @@ export default function ExplorerPage() {
       setSelReceiptId(null);
       setHint(`→ ${res.agent} — recent receipts below`);
     } else {
-      setHint("NO MATCH — TRY mrc_, batch_, agent:vector-7, OR 0x…");
+      setHint("NO MATCH — TRY cent_, batch_, agent:vector-7, OR 0x…");
     }
   };
 
@@ -155,7 +155,7 @@ export default function ExplorerPage() {
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ EXPLORER</span>
           </div>
           <div className="flex items-center gap-5">
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — Machinarc-com" className="text-mute transition-colors hover:text-volt">
+            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
             <a

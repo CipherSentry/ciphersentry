@@ -4,7 +4,7 @@
  * from the WebCrypto keypair. Phishing-resistant custody, device-local.
  */
 
-const LS_PRK = "mrc.passkey.v1";
+const LS_PRK = "cent.passkey.v1";
 
 export interface PasskeyRecord {
   id: string; // base64 raw credential id
@@ -37,11 +37,11 @@ export async function registerPasskey(name: string): Promise<PasskeyRecord> {
   const cred = (await navigator.credentials.create({
     publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
-      rp: { name: "Machinarc" },
+      rp: { name: "CipherSentry" },
       user: {
         id: new TextEncoder().encode(`op:${name}:0`),
         name,
-        displayName: `Machinarc Operator — ${name}`,
+        displayName: `CipherSentry Operator — ${name}`,
       },
       pubKeyCredParams: [
         { type: "public-key", alg: -7 },

@@ -15,6 +15,6 @@ export function GithubIcon({ size = 13 }: { size?: number }) {
 }
 
 export const SOCIALS = {
-  x: "https://x.com/machinarc",
-  github: "https://github.com/Machinarc-com",
+  x: "https://x.com/ciphersentry",
+  github: "https://github.com/CipherSentry-com",
 };

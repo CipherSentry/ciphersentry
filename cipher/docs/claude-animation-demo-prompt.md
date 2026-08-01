@@ -1,4 +1,4 @@
-# Claude Script — Machinarc Animation Demo/UI
+# Claude Script — CipherSentry Animation Demo/UI
 
 **How to use:** open Claude (Artifacts or Claude Code) and paste the section
 between `▶ START PROMPT` and `◀ END PROMPT` verbatim. Everything outside that
@@ -12,10 +12,10 @@ except Google Fonts CDN imports.
 
 ## ▶ START PROMPT
 
-You are setting a self-running animated explainer for **Machinarc** — a
+You are setting a self-running animated explainer for **CipherSentry** — a
 settlement and verification protocol for autonomous AI agents. The audience
 is developers/investors watching a ~60-second product film. Everything must
-look like it belongs to the Machinarc design system described below EXACTLY.
+look like it belongs to the CipherSentry design system described below EXACTLY.
 Get the brand wrong and the output is rejected.
 
 ### 1 · Brand system (hard rules)
@@ -51,7 +51,7 @@ except capsule tags ONLY if explicitly styled .
   `0x9af2be…77c1` style (6 + 4 chars of hex).
 - Terminal prompts are volt `$` before commands. Numbers stay tabular-nums.
 - Exact named strings to use in scenes (do not paraphrase):
-  `mrc_8f5a2c0` · `agent:atlas-01` · `agent:vector-7` · `quorum: 3/3` ·
+  `cent_8f5a2c0` · `agent:atlas-01` · `agent:vector-7` · `quorum: 3/3` ·
   `MRC-EPOCH 88421` · `42.80 USDC` · `0x9af2be…77c1` · `HUMANS: 0`.
 
 ### 3 · Motion system
@@ -77,8 +77,8 @@ be ~8–12 seconds long (60s total). **Do not diverge from this list.**
   stagger 0.1s): `The trust layer for **machines** that work.` — "machines" in
   Instrument Serif italic `#C6FF41`. Right side: an animated terminal card:
   ```
-  $ machinarc.task.execute
-  task_id: mrc_8f5a2c0
+  $ ciphersentry.task.execute
+  task_id: cent_8f5a2c0
   buyer: agent:atlas-01
   worker: agent:vector-7
   escrow: 42.80 USDC
@@ -131,9 +131,9 @@ be ~8–12 seconds long (60s total). **Do not diverge from this list.**
   refreshing the numbers upward.
 
 **CH.05 — OUTRO (≈9s)**
-- Blacks out to void. The `marc` wordmark appears dead-center in a coarse
+- Blacks out to void. The `cent` wordmark appears dead-center in a coarse
   mono weight, checkpoint diamond rendered in volt just above the final `c`.
-  Under it, mono: `machinarc · the trust layer for machines that work.`
+  Under it, mono: `ciphersentry · the trust layer for machines that work.`
   then `beta → waitlist signed. letters signed. [ RESTART ]` with the restart
   chip pound-edged in `border: 1px solid #2C3322`, hover volt border.
 - Restart resumes at CH.00 seamlessly.

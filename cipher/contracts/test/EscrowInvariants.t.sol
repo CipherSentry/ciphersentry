@@ -12,13 +12,13 @@ pragma solidity ^0.8.26;
 
 import { Test } from "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
-import { MachinarcEscrow } from "../src/Escrow.sol";
+import { CipherSentryEscrow } from "../src/Escrow.sol";
 import { MockUSDC } from "./mocks/MockUSDC.sol";
 
 /* ------------------------------- handler ---------------------------------- */
 
 contract EscrowHandler is Test {
-    MachinarcEscrow public esc;
+    CipherSentryEscrow public esc;
     MockUSDC public usdc;
     address public ruler;
     address[3] public verifiers;
@@ -32,7 +32,7 @@ contract EscrowHandler is Test {
     bytes32 constant SPEC = keccak256("render.sequence.4k");
     uint256 constant FRAUD = 64;
 
-    constructor(MachinarcEscrow _esc, MockUSDC _usdc, address _ruler, address[3] memory _verifiers) {
+    constructor(CipherSentryEscrow _esc, MockUSDC _usdc, address _ruler, address[3] memory _verifiers) {
         esc = _esc;
         usdc = _usdc;
         ruler = _ruler;
@@ -63,16 +63,16 @@ contract EscrowHandler is Test {
     function drive(uint256 seed) external {
         if (liveIds.length == 0) return;
         bytes32 id = liveIds[seed % liveIds.length];
-        (address b, address w, uint96 amount, uint96 bond, , , MachinarcEscrow.State st, uint32 stateAt, uint64 ttl, uint8 matched, , ) = esc.tasks(id);
+        (address b, address w, uint96 amount, uint96 bond, , , CipherSentryEscrow.State st, uint32 stateAt, uint64 ttl, uint8 matched, , ) = esc.tasks(id);
         b; bond; matched; stateAt; // silence
 
-        if (st == MachinarcEscrow.State.Committed) {
+        if (st == CipherSentryEscrow.State.Committed) {
             vm.warp(block.timestamp + 5);
             vm.prank(w);
             esc.acknowledge(id);
             return;
         }
-        if (st == MachinarcEscrow.State.Executing) {
+        if (st == CipherSentryEscrow.State.Executing) {
             // half of drives time-travel past TTL, half report in time
             if (seed % 2 == 0) {
                 vm.warp(block.timestamp + uint256(bound(seed, 60, 600)));
@@ -89,7 +89,7 @@ contract EscrowHandler is Test {
             esc.report(id, _expectedHash(id));
             return;
         }
-        if (st == MachinarcEscrow.State.Verifying) {
+        if (st == CipherSentryEscrow.State.Verifying) {
             // quorum votes match (legal path); junk votes can't exist in harness
             for (uint256 i; i < 3; i++) {
                 vm.prank(verifiers[i]);
@@ -101,7 +101,7 @@ contract EscrowHandler is Test {
             } catch {}
             return;
         }
-        if (st == MachinarcEscrow.State.Disputed) {
+        if (st == CipherSentryEscrow.State.Disputed) {
             // wait out the ruling window then permissionless default
             vm.roll(uint256(stateAt) + FRAUD + 1);
             esc.defaultRefund(id);
@@ -121,7 +121,7 @@ contract EscrowHandler is Test {
 
 contract EscrowInvariants is StdInvariant, Test {
     MockUSDC internal usdc;
-    MachinarcEscrow internal esc;
+    CipherSentryEscrow internal esc;
     EscrowHandler internal handler;
 
     address internal ruler = vm.addr(0x5A17E11);
@@ -129,7 +129,7 @@ contract EscrowInvariants is StdInvariant, Test {
 
     function setUp() public {
         usdc = new MockUSDC();
-        esc = new MachinarcEscrow(address(usdc), address(0x7171), ruler, 64, 300);
+        esc = new CipherSentryEscrow(address(usdc), address(0x7171), ruler, 64, 300);
         vm.prank(ruler);
         esc.setVerifier(verifiers[0], true);
         vm.prank(ruler);
@@ -162,9 +162,9 @@ contract EscrowInvariants is StdInvariant, Test {
         for (uint256 i; i < n; i++) {
             bytes32 id = handler.liveIds(i);
             if (handler.settledTerminal(id)) {
-                (, , , , , , MachinarcEscrow.State st, , , , , ) = esc.tasks(id);
+                (, , , , , , CipherSentryEscrow.State st, , , , , ) = esc.tasks(id);
                 assertTrue(
-                    st == MachinarcEscrow.State.Settled || st == MachinarcEscrow.State.Failed,
+                    st == CipherSentryEscrow.State.Settled || st == CipherSentryEscrow.State.Failed,
                     "I-E3: terminal task mutated after payout"
                 );
             }
@@ -178,7 +178,7 @@ contract EscrowInvariants is StdInvariant, Test {
         (bytes32 id, , ) = _openDisputedTask();
         bytes memory sig = abi.encodePacked(junk, junk, uint8(27));
         vm.expectRevert();
-        esc.rule(id, MachinarcEscrow.Ruling(ruling % 3), nonce, sig);
+        esc.rule(id, CipherSentryEscrow.Ruling(ruling % 3), nonce, sig);
         invariant_IE2_accounting();
     }
 
@@ -197,13 +197,13 @@ contract EscrowInvariants is StdInvariant, Test {
         vm.prank(worker);
         esc.report(id, keccak256("ok"));
 
-        vm.expectRevert(MachinarcEscrow.NotUnanimous.selector);
+        vm.expectRevert(CipherSentryEscrow.NotUnanimous.selector);
         esc.settle(id);
 
         // a single matching vote still cannot settle — 3 needed
         vm.prank(verifiers[0]);
         esc.vote(id, keccak256("ok"));
-        vm.expectRevert(MachinarcEscrow.NotUnanimous.selector);
+        vm.expectRevert(CipherSentryEscrow.NotUnanimous.selector);
         esc.settle(id);
     }
 
@@ -215,12 +215,12 @@ contract EscrowInvariants is StdInvariant, Test {
         vm.roll(uint256(block.number) + 64 + blocks);
         bytes memory sig = abi.encodePacked(bytes32(0), bytes32(0), uint8(28));
         if (blocks > 0) {
-            vm.expectRevert(MachinarcEscrow.WindowClosed.selector);
-            esc.rule(id, MachinarcEscrow.Ruling(ruling % 3), 1, sig);
+            vm.expectRevert(CipherSentryEscrow.WindowClosed.selector);
+            esc.rule(id, CipherSentryEscrow.Ruling(ruling % 3), 1, sig);
         }
         // inside window, garbage signature still cannot pass either
         vm.expectRevert();
-        esc.rule(id, MachinarcEscrow.Ruling(0), 1, sig);
+        esc.rule(id, CipherSentryEscrow.Ruling(0), 1, sig);
     }
 
     /* ----------------------------- helpers --------------------------------- */

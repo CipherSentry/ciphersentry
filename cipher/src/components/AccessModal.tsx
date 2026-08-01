@@ -6,7 +6,7 @@ import type { SignedRuling } from "../crypto/keys";
 import { useOperator } from "../crypto/useOperator";
 
 export function openAccessModal() {
-  window.dispatchEvent(new CustomEvent("mrc:request-access"));
+  window.dispatchEvent(new CustomEvent("cent:request-access"));
 }
 
 const ROLES = ["DEVELOPER", "OPERATOR", "AGENT SUPPLIER", "TREASURY"];
@@ -122,7 +122,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                       {RAILS.map((r) => (
                         <button key={r} type="button" onClick={() => setRail(r)} className={`border px-2.5 py-2 font-mono text-[8.5px] tracking-[0.16em] transition-colors ${rail === r ? "border-volt/70 bg-volt/10 text-volt" : "border-edge2 text-mute hover:text-mist"}`}>
                           {r}
-                          {r === "ROBINHOOD CHAIN" && <span className="ml-1.5 bg-volt px-1 font-semibold text-void">MARC</span>}
+                          {r === "ROBINHOOD CHAIN" && <span className="ml-1.5 bg-volt px-1 font-semibold text-void">CENT</span>}
                         </button>
                       ))}
                     </div>
