@@ -12,7 +12,7 @@ pragma solidity ^0.8.26;
 /*  I-V3  claimed + claimable ≤ grant.at — over-release impossible            */
 /* -------------------------------------------------------------------------- */
 
-interface IMarc {
+interface ICENT {
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
@@ -20,14 +20,14 @@ interface IMarc {
 contract VestingVault {
     struct Grant {
         address beneficiary;
-        uint96 amount; // MARC, 18 decimals
+        uint96 amount; // CENT, 18 decimals
         uint96 cliff; // first epoch anything vests
         uint96 linear; // epochs over which it vests after cliff
         uint96 claimed;
     }
 
     uint256 public immutable EPOCH_BLOCKS;
-    IMarc public immutable MRC;
+    ICENT public immutable CENT;
     address public immutable GRANTOR;
 
     mapping(uint256 => Grant) public grants;
@@ -43,8 +43,8 @@ contract VestingVault {
     error NothingVested();
     error OverRelease();
 
-    constructor(address marc_, address grantor_, uint256 epochBlocks) {
-        MRC = IMarc(marc_);
+    constructor(address cent_, address grantor_, uint256 epochBlocks) {
+        CENT = ICENT(cent_);
         GRANTOR = grantor_;
         EPOCH_BLOCKS = epochBlocks == 0 ? 64 : epochBlocks;
     }
@@ -96,7 +96,7 @@ contract VestingVault {
         g.claimed = vested;
         if (g.claimed > g.amount) revert OverRelease();
         emit Claimed(id, g.beneficiary, due, g.claimed);
-        if (!MRC.transfer(g.beneficiary, due)) revert("pay");
+        if (!CENT.transfer(g.beneficiary, due)) revert("pay");
     }
 
     /// @notice The I-V3 triple the invariant suite asserts.

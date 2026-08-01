@@ -1,9 +1,9 @@
 {
-  "name": "@machinarc/indexer",
+  "name": "@ciphersentry/indexer",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Machinarc indexer — Postgres state transitions + ClickHouse receipt graph",
+  "description": "CipherSentry indexer — Postgres state transitions + ClickHouse receipt graph",
   "scripts": {
     "indexer": "node --experimental-strip-types src/server.ts",
     "schema:ch": "node --experimental-strip-types src/db.ts --apply-ch-schema"

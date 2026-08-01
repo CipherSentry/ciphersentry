@@ -16,7 +16,7 @@ interface IVerifierRegistrySlash {
     function bondOf(address verifier) external view returns (uint256);
 }
 
-interface IMarcSlash {
+interface ICENTSlash {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function transfer(address to, uint256 amount) external returns (bool);
 }
@@ -47,7 +47,7 @@ contract SlashExecutor {
     address public constant GRAVEYARD = address(0x000000000000000000000000000000000000dEaD);
 
     IVerifierRegistrySlash public immutable REGISTRY;
-    IMarcSlash public immutable MRC;
+    ICENTSlash public immutable CENT;
     address public immutable WATCHER; // posts evidence — router for challenge bonds
     address public immutable RESOLVER; // dismisses frivolous / burns griefer bond
     address public immutable TREASURY; // proceeds share lands here (25%)
@@ -86,10 +86,10 @@ contract SlashExecutor {
         return challenges.length - head;
     }
 
-    constructor(address registry, address marcAddr, address watcher, address resolver, address treasury) {
+    constructor(address registry, address centAddr, address watcher, address resolver, address treasury) {
         if (treasury == address(0)) revert ZeroAddress();
         REGISTRY = IVerifierRegistrySlash(registry);
-        MRC = IMarcSlash(marcAddr);
+        CENT = ICENTSlash(centAddr);
         WATCHER = watcher;
         RESOLVER = resolver;
         TREASURY = treasury;
@@ -107,7 +107,7 @@ contract SlashExecutor {
         nullifierUsed[evidenceHash] = true;
 
         // pull the challenge bond into escrow
-        if (!MRC.transferFrom(msg.sender, address(this), CHALLENGE_BOND)) revert("bond pull failed");
+        if (!CENT.transferFrom(msg.sender, address(this), CHALLENGE_BOND)) revert("bond pull failed");
         bondEscrow += CHALLENGE_BOND;
 
         challengeId = challenges.length;
@@ -158,9 +158,9 @@ contract SlashExecutor {
 
         REGISTRY.slash(c.target, cut, address(this));
 
-        if (!MRC.transfer(GRAVEYARD, burned)) revert("burn failed");
-        if (!MRC.transfer(c.challenger, CHALLENGE_BOND + bounty)) revert("challenger pay failed");
-        if (treasuryShare > 0 && !MRC.transfer(TREASURY, treasuryShare)) revert("treasury pay failed");
+        if (!CENT.transfer(GRAVEYARD, burned)) revert("burn failed");
+        if (!CENT.transfer(c.challenger, CHALLENGE_BOND + bounty)) revert("challenger pay failed");
+        if (treasuryShare > 0 && !CENT.transfer(TREASURY, treasuryShare)) revert("treasury pay failed");
 
         bondEscrow -= CHALLENGE_BOND;
 
@@ -178,7 +178,7 @@ contract SlashExecutor {
         head += 1;
         bondEscrow -= CHALLENGE_BOND;
         emit ChallengeDismissed(idx, c.target, c.challenger);
-        if (!MRC.transfer(GRAVEYARD, CHALLENGE_BOND)) revert("burn failed");
+        if (!CENT.transfer(GRAVEYARD, CHALLENGE_BOND)) revert("burn failed");
     }
 
     /* ------------------------------ internals -------------------------------- */

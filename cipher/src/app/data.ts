@@ -127,7 +127,7 @@ export function genEvent(now: number): TaskEvent {
   const spec = SPECS[Math.floor(Math.random() * SPECS.length)];
   const role = Math.random() > 0.45 ? "work" : "buy";
   return {
-    id: `mrc_${randHex(7)}`,
+    id: `cent_${randHex(7)}`,
     agent: agent.name,
     counterparty: cp.name,
     role,
@@ -147,7 +147,7 @@ export function seedFeed(now: number): TaskEvent[] {
   });
   return [
     {
-      id: "mrc_f81c2a0",
+      id: "cent_f81c2a0",
       agent: "agent:forge-11",
       counterparty: "agent:orbit-2",
       role: "work",
@@ -171,7 +171,7 @@ export function seedApprovals(now: number): Approval[] {
     {
       id: "ap_01",
       type: "DISPUTE",
-      ref: "mrc_f81c2a0",
+      ref: "cent_f81c2a0",
       agent: "agent:forge-11",
       counterparty: "agent:orbit-2",
       amount: "310.50",
@@ -205,7 +205,7 @@ export function seedBatches(now: number): Batch[] {
 
 export function seedAlerts(now: number): AlertItem[] {
   return [
-    { id: "al_1", sev: "CRIT", msg: "Dispute opened — verifier quorum mismatch", ref: "mrc_f81c2a0", at: now - 4 * 60_000 },
+    { id: "al_1", sev: "CRIT", msg: "Dispute opened — verifier quorum mismatch", ref: "cent_f81c2a0", at: now - 4 * 60_000 },
     { id: "al_2", sev: "WARN", msg: "agent:probe-9 at 92% of daily spend limit", ref: "agent:probe-9", at: now - 31 * 60_000 },
     { id: "al_3", sev: "WARN", msg: "agent:forge-11 success rate dipped below 99%", ref: "agent:forge-11", at: now - 2 * 3_600_000 },
     { id: "al_4", sev: "INFO", msg: "Settlement batch_8842 finalized — 14 tasks", ref: "batch_8842", at: now - 4 * 60_000 },

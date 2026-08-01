@@ -2,11 +2,11 @@
 pragma solidity ^0.8.26;
 
 /* -------------------------------------------------------------------------- */
-/*  DEPLOY.S.SOL — Base-Sepolia broadcast for the Machinarc stack             */
+/*  DEPLOY.S.SOL — Base-Sepolia broadcast for the CipherSentry stack             */
 /*                                                                            */
 /*  Deploys, in order:                                                        */
-/*    MARC (fixed supply → distributor)                                       */
-/*    MachinarcEscrow (USDC commitments)                                      */
+/*    CENT (fixed supply → distributor)                                       */
+/*    CipherSentryEscrow (USDC commitments)                                      */
 /*    SettlementBatcher (2-of-3 anchors)                                      */
 /*    VestingVault (epoch-indexed)                                            */
 /*    VerifierRegistry (bond floor)                                           */
@@ -27,7 +27,7 @@ pragma solidity ^0.8.26;
 
 import { Script, console } from "forge-std/Script.sol";
 import { CentToken } from "../src/CENT.sol";
-import { MachinarcEscrow } from "../src/Escrow.sol";
+import { CipherSentryEscrow } from "../src/Escrow.sol";
 import { SettlementBatcher } from "../src/SettlementBatcher.sol";
 import { VestingVault } from "../src/VestingVault.sol";
 import { VerifierRegistry } from "../src/VerifierRegistry.sol";
@@ -87,7 +87,7 @@ contract Deploy is Script {
         CentToken cent = new CentToken(env.treasury);
 
         // 2 ─ Escrow: task money; immutable, no pause, no upgrade path.
-        MachinarcEscrow escrow = new MachinarcEscrow(env.usdc, env.treasury, env.ruler, FRAUD_WINDOW, EXEC_TTL);
+        CipherSentryEscrow escrow = new CipherSentryEscrow(env.usdc, env.treasury, env.ruler, FRAUD_WINDOW, EXEC_TTL);
 
         // 3 ─ SettlementBatcher: 2-of-3 anchor authority.
         SettlementBatcher batcher = new SettlementBatcher(_slots(env.signers), BATCH_WINDOW);
@@ -117,7 +117,7 @@ contract Deploy is Script {
         console.log("ciphersentry — base-sepolia deploy");
         console.log("--------------------------------");
         console.log("CENT                ", address(cent));
-        console.log("MachinarcEscrow     ", address(escrow));
+        console.log("CipherSentryEscrow     ", address(escrow));
         console.log("SettlementBatcher   ", address(batcher));
         console.log("VestingVault        ", address(vault));
         console.log("VerifierRegistry    ", address(registry));

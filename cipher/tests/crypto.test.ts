@@ -9,7 +9,7 @@ import {
   verifySignature,
 } from "../src/crypto/keys";
 import { decryptKeystore, encryptKeystore, KEYSTORE_VERSION } from "../src/crypto/keystore";
-import { canonicalize, outputHash } from "../src/sdk/machinarc";
+import { canonicalize, outputHash } from "../src/sdk/ciphersentry";
 
 describe("canonical form & hashing", () => {
   it("canonicalize is order-stable at every depth", () => {
@@ -44,7 +44,7 @@ describe("operator key lifecycle", () => {
 
   it("signs canonical payloads and independently verifies them", async () => {
     const key = await ensureOperatorKey();
-    const sig = await signRuling({ ruling: "REFUND BUYER", task: "mrc_abc", escrow: "42.80 USDC" }, key);
+    const sig = await signRuling({ ruling: "REFUND BUYER", task: "cent_abc", escrow: "42.80 USDC" }, key);
     expect(sig.verified).toBe(true);
     expect(await verifySignature(sig)).toBe(true);
 

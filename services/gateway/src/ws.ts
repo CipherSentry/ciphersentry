@@ -31,11 +31,11 @@ export class SubscriptionHub {
       try {
         env = JSON.parse(raw);
       } catch {
-        this.send(ws, frame("error", { code: "MRC_E_SCHEMA", message: "invalid frame" }));
+        this.send(ws, frame("error", { code: "CEN_E_SCHEMA", message: "invalid frame" }));
         return;
       }
       if (env.method !== "events.subscribe" || !env.params?.topics?.length) {
-        this.send(ws, { jsonrpc: "2.0", id: env.id ?? 0, error: { code: "MRC_E_SCHEMA", message: "expected events.subscribe" } });
+        this.send(ws, { jsonrpc: "2.0", id: env.id ?? 0, error: { code: "CEN_E_SCHEMA", message: "expected events.subscribe" } });
         return;
       }
       const topics = env.params.topics.filter((t) => t === "tasks" || t === "batches");

@@ -1,6 +1,6 @@
 import { Play, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Machinarc, MrcError } from "../sdk/machinarc";
+import { CipherSentry, CenError } from "../sdk/ciphersentry";
 
 type Tone = "mist" | "volt" | "mute" | "red" | "amber";
 interface Line {
@@ -45,16 +45,16 @@ export default function SdkPlayground() {
     log(`$ node quickstart.ts        # run ${attempt}`, "mute");
     log("", "mute");
     // shared client — this commit lands live in the Ops consoles too
-    const mrc = Machinarc.shared({ key: "op:demo" });
+    const cent = CipherSentry.shared({ key: "op:demo" });
 
     try {
       log("→ registry.query({ spec: 'render.sequence.4k', minTier: 'T1' })");
-      const [worker] = await mrc.registry.query({ spec: "render.sequence.4k", minTier: "T1" });
-      if (!worker) throw new MrcError("MRC_E_NOT_FOUND", "no worker matched the filter");
+      const [worker] = await cent.registry.query({ spec: "render.sequence.4k", minTier: "T1" });
+      if (!worker) throw new CenError("CEN_E_NOT_FOUND", "no worker matched the filter");
       log(`✓ ${worker.id} · trust ${worker.trust} · ${worker.rate.toFixed(2)} USDC/task`, "volt");
 
       log("→ task.commit({ frames: 240, seed: 88421 } · escrow 42.80 USDC)");
-      const task = await mrc.task.commit({
+      const task = await cent.task.commit({
         worker: worker.id,
         spec: "render.sequence.4k",
         input: { frames: 240, seed: 88421 },
@@ -63,15 +63,15 @@ export default function SdkPlayground() {
       log(`✓ ${task.id} COMMITTED — escrow locked`, "volt");
 
       log("… quorum recomputing (3/3)", "amber");
-      const r = await mrc.verify(task, { quorum: 3 });
+      const r = await cent.verify(task, { quorum: 3 });
       log(`✓ hashes match  ${r.recomputed}`, "volt");
       log(`✓ SETTLED · receipt ${r.taskId} · ${r.ms}ms · tx ${r.tx}`, "volt");
       log("exit 0 — escrow released, receipt anchored", "mute");
     } catch (e) {
-      if (e instanceof MrcError) {
+      if (e instanceof CenError) {
         log(`✗ ${e.code}`, "red");
         log(`  ${e.message}`, "mute");
-        if (e.code === "MRC_E_HASH_MISMATCH") {
+        if (e.code === "CEN_E_HASH_MISMATCH") {
           log("→ escrow FROZEN — intervention opened in Ops console", "amber");
           log("  resolve it: #/app → INTERVENE", "mute");
         } else {

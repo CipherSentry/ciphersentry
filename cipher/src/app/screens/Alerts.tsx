@@ -80,7 +80,7 @@ export default function Alerts() {
           <button
             key={a.id}
             onClick={() => {
-              if (a.ref.startsWith("mrc_")) app.open({ s: "task", id: a.ref });
+              if (a.ref.startsWith("cent_")) app.open({ s: "task", id: a.ref });
               else if (a.ref.startsWith("agent:")) app.open({ s: "agent", id: a.ref.replace("agent:", "") });
             }}
             className="flex w-full items-start gap-3.5 border-b border-edge px-5 py-4 text-left active:bg-panel"

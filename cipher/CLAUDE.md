@@ -1,7 +1,7 @@
 # CLAUDE.md — Working on Cipher Sentry
 
 You are editing **Cipher Sentry** — the guardian layer for machines that
-work (formerly codename Machinarc; the pivot is identity, not architecture).
+work (formerly codename CipherSentry; the pivot is identity, not architecture).
 The aesthetic is not a skin; it is the thesis. Before any diff, this file is
 the law of color, type, geometry, motion, and voice. For code invariants
 also read `AGENT.md` — this file owns the *style*.
@@ -169,9 +169,9 @@ Operators get volt; counterparties get mist; negative amounts `−`, positive `+
 - USDC amounts: 2 decimals (`42.80 USDC`), big ledger values locale-grouped, sign `+` volt for earned / `−` neutral for spend. Percentages: one decimal (`99.2%`).
 - Hashes: `0x9af2be…99d4` (6+4 elided) everywhere; never raw 64-hex rows in UI.
 - Timestamps: `Xs/Xm/Xh` in feeds; `HH:MM:SSZ` UTC military in status bars; block height `BLK 12,840,117`; epoch `E-XX` phases vs `88421` module units.
-- Mono lines starting `$ ` prefix commands (`$ machinarc.task.execute`), `>`/chevron for live streams.
+- Mono lines starting `$ ` prefix commands (`$ ciphersentry.task.execute`), `>`/chevron for live streams.
 - Headline grammar: short noun sentences, Oxford commas forbidden in lists of three mechanics (use commas + em dash). Hero punctuation `.` ending; serif italic reserved word ends sentence.
-- Error vocabulary: `MRC_E_*` codes always accompany prose ("✗ MRC_E_HASH_MISMATCH — quorum rejected…").
+- Error vocabulary: `CEN_E_*` codes always accompany prose ("✗ CEN_E_HASH_MISMATCH — quorum rejected…").
 
 ---
 
@@ -187,10 +187,10 @@ Operators get volt; counterparties get mist; negative amounts `−`, positive `+
 
 ## 11 · Brand mark discipline
 
-- `LogoMark` = marc wordmark (chunky display strokes + trailing checkpoint diamond, at the registered position). `currentColor` carries the strokes; pass `accent` to tint the node (default mist `#EDF1E5`).
+- `LogoMark` = cent wordmark (chunky display strokes + trailing checkpoint diamond, at the registered position). `currentColor` carries the strokes; pass `accent` to tint the node (default mist `#EDF1E5`).
 - Never place the mark smaller than 15px height; never inside a rough circle guard-frame except O.G. tile/favicon assets where the volt field is the frame; never redrawn into new glyphs (hooks, waves, tubes — they were explored and rejected).
-- Favicon = volt tile + black marc + dark checkpoint — identity in one glance.
-- Avoid repeating "machinarc" text next to the mark — it already says the word.
+- Favicon = volt tile + black cent + dark checkpoint — identity in one glance.
+- Avoid repeating "ciphersentry" text next to the mark — it already says the word.
 
 ---
 
