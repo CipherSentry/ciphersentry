@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ciphersentry.com/sitemap.xml
+Sitemap: https://ciphersentry.xyz/sitemap.xml

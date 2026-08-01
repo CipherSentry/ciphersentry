@@ -33,7 +33,7 @@ export default function Header() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-edge bg-void/85 backdrop-blur-md">
       <div className="flex h-[68px] items-center justify-between px-8 md:px-16">
-        <a href="#/" aria-label="Cipher Sentry — ciphersentry.com" className="group flex items-center">
+        <a href="#/" aria-label="Cipher Sentry — ciphersentry.xyz" className="group flex items-center">
           <LogoMark size={17} className="text-volt transition-transform duration-300 group-hover:scale-105" />
         </a>
 
