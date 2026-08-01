@@ -20,6 +20,7 @@ import Inspector from "./Inspector";
 import Observe from "./Observe";
 import Treasury from "./Treasury";
 import Verifiers from "./Verifiers";
+import DesktopOnboarding from "./Onboarding";
 import LogoMark from "../components/LogoMark";
 import { NETWORKS } from "../networks";
 import { rollEpoch, seedEpoch, seedVerifiers } from "../network/verifiers";
@@ -45,6 +46,7 @@ const WORK: { id: View; label: string; icon: typeof Activity }[] = [
 
 export default function DesktopApp() {
   const op = useOperator();
+  const [connected, setConnected] = useState(false);
   const [view, setView] = useState<View>("observe");
   const [now, setNow] = useState(SIM_START);
   const [blk, setBlk] = useState(12840117);
@@ -130,8 +132,9 @@ export default function DesktopApp() {
     return () => clearInterval(id);
   }, []);
 
-  /* live task stream — via the shared typed client transport */
+  /* live task stream — after operator connects */
   useEffect(() => {
+    if (!connected) return;
     return cent.stream.onTick((events, delta) => {
       setFeed([...events]);
       if (delta && (delta.earned || delta.spent || delta.escrowDelta)) {
@@ -145,15 +148,16 @@ export default function DesktopApp() {
         setFleetPoints((p) => p + delta.earned + delta.spent);
       }
     });
-  }, []);
+  }, [connected]);
 
   /* kill switch pauses the whole network locally */
   useEffect(() => {
-    cent.transport.setPaused(halted);
-  }, [halted]);
+    cent.transport.setPaused(halted || !connected);
+  }, [halted, connected]);
 
   /* keyboard shortcuts */
   useEffect(() => {
+    if (!connected) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT") return;
       const order: View[] = ["observe", "guard", "intervene", "verifiers", "fleet", "treasury"];
@@ -166,7 +170,7 @@ export default function DesktopApp() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [connected]);
 
   const value = useMemo<DesktopValue>(() => {
     const toast = (msg: string) => {
@@ -261,22 +265,35 @@ export default function DesktopApp() {
   const utc = new Date(now);
   const utcStr = `${String(utc.getUTCHours()).padStart(2, "0")}:${String(utc.getUTCMinutes()).padStart(2, "0")}:${String(utc.getUTCSeconds()).padStart(2, "0")}Z`;
 
+  if (!connected) {
+    return (
+      <DesktopCtx.Provider value={value}>
+        <DesktopOnboarding
+          onConnect={() => {
+            setConnected(true);
+            value.toast("FLEET PAIRED — 3 AGENTS SYNCED");
+          }}
+        />
+      </DesktopCtx.Provider>
+    );
+  }
+
   return (
     <DesktopCtx.Provider value={value}>
       <div className="flex h-full flex-col overflow-hidden bg-void font-mono text-mist">
-        {/* ---- title bar ---- */}
-        <div className="flex h-10 shrink-0 items-center justify-between border-b border-edge bg-code px-4">
+        {/* ---- title bar (light chrome) ---- */}
+        <div className="flex h-10 shrink-0 items-center justify-between border-b border-edge bg-panel px-4">
           <div className="flex items-center gap-3">
             <a href="#/" aria-label="Back to ciphersentry.xyz home" className="group flex items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
-            <span className="hidden text-[8.5px] tracking-[0.24em] text-mute/60 xl:inline">SENTRY CONSOLE / V0.2</span>
+            <span className="hidden text-[8.5px] tracking-[0.24em] text-mute xl:inline">SENTRY CONSOLE / V0.2</span>
           </div>
-          <div className="hidden items-center gap-2 text-[9px] tracking-[0.14em] text-mute/70 xl:flex">
-            <span className="text-volt">$</span> cent.stream.attach <span className="text-mute/40">--fleet</span> atlas <span className="text-mute/40">--quorum</span> 3
+          <div className="hidden items-center gap-2 text-[9px] tracking-[0.14em] text-mute xl:flex">
+            <span className="text-volt">$</span> cent.stream.attach <span className="text-mute/50">--fleet</span> atlas <span className="text-mute/50">--quorum</span> 3
             <span className="animate-blink ml-0.5 inline-block h-3 w-[6px] bg-volt/70" />
           </div>
-          <div className="flex items-center gap-4 text-[9px] tracking-[0.16em] text-mute/70">
+          <div className="flex items-center gap-4 text-[9px] tracking-[0.16em] text-mute">
             <span className={`flex items-center gap-1.5 ${halted ? "text-red-400" : "text-volt"}`}>
               <span className={`h-1.5 w-1.5 ${halted ? "bg-red-400" : "animate-pulse bg-volt"}`} />
               {halted ? "HALTED" : "LIVE"}
@@ -290,7 +307,7 @@ export default function DesktopApp() {
                 onClick={() => setNetOpen((o) => !o)}
                 aria-label="Switch settlement rail"
                 className={`hidden items-center gap-1.5 border px-1.5 py-1 text-[8px] tracking-[0.14em] transition-colors md:flex ${
-                  net.id === "robinhood" ? "border-volt/60 text-volt" : "border-edge2 text-mute/80 hover:border-volt/50 hover:text-mist"
+                  net.id === "robinhood" ? "border-volt/60 text-volt" : "border-edge2 text-mute hover:border-volt/50 hover:text-mist"
                 }`}
               >
                 {net.label}
@@ -298,8 +315,8 @@ export default function DesktopApp() {
                 <ChevronDown size={9} className={`transition-transform ${netOpen ? "rotate-180" : ""}`} />
               </button>
               {netOpen && (
-                <div className="surface-code absolute right-0 top-full z-[70] mt-2 w-[280px] border shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-                  <div className="border-b border-code-edge px-3 py-2 text-[7.5px] tracking-[0.24em] text-code-mute">
+                <div className="absolute right-0 top-full z-[70] mt-2 w-[280px] border border-edge bg-panel shadow-[0_16px_48px_rgba(11,68,32,0.12)]">
+                  <div className="border-b border-edge px-3 py-2 text-[7.5px] tracking-[0.24em] text-mute">
                     SETTLEMENT RAIL — PROTOCOL IS RAIL-AGNOSTIC
                   </div>
                   {NETWORKS.map((n) => (
@@ -310,19 +327,19 @@ export default function DesktopApp() {
                         setNetOpen(false);
                         value.toast(n.id === "robinhood" ? "ROBINHOOD CHAIN — CENT TGE PENDING · PREVIEW" : `RAIL → ${n.label}`);
                       }}
-                      className={`flex w-full items-center gap-3 border-b border-code-edge/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-white/[0.04] ${
-                        n.id === net.id ? "bg-volt/[0.08]" : ""
+                      className={`flex w-full items-center gap-3 border-b border-edge/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-void ${
+                        n.id === net.id ? "bg-volt/[0.06]" : ""
                       }`}
                     >
-                      <span className={`h-1.5 w-1.5 shrink-0 ${n.status === "LIVE" ? "animate-pulse bg-volt" : n.status === "EVAL" ? "bg-code-mute/50" : "bg-amber-300"}`} />
+                      <span className={`h-1.5 w-1.5 shrink-0 ${n.status === "LIVE" ? "animate-pulse bg-volt" : n.status === "EVAL" ? "bg-mute/40" : "bg-amber-300"}`} />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline justify-between gap-2">
-                          <span className="text-[9.5px] tracking-[0.1em] text-code-fg">{n.label}</span>
-                          <span className={`text-[7px] tracking-[0.16em] ${n.tag === "CENT TGE" ? "text-volt" : n.status === "LIVE" ? "text-volt/70" : "text-code-mute"}`}>
+                          <span className="text-[9.5px] tracking-[0.1em] text-mist">{n.label}</span>
+                          <span className={`text-[7px] tracking-[0.16em] ${n.tag === "CENT TGE" ? "text-volt" : n.status === "LIVE" ? "text-volt/70" : "text-mute"}`}>
                             {n.tag}
                           </span>
                         </span>
-                        <span className="mt-0.5 block truncate text-[8px] text-code-mute">{n.note}</span>
+                        <span className="mt-0.5 block truncate text-[8px] text-mute">{n.note}</span>
                       </span>
                     </button>
                   ))}
@@ -333,32 +350,32 @@ export default function DesktopApp() {
         </div>
 
         <div className="flex min-h-0 flex-1">
-          {/* ---- sidebar ---- */}
-          <aside className="flex w-48 shrink-0 flex-col border-r border-edge bg-code">
-            <div className="px-3.5 pb-1 pt-4 text-[7.5px] tracking-[0.28em] text-mute/50">MODES — WHY YOU'RE HERE</div>
+          {/* ---- sidebar (light) ---- */}
+          <aside className="flex w-48 shrink-0 flex-col border-r border-edge bg-panel">
+            <div className="px-3.5 pb-1 pt-4 text-[7.5px] tracking-[0.28em] text-mute">MODES — WHY YOU'RE HERE</div>
             {NAV.map((n, i) => <NavBtn key={n.id} n={n} i={i} />)}
-            <div className="px-3.5 pb-1 pt-5 text-[7.5px] tracking-[0.28em] text-mute/50">WORKSPACES</div>
+            <div className="px-3.5 pb-1 pt-5 text-[7.5px] tracking-[0.28em] text-mute">WORKSPACES</div>
             {WORK.map((n, i) => <NavBtn key={n.id} n={n} i={i + 3} />)}
 
             <div className="mt-auto p-3">
-              <div className="border border-edge p-2.5">
+              <div className="border border-edge bg-void p-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[7.5px] tracking-[0.22em] text-mute/50">OPERATOR — WEBCRYPTO</span>
+                  <span className="text-[7.5px] tracking-[0.22em] text-mute">OPERATOR — WEBCRYPTO</span>
                   <button
                     aria-label="Rotate device key"
                     onClick={() => {
                       void op.rotate().then((k) => value.toast(`KEY ROTATED → ${k.fp}`));
                     }}
-                    className="text-mute/50 transition-colors hover:text-volt"
+                    className="text-mute transition-colors hover:text-volt"
                   >
                     <RefreshCw size={10} />
                   </button>
                 </div>
                 <div className="mt-1.5 truncate text-[9.5px] text-volt">{op.key?.fp ?? "GENERATING…"}</div>
-                <div className="mt-1 flex items-center gap-1.5 text-[7.5px] tracking-[0.16em] text-mute/60">
-                  <span className="h-1 w-1 bg-volt" /> {op.key?.algLabel ?? "…"} · THIS MACHINE
+                <div className="mt-1 flex items-center gap-1.5 text-[7.5px] tracking-[0.16em] text-mute">
+                  <span className="h-1 w-1 bg-volt" /> {op.key?.algLabel ?? "…"} · THIS DEVICE
                 </div>
-                <div className="mt-1 truncate text-[7px] tracking-[0.1em] text-mute/40">
+                <div className="mt-1 truncate text-[7px] tracking-[0.1em] text-mute/60">
                   PUB {op.key ? `${op.key.pubHex.slice(0, 18)}…` : "…"}
                 </div>
               </div>
@@ -389,11 +406,11 @@ export default function DesktopApp() {
           </main>
         </div>
 
-        {/* ---- status bar ---- */}
-        <div className="flex h-8 shrink-0 items-center justify-between border-t border-edge bg-code px-4 text-[8px] tracking-[0.18em] text-mute/60">
+        {/* ---- status bar (light) ---- */}
+        <div className="flex h-8 shrink-0 items-center justify-between border-t border-edge bg-panel px-4 text-[8px] tracking-[0.18em] text-mute">
           <div className="flex items-center gap-4">
-            <span className={cent.transport.kind === "rpc" ? "text-amber-300" : halted ? "text-red-400" : "text-volt"}>
-              ●{cent.transport.kind.toUpperCase()} {cent.transport.kind === "rpc" ? "OFFLINE" : halted ? "HALTED" : "LIVE"}
+            <span className={cent.transport.kind === "rpc" ? "text-amber-600" : halted ? "text-red-400" : "text-volt"}>
+              ●{cent.transport.kind.toUpperCase()} {cent.transport.kind === "rpc" ? "NODE" : halted ? "HALTED" : "LIVE"}
             </span>
             <span>STREAM 2.8S · QUORUM 3/3</span>
             <span className={net.id === "robinhood" ? "text-volt" : ""}>NET {net.short}{net.tag === "CENT TGE" ? " · CENT SOON" : ""}</span>
@@ -417,7 +434,7 @@ export default function DesktopApp() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.28, ease: EASE }}
-                className="flex items-center gap-2.5 border border-volt/50 bg-code/95 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-code-fg shadow-[0_10px_40px_rgba(0,0,0,0.35)]"
+                className="flex items-center gap-2.5 border border-volt/40 bg-panel px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist shadow-[0_12px_40px_rgba(11,68,32,0.12)]"
               >
                 <span className="flex h-4 w-4 items-center justify-center bg-volt">
                   <Check size={10} strokeWidth={3.5} className="text-void" />

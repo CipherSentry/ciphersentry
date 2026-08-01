@@ -72,11 +72,15 @@ export function Ul({ items }: { items: ReactNode[] }) {
 
 export function Code({ code, label }: { code: string; label?: string }) {
   return (
-    <div className="surface-code mt-4 border">
+    <div className="surface-code relative mt-4 border border-volt/25">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-volt/50 to-transparent" />
       {label && (
-        <div className="flex items-center justify-between border-b border-code-edge px-4 py-2">
-          <span className="font-mono text-[8px] tracking-[0.24em] text-code-mute">{label}</span>
-          <span className="font-mono text-[8px] tracking-[0.24em] text-volt/70">UTF-8</span>
+        <div className="flex items-center justify-between border-b border-volt/15 px-4 py-2">
+          <span className="flex items-center gap-2 font-mono text-[8px] tracking-[0.24em] text-volt/80">
+            <span className="h-1 w-1 bg-volt" />
+            {label}
+          </span>
+          <span className="font-mono text-[8px] tracking-[0.24em] text-volt/50">UTF-8</span>
         </div>
       )}
       <pre className="no-scrollbar overflow-x-auto p-5 font-mono text-[11.5px] leading-[1.9]">

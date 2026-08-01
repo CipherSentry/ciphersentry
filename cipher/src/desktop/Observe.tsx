@@ -52,7 +52,7 @@ export default function Observe() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* KPI strip */}
-      <div className="grid shrink-0 grid-cols-5 divide-x divide-edge border-b border-edge bg-code">
+      <div className="grid shrink-0 grid-cols-5 divide-x divide-edge border-b border-edge bg-void">
         <Kpi label="TASKS / MIN" value={String(throughput[throughput.length - 1]).padStart(2, "0")} sub="ROLLING 60S · ATLAS FLEET" />
         <Kpi label="ESCROW LOCKED" value={d.wallet.escrow.toFixed(1)} sub="USDC · NON-CUSTODIAL" />
         <Kpi label="SETTLED 24H" value={d.wallet.earned.toFixed(0)} sub="USDC EARNED · NET +" tone="text-volt" />
@@ -95,12 +95,12 @@ export default function Observe() {
                     animate={{ opacity: 1, backgroundColor: "rgba(198,255,65,0)" }}
                     transition={{ duration: 0.6 }}
                     onClick={() => d.setInspector(sel ? null : t.id)}
-                    className={`grid w-full grid-cols-[76px_96px_minmax(0,1fr)_120px_92px] items-center gap-3 border-b border-edge/50 px-3 py-[7px] text-left font-mono text-[10px] transition-colors hover:bg-panel/70 ${
+                    className={`grid w-full grid-cols-[76px_96px_minmax(0,1fr)_120px_92px] items-center gap-3 border-b border-edge/50 px-3 py-[7px] text-left font-mono text-[10px] transition-colors hover:bg-void/70 ${
                       sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
                     }`}
                   >
                     <span className="tabular-nums text-mute/60">{clock(t.at)}</span>
-                    <span className="truncate text-code-fg">{t.id}</span>
+                    <span className="truncate text-mist">{t.id}</span>
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="truncate text-[9.5px] text-mute">
                         {t.agent.replace("agent:", "")}
