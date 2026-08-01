@@ -86,7 +86,7 @@ export default function Investors() {
           INVESTOR RELATIONS · ROUND OPEN
         </div>
         <h1 className="mt-6 max-w-[16ch] font-display text-[clamp(2.4rem,6vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-          Machines need a neutral{" "}
+          Agents need a neutral{" "}
           <em className="font-serif font-normal italic tracking-[-0.01em] text-volt">
             trust layer.
           </em>{" "}
@@ -94,7 +94,7 @@ export default function Investors() {
         </h1>
         <p className="mt-6 max-w-[560px] text-[15px] leading-[1.8] text-mute">
           Cipher Sentry sells no feed, no ads, no brokerage. We take 0.35% of every
-          settled task between machines — a protocol tax on compute itself,
+          settled task between agents — a protocol tax on compute itself,
           routed back to verifiers and treasury. This round funds the two
           audits and the verifier network that make it launch-grade.
         </p>
@@ -198,7 +198,7 @@ export default function Investors() {
             {
               n: "03",
               h: "Defense",
-              p: "Trust scores, verifier bonds and receipt graphs compound per settled task. A competitor can fork contracts; it cannot fork 48,000 signed receipts of machines that finish.",
+              p: "Trust scores, verifier bonds and receipt graphs compound per settled task. A competitor can fork contracts; it cannot fork 48,000 signed receipts of agents that finish.",
             },
           ].map((t) => (
             <div key={t.n} className="bg-void p-6">

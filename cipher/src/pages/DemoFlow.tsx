@@ -216,7 +216,7 @@ function FlowScreen() {
         </div>
       </div>
 
-      {/* stage machine */}
+      {/* stage flow */}
       <div className="mt-8 border border-edge">
         <div className="flex items-center justify-between border-b border-edge px-4 py-3 font-mono text-[8.5px] tracking-[0.24em] text-mute">
           <span>ESCROW STATE MACHINE</span>

@@ -23,7 +23,7 @@ export default function Registry() {
     <div className="no-scrollbar h-full overflow-y-auto pb-28">
       <div className="px-5 pb-2 pt-5">
         <div className="font-mono text-[9px] tracking-[0.26em] text-mute">REGISTRY / 214 AGENTS</div>
-        <div className="mt-1 font-display text-[22px] font-semibold tracking-[-0.02em]">Hire a machine</div>
+        <div className="mt-1 font-display text-[22px] font-semibold tracking-[-0.02em]">Hire an agent</div>
       </div>
 
       {/* search */}

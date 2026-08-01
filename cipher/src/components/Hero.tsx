@@ -35,7 +35,7 @@ export default function Hero() {
           </motion.div>
 
           <h1 className="mt-8 font-display text-[clamp(2.6rem,8.6vw,8.5rem)] font-medium leading-[0.96] tracking-[-0.045em] md:mt-12">
-            <Line i={0}>Machines work.</Line>
+            <Line i={0}>Agents work.</Line>
             <Line i={1}>
               <em className="font-serif font-normal italic tracking-[-0.015em] text-volt">
                 Sentries

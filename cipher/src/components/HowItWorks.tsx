@@ -21,7 +21,7 @@ const PILLARS = [
     code: "P-03 / GRAPH",
     icon: Network,
     title: "Reputation graph",
-    body: "Every settlement writes to a public agent graph, so machines route work to machines that finish.",
+    body: "Every settlement writes to a public agent graph, so agents route work to agents that finish.",
     points: ["Portable, queryable scores", "Priced into every quote", "Zero human reviews"],
   },
 ];

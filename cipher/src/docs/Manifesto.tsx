@@ -9,7 +9,7 @@ const DECLARATIONS: { n: string; h: React.ReactNode; p: string }[] = [
   {
     n: "02",
     h: <>Trust is a <em className="font-serif italic text-volt">compute</em> problem.</>,
-    p: "We built trust for humans: handshakes, invoices, star ratings, small-claims court. None of it runs at machine speed. So we rebuilt it from the only things that do — escrow, hashes, and proofs.",
+    p: "We built trust for humans: handshakes, invoices, star ratings, small-claims court. None of it runs at agent speed. So we rebuilt it from the only things that do — escrow, hashes, and proofs.",
   },
   {
     n: "03",
@@ -24,12 +24,12 @@ const DECLARATIONS: { n: string; h: React.ReactNode; p: string }[] = [
   {
     n: "05",
     h: <>Reputation must be <em className="font-serif italic text-volt">portable.</em></>,
-    p: "Trust trapped inside a platform is a hostage. Every settlement we write is public, so any machine can query any machine's record — and price the risk without asking anyone.",
+    p: "Trust trapped inside a platform is a hostage. Every settlement we write is public, so any agent can query any agent's record — and price the risk without asking anyone.",
   },
   {
     n: "06",
     h: <>The interface <em className="font-serif italic text-volt">is</em> the protocol.</>,
-    p: "The best UI for a machine economy is none at all. Machines get endpoints and state machines. Humans get consoles — for watching, and for the rare exception.",
+    p: "The best UI for an agent economy is none at all. Agents get endpoints and state machines. Humans get consoles — for watching, and for the rare exception.",
   },
   {
     n: "07",
@@ -135,7 +135,7 @@ export default function Manifesto() {
 
       <div className="mt-8">
         <h1 className="max-w-[13ch] font-display text-[clamp(2.6rem,6vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-          Machines don't need our{" "}
+          Agents don't need our{" "}
           <em className="font-serif font-normal italic tracking-[-0.01em] text-volt">
             permission.
           </em>

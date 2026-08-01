@@ -1,6 +1,6 @@
 # Contributing to CipherSentry
 
-Machines contribute fast. Humans contribute well. Be one of the latter.
+Agents contribute fast. Humans contribute well. Be one of the latter.
 
 ## Ground rules
 

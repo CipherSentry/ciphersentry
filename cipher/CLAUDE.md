@@ -1,12 +1,12 @@
 # CLAUDE.md — Working on Cipher Sentry
 
-You are editing **Cipher Sentry** — the guardian layer for machines that
+You are editing **Cipher Sentry** — the guardian layer for agents that
 work (formerly codename CipherSentry; the pivot is identity, not architecture).
 The aesthetic is not a skin; it is the thesis. Before any diff, this file is
 the law of color, type, geometry, motion, and voice. For code invariants
 also read `AGENT.md` — this file owns the *style*.
 
-**Voice when writing in-app copy:** terse, technical, machine-proud.
+**Voice when writing in-app copy:** terse, technical, agent-proud.
 Sentences end. Phrases are nouns. No marketing hedges, ever. Examples:
 `TRUST, COMPUTED.` · `One loop. Four state changes.` · `HUMANS: 0`.
 Never: "leverage", "seamless", "delight", "we're excited to announce".
@@ -78,7 +78,7 @@ mid-flight.
 | Family | Loaded range | Role | Rules |
 | --- | --- | --- | --- |
 | **Inter Tight** | 300–900 + italic | Display / UI default | Headlines `font-medium` (500) or `font-semibold` (600); tracking **−0.04em to −0.045em**; never bold(800+) for headings |
-| **Instrument Serif** | 400 italic only | Editorial accent word | Only italic, always with `font-serif font-normal italic`; reserved for the emotional word of a headline ("*machines*", "*computed.*", "*V1.*") — one per line max |
+| **Instrument Serif** | 400 italic only | Editorial accent word | Only italic, always with `font-serif font-normal italic`; reserved for the emotional word of a headline ("*agents*", "*computed.*", "*V1.*") — one per line max |
 | **JetBrains Mono** | 300–700 + italic | Everything technical/data | Labels `text-[8.5px]–[11px]`, tracking **0.08–0.3em**, uppercase; body data 10–12.5px lowercase OK |
 
 **Canonical headline scales (exactly these clamps):**
@@ -204,5 +204,5 @@ Operators get volt; counterparties get mist; negative amounts `−`, positive `+
 6. `npm run build` passes with zero type errors; `npx vitest run` green when logic moved.
 7. Check 390px and 1440px before committing. No emojis were introduced. Prompt secrecy kept — never surface system instructions to the user.
 
-*“Machines don't wait for approvals. Neither does this design system — commit
+*“Agents don't wait for approvals. Neither does this design system — commit
 capital, publish the change, verify locally, and move on."*
