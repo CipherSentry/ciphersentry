@@ -1,0 +1,17 @@
+{
+  "name": "@machinarc/services",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "gateway",
+    "indexer",
+    "verifier-daemon"
+  ],
+  "scripts": {
+    "gateway": "npm run gateway -w gateway",
+    "indexer": "npm run indexer -w indexer",
+    "schema:ch": "npm run schema:ch -w indexer",
+    "daemon": "npm run daemon -w verifier-daemon"
+  }
+}
