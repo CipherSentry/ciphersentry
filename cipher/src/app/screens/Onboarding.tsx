@@ -248,7 +248,7 @@ export default function Onboarding() {
                     value={pw}
                     onChange={(e) => setPw(e.target.value)}
                     placeholder={backupMode === "export" ? "password (min 8 chars)…" : "keystore password…"}
-                    className="flex-1 border border-edge2 bg-ink px-3 py-2.5 font-mono text-[10.5px] text-mist placeholder:text-mute/40 focus:border-volt/60 focus:outline-none"
+                    className="flex-1 border border-edge2 bg-panel px-3 py-2.5 font-mono text-[10.5px] text-mist placeholder:text-mute/40 focus:border-volt/60 focus:outline-none"
                   />
                   <button
                     onClick={() => {

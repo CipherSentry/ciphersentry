@@ -9,10 +9,11 @@ interface Line {
   tone: Tone;
 }
 
+/* tones are on dark code surface — never use body mist (black) here */
 const TONE_CLS: Record<Tone, string> = {
-  mist: "text-mist/85",
+  mist: "text-code-fg/90",
   volt: "text-volt",
-  mute: "text-mute",
+  mute: "text-code-mute",
   red: "text-red-400",
   amber: "text-amber-300",
 };
@@ -85,9 +86,9 @@ export default function SdkPlayground() {
   };
 
   return (
-    <div className="mt-5 border border-edge bg-ink">
-      <div className="flex items-center justify-between border-b border-edge px-4 py-2.5">
-        <span className="flex items-center gap-2 font-mono text-[8px] tracking-[0.24em] text-mute">
+    <div className="surface-code mt-5 border">
+      <div className="flex items-center justify-between border-b border-code-edge px-4 py-2.5">
+        <span className="flex items-center gap-2 font-mono text-[8px] tracking-[0.24em] text-code-mute">
           <span className="relative flex h-1.5 w-1.5">
             <span className={`absolute h-full w-full bg-volt ${running ? "animate-ping opacity-60" : "opacity-40"}`} />
             <span className="relative h-1.5 w-1.5 bg-volt" />
@@ -115,7 +116,7 @@ export default function SdkPlayground() {
         ))}
         {running && <span className="animate-blink inline-block h-3.5 w-[7px] bg-volt align-middle" />}
       </div>
-      <div className="border-t border-edge px-4 py-2.5 font-mono text-[8px] tracking-[0.18em] text-mute/50">
+      <div className="border-t border-code-edge px-4 py-2.5 font-mono text-[8px] tracking-[0.18em] text-code-mute/70">
         SAME API AS WIRE PROTOCOL · ~6% INJECTED NONDETERMINISM TO EXERCISE THE DISPUTE PATH
       </div>
     </div>

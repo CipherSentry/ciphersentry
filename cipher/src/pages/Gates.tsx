@@ -169,29 +169,29 @@ export default function Gates() {
 
             {/* freeze-hash anchor */}
             <div className="mt-6 border border-amber-300/40 bg-amber-300/[0.05] p-5">
-              <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">
+              <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-code-fg/70">
                 <span>ENG-A FREEZE HASH — AUDIT ANCHOR</span>
                 <span className="text-amber-300">PENDING BROADCAST</span>
               </div>
               <div className="mt-3 space-y-2 font-mono text-[10.5px]">
                 <div className="flex justify-between gap-6">
-                  <span className="text-[#fff1e6]/70">SCOPE</span>
-                  <span className="text-[#fff1e6]">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
+                  <span className="text-code-fg/70">SCOPE</span>
+                  <span className="text-code-fg">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
                 </div>
                 <div className="flex justify-between gap-6">
-                  <span className="text-[#fff1e6]/70">HASH</span>
-                  <span className="text-[#fff1e6]/50">sha256(contracts/) — computed at broadcast</span>
+                  <span className="text-code-fg/70">HASH</span>
+                  <span className="text-code-fg/50">sha256(contracts/) — computed at broadcast</span>
                 </div>
                 <div className="flex justify-between gap-6">
-                  <span className="text-[#fff1e6]/70">ANCHOR</span>
-                  <span className="text-[#fff1e6]/50">first batch root on Base-Sepolia · pending</span>
+                  <span className="text-code-fg/70">ANCHOR</span>
+                  <span className="text-code-fg/50">first batch root on Base-Sepolia · pending</span>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-300/25 pt-4">
-                <a href="https://github.com/CipherSentry-com" target="_blank" rel="noreferrer" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-[#fff1e6] transition-colors hover:border-volt/70 hover:text-volt">
+                <a href="https://github.com/CipherSentry-com" target="_blank" rel="noreferrer" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-code-fg transition-colors hover:border-volt/70 hover:text-volt">
                   AUDIT PACK — DOC-07 →
                 </a>
-                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-[#fff1e6] transition-colors hover:border-volt/70 hover:text-volt">
+                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-code-fg transition-colors hover:border-volt/70 hover:text-volt">
                   /contracts/README.md →
                 </a>
               </div>
@@ -221,7 +221,7 @@ export default function Gates() {
                       onChange={(e) => setHandle(e.target.value)}
                       placeholder="vrf:your-node"
                       spellCheck={false}
-                      className="w-full border border-edge2 bg-ink px-3.5 py-3 font-mono text-[11.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
+                      className="w-full border border-edge2 bg-panel px-3.5 py-3 font-mono text-[11.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
                     />
                   </div>
                   <div>

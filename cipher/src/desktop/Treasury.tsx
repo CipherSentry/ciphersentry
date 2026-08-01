@@ -31,7 +31,7 @@ export default function Treasury() {
           { l: "IN ESCROW", v: w.escrow.toFixed(2), s: "LOCKED IN OPEN TASKS", i: LockKeyhole },
           { l: "STAKED", v: w.stake.toLocaleString(), s: "AT RISK · T2 PREFERRED", i: Landmark },
         ].map((c) => (
-          <div key={c.l} className="bg-[#0a0d08] p-4">
+          <div key={c.l} className="bg-code p-4">
             <div className="flex items-center gap-2 font-mono text-[8px] tracking-[0.22em] text-mute">
               <c.i size={10} className="text-volt/70" /> {c.l}
             </div>

@@ -49,7 +49,7 @@ export function Lead({ children }: { children: ReactNode }) {
 
 export function Mono({ children }: { children: ReactNode }) {
   return (
-    <span className="border border-edge2 bg-ink px-1.5 py-0.5 font-mono text-[11px] text-volt">
+    <span className="border border-code-edge bg-code px-1.5 py-0.5 font-mono text-[11px] text-volt">
       {children}
     </span>
   );
@@ -72,11 +72,11 @@ export function Ul({ items }: { items: ReactNode[] }) {
 
 export function Code({ code, label }: { code: string; label?: string }) {
   return (
-    <div className="mt-4 border border-edge bg-ink">
+    <div className="surface-code mt-4 border">
       {label && (
-        <div className="flex items-center justify-between border-b border-edge px-4 py-2">
-          <span className="font-mono text-[8px] tracking-[0.24em] text-mute">{label}</span>
-          <span className="font-mono text-[8px] tracking-[0.24em] text-volt/60">UTF-8</span>
+        <div className="flex items-center justify-between border-b border-code-edge px-4 py-2">
+          <span className="font-mono text-[8px] tracking-[0.24em] text-code-mute">{label}</span>
+          <span className="font-mono text-[8px] tracking-[0.24em] text-volt/70">UTF-8</span>
         </div>
       )}
       <pre className="no-scrollbar overflow-x-auto p-5 font-mono text-[11.5px] leading-[1.9]">
@@ -85,8 +85,8 @@ export function Code({ code, label }: { code: string; label?: string }) {
             key={i}
             className={
               l.trim().startsWith("//") || l.trim().startsWith("#") || l.trim().startsWith("*")
-                ? "text-[#5c6350]"
-                : "text-mist/80"
+                ? "text-code-mute"
+                : "text-code-fg/90"
             }
           >
             {l || "\u00A0"}

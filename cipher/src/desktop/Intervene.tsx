@@ -127,11 +127,11 @@ export default function Intervene() {
               </motion.span>
               <div className="font-display text-[24px] font-semibold">Ruling signed & broadcast</div>
               <div className="w-full max-w-[380px] border border-volt/40 bg-deepgreen p-4 font-mono text-[9.5px] leading-[2]">
-                <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">SIG</span><span className="truncate text-[#fff1e6]">{sig.sig.slice(0, 24)}…{sig.sig.slice(-8)}</span></div>
+                <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">SIG</span><span className="truncate text-code-fg">{sig.sig.slice(0, 24)}…{sig.sig.slice(-8)}</span></div>
                 <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">CANONICAL</span><span className="truncate text-mist/50">{sig.canonical.slice(0, 30)}…</span></div>
                 <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">KEY</span><span className="text-volt">{sig.fp}</span></div>
-                <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">ALG</span><span className="text-[#fff1e6]">{sig.algLabel}</span></div>
-                <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">TX</span><span className="text-[#fff1e6]">{sig.tx}</span></div>
+                <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">ALG</span><span className="text-code-fg">{sig.algLabel}</span></div>
+                <div className="flex justify-between gap-4"><span className="tracking-[0.14em] text-mute">TX</span><span className="text-code-fg">{sig.tx}</span></div>
                 <div className="mt-1.5 flex items-center justify-between border-t border-volt/25 pt-1.5">
                   <span className="tracking-[0.14em] text-mute">LOCAL VERIFY</span>
                   <span className="flex items-center gap-1.5 text-volt"><Check size={11} strokeWidth={3} /> VALID — WEBCRYPTO</span>
@@ -156,12 +156,12 @@ export default function Intervene() {
               {a.type === "DISPUTE" ? (
                 <>
                   <div className="mt-5 grid grid-cols-2 gap-px border border-edge bg-edge">
-                    <div className="bg-[#0a0d08] p-3.5 font-mono">
+                    <div className="bg-code p-3.5 font-mono">
                       <div className="text-[8px] tracking-[0.22em] text-mute">WORKER (MINE)</div>
                       <div className="mt-1.5 text-[11px] text-volt">{a.agent}</div>
                       <div className="mt-0.5 text-[8.5px] text-mute/50">TRUST 91 · STAKE 850</div>
                     </div>
-                    <div className="bg-[#0a0d08] p-3.5 font-mono">
+                    <div className="bg-code p-3.5 font-mono">
                       <div className="text-[8px] tracking-[0.22em] text-mute">BUYER · ESCROW LOCKED</div>
                       <div className="mt-1.5 text-[11px] text-mist">{a.counterparty}</div>
                       <div className="mt-0.5 text-[8.5px] text-volt">{a.amount} USDC</div>
@@ -233,7 +233,7 @@ export default function Intervene() {
                     <button
                       key={r.id}
                       onClick={() => setRuling(r.id)}
-                      className={`p-3.5 text-left transition-colors ${ruling === r.id ? "bg-volt/[0.07]" : "bg-[#0a0d08] hover:bg-panel/60"}`}
+                      className={`p-3.5 text-left transition-colors ${ruling === r.id ? "bg-volt/[0.07]" : "bg-panel hover:bg-void"}`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className={`font-mono text-[9.5px] font-semibold tracking-[0.14em] ${ruling === r.id ? "text-volt" : "text-mist"}`}>{r.id}</span>

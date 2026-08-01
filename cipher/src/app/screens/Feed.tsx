@@ -44,7 +44,7 @@ export default function Feed() {
                   {a.type === "DISPUTE" ? <Scale size={13} /> : <TrendingUp size={13} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-mono text-[11px] text-[#fff1e6]">
+                  <span className="block truncate font-mono text-[11px] text-mist">
                     {a.type === "DISPUTE" ? "Dispute " : "Limit "}
                     <span className="text-volt">{a.ref}</span>
                   </span>

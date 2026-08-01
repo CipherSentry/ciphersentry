@@ -98,9 +98,9 @@ export default function Hero() {
         </div>
 
         {/* ---- right: the engineering window ---- */}
-        <div className="border-t border-edge2 bg-ink lg:min-h-[calc(100svh-68px)] lg:border-l lg:border-t-0">
+        <div className="border-t border-code-edge bg-code lg:min-h-[calc(100svh-68px)] lg:border-l lg:border-t-0">
           <div className="h-full flex-col lg:flex animate-shelf-in">
-            <div className="flex items-center justify-between border-b border-edge2/30 px-7 py-4">
+            <div className="flex items-center justify-between border-b border-code-edge px-7 py-4">
               <span className="flex items-center gap-2.5 font-mono text-[9px] tracking-[0.26em] text-volthot">
                 <span className="h-1.5 w-1.5 bg-volthot" />
                 LIVE TASK TRACE
