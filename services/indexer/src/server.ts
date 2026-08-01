@@ -17,10 +17,10 @@ import { ChainListener, LedgerWriter, type BatchRow, type TaskEventRow } from ".
 
 // 127.0.0.1 not localhost — Node resolves localhost to ::1 (IPv6) on many
 // setups while compose binds IPv4; that's the #1 first-run connection error.
-const PG_DSN = process.env.PG_DSN ?? "postgres://mrc:mrc@127.0.0.1:5432/machinarc";
+const PG_DSN = process.env.PG_DSN ?? "postgres://cent:cent@127.0.0.1:5432/ciphersentry";
 const CH_URL = process.env.CH_URL ?? "http://127.0.0.1:8123";
-const CH_DB = process.env.CH_DB ?? "machinarc";
-const NODE_EVENTS = process.env.NODE_EVENTS ?? "wss://node.base-sepolia.machinarc.com/events";
+const CH_DB = process.env.CH_DB ?? "ciphersentry";
+const NODE_EVENTS = process.env.NODE_EVENTS ?? "wss://node.base-sepolia.ciphersentry.com/events";
 const PORT = Number(process.env.PORT ?? 8081);
 
 /* ----------------------------- trust score --------------------------------- */
@@ -45,7 +45,7 @@ function json(res: import("node:http").ServerResponse, status: number, body: unk
 async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ status: number; body: unknown }> {
   const p = url.pathname.replace(/\/+$/, "") || "/";
 
-  if (p === "/health") return { status: 200, body: { ok: true, service: "machinarc-indexer" } };
+  if (p === "/health") return { status: 200, body: { ok: true, service: "ciphersentry-indexer" } };
 
   if (p === "/batches") {
     const rows = await pg.exec(
@@ -153,7 +153,7 @@ export async function boot(): Promise<void> {
   });
 
   server.listen(PORT, () => {
-    console.log(`machinarc-indexer`);
+    console.log(`ciphersentry-indexer`);
     console.log(`  api      → http://localhost:${PORT}`);
     console.log(`  events   → ${NODE_EVENTS.replace(/\/events$/, "")}`);
     console.log(`  analytics→ ${CH_URL}/${CH_DB}`);

@@ -9,7 +9,7 @@ export default function AuditReadiness() {
       </Title>
 
       <Lead>
-        Two independent audits stand between this code and the MARC launch
+        Two independent audits stand between this code and the CENT launch
         gate. This pack gives each engagement its scope, its invariants, and
         its threat models up front — so auditors spend their weeks breaking
         the protocol, not reading it.
@@ -19,7 +19,7 @@ export default function AuditReadiness() {
       <Table
         head={["#", "SCOPE", "CONTRACTS", "EST. LOC", "RISK TIER", "WEEKS"]}
         rows={[
-          ["A", "Capital contracts", "Escrow · SettlementBatcher · MARC token + VestingVault", "≈ 1,080", <span className="text-red-400">CRITICAL</span>, "3 + 2 remediation"],
+          ["A", "Capital contracts", "Escrow · SettlementBatcher · CENT token + VestingVault", "≈ 1,080", <span className="text-red-400">CRITICAL</span>, "3 + 2 remediation"],
           ["B", "Consensus contracts", "VerifierRegistry · QuorumElection · SlashExecutor · EmissionsDistributor", "≈ 1,200", <span className="text-red-400">CRITICAL</span>, "3 + 2 remediation"],
         ]}
       />
@@ -75,7 +75,7 @@ export default function AuditReadiness() {
         external dependency assumption.
       </Note>
 
-      <H2 n="04">MARC token & vesting</H2>
+      <H2 n="04">CENT token & vesting</H2>
       <P>
         Fixed supply, no mint authority, vesting locked to network epochs —
         not wall clocks — per the tokenomics design:
@@ -148,7 +148,7 @@ fixtures: 40 election scenarios w/ expected quorums
           ["Multi-rail replay", "tasks and rulings replicated across rails", "domain-separated chainIds in every signature"],
           ["USDC upgradeability", "proxy changes under escrow", "external dependency in threat register; custody never relies on USDC internals"],
           ["MEV on verdict transactions", "ruling params visible pre-inclusion", "signed rulings are payload-bound; front-running gains nothing"],
-          ["Governance floor capture", "MARC holders steer fee/quorum params", "phase gates: foundation till V1.0, bounded vote, timelock 7d"],
+          ["Governance floor capture", "CENT holders steer fee/quorum params", "phase gates: foundation till V1.0, bounded vote, timelock 7d"],
           ["Deterministic-sandbox divergence", "spec executes differently in verify than in work", "same WASM runtime, pinned version hash, frozen syscall table"],
         ]}
       />

@@ -1,8 +1,8 @@
-# Machinarc Backend — Architecture Brainstorm
+# CipherSentry Backend — Architecture Brainstorm
 
 Status: **pre-implementation sketch** for V0.2 (Verifier Network). The front
 end in this repo already speaks the wire surface below; the sim in
-`src/sdk/machinarc.ts` is the reference client behavior.
+`src/sdk/ciphersentry.ts` is the reference client behavior.
 
 ---
 
@@ -50,7 +50,7 @@ end in this repo already speaks the wire surface below; the sim in
 - **Object storage** — task outputs (content-addressed by their reported hash; dedupe is free).
 - **ClickHouse** — receipts, trust time-series, batch analytics, the public agent graph.
 
-## 4. MARC-readiness (V0.2 defaults)
+## 4. CENT-readiness (V0.2 defaults)
 
 - **Bond registry**: verifier bonds custodied in the staking contract; the pool reads them — never the app DB.
 - **Slash executor**: on proven fault → contract call; 50% burn / 50% challenger+treasury. Emit `stake.slashed`.
@@ -64,7 +64,7 @@ end in this repo already speaks the wire surface below; the sim in
 `operator.rule(id, ruling, sig)` · `stake(amount, tier)` ·
 `events.subscribe(topic)`.
 
-Errors are the six `MRC_E_*` codes from the spec — nothing else escapes.
+Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 
 ## 6. Security
 
@@ -80,7 +80,7 @@ Errors are the six `MRC_E_*` codes from the spec — nothing else escapes.
 | B0 — Ledger | Task service + escrow gateway on Base-Sepolia; console reads real chain | audit #1 scoped |
 | B1 — Verifier alpha | 3 foundation-run daemons, slashing dry-runs | WASM sandbox hardened |
 | B2 — Verifier network | External verifiers, epoch elections, real slashes | audits #1+#2 done |
-| B3 — MARC-ready | Bond registry + slash executor + accrual ledger | gate list in DOC-05 |
+| B3 — CENT-ready | Bond registry + slash executor + accrual ledger | gate list in DOC-05 |
 
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.

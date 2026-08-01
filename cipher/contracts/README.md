@@ -1,4 +1,4 @@
-# Machinarc Contracts — ENG-A (Capital)
+# CipherSentry Contracts — ENG-A (Capital)
 
 Invariant-first Solidity for the two capital contracts the audit gate depends
 on. Every property on this list maps to a line of
@@ -11,9 +11,9 @@ that doc is enforced by a named test here.
 src/
 ├── Escrow.sol              # task escrow, quorum voting, EIP-712 rulings (~480 LOC)
 ├── SettlementBatcher.sol   # 2-of-3 merkle-root anchoring + emergency window (~260 LOC)
-├── VerifierRegistry.sol    # ENG-B — 25,000 MARC floor, stake/unbond/jail (~390 LOC)
+├── VerifierRegistry.sol    # ENG-B — 25,000 CENT floor, stake/unbond/jail (~390 LOC)
 ├── QuorumElection.sol      # ENG-B — deterministic quorum per DOC-07 §05 (~210 LOC)
-├── MarcToken.sol           # ENG-A — fixed supply, mintless bytecode
+├── CENT.sol                # ENG-A — fixed supply, mintless bytecode
 ├── VestingVault.sol        # ENG-A — epoch-indexed vesting, monotone, capped
 └── SlashExecutor.sol       # ENG-B — nullifiers, FIFO queue, epoch cap, 50/25/25 proceeds
 test/
@@ -46,7 +46,7 @@ forge coverage                          # target: 100% line on Escrow
 - **Quorum election** — outside ENG-A (`VerifierRegistry/QuorumElection` are
   ENG-B). The ruler seeds the allowed voter set here; the election contract
   replaces that call before deployment.
-- **MARC token & VestingVault** — ENG-A scope but tracked in a separate
+- **CENT token & VestingVault** — ENG-A scope but tracked in a separate
   package (`contracts-token/`) so this freeze stays small.
 
 ## Invariant map — DOC-07 → enforced property

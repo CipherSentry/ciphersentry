@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 /* -------------------------------------------------------------------------- */
-/*  MACHINARC ESCROW — ENG-A / CAPITAL                                        */
+/*  CIPHERSENTRY ESCROW — ENG-A / CAPITAL                                    */
 /*  Holds every task's USDC until a matched quorum proof — or a signed        */
 /*  ruling inside the fraud window. Immutable. No upgrade path. No admin      */
 /*  withdrawal. This is the contract users actually trust with capital,        */
@@ -20,7 +20,7 @@ interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
-contract MachinarcEscrow {
+contract CipherSentryEscrow {
     /* ----------------------------- types ---------------------------------- */
 
     enum State {
@@ -146,7 +146,7 @@ contract MachinarcEscrow {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
-                keccak256("MachinarcEscrow"),
+                keccak256("CipherSentryEscrow"),
                 keccak256("0.1"),
                 block.chainid, // multi-rail replay protection (DOC-07 §07)
                 address(this)

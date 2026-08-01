@@ -1,9 +1,9 @@
 {
-  "name": "@machinarc/verifier-daemon",
+  "name": "@ciphersentry/verifier-daemon",
   "version": "0.2.0-alpha.1",
   "private": true,
   "type": "module",
-  "description": "Verifier daemon alpha — deterministic WASM re-execution for Machinarc tasks",
+  "description": "Verifier daemon alpha — deterministic WASM re-execution for CipherSentry tasks",
   "main": "dist/daemon.js",
   "scripts": {
     "daemon": "node --experimental-strip-types src/daemon.ts",
@@ -11,5 +11,9 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
   }
 }

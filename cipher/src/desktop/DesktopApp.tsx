@@ -7,9 +7,9 @@ import {
   seedApprovals,
   seedBatches,
 } from "../app/data";
-import { Machinarc } from "../sdk/machinarc";
+import { CipherSentry } from "../sdk/ciphersentry";
 
-const mrc = Machinarc.shared();
+const cent = CipherSentry.shared();
 import type { Agent, Approval, TaskEvent } from "../app/data";
 import { DesktopCtx } from "./store";
 import type { DesktopValue, DToast, DLimits, ResolvedItem, View } from "./store";
@@ -48,12 +48,12 @@ export default function DesktopApp() {
   const [view, setView] = useState<View>("observe");
   const [now, setNow] = useState(SIM_START);
   const [blk, setBlk] = useState(12840117);
-  const [feed, setFeed] = useState<TaskEvent[]>(() => mrc.stream.state());
+  const [feed, setFeed] = useState<TaskEvent[]>(() => cent.stream.state());
   const [agents, setAgents] = useState<Agent[]>(AGENTS);
   const [approvals, setApprovals] = useState<Approval[]>(() => seedApprovals(SIM_START));
   const [resolved, setResolved] = useState<ResolvedItem[]>(() => [
-    { id: "rs_1", ref: "mrc_3c1e9aa", ruling: "RELEASE TO WORKER", at: SIM_START - 3 * 3_600_000, tx: randHash() },
-    { id: "rs_2", ref: "mrc_77f10d2", ruling: "REFUND BUYER", at: SIM_START - 26 * 3_600_000, tx: randHash() },
+    { id: "rs_1", ref: "cent_3c1e9aa", ruling: "RELEASE TO WORKER", at: SIM_START - 3 * 3_600_000, tx: randHash() },
+    { id: "rs_2", ref: "cent_77f10d2", ruling: "REFUND BUYER", at: SIM_START - 26 * 3_600_000, tx: randHash() },
   ]);
   const [batches] = useState(() => seedBatches(SIM_START));
   const [toasts, setToasts] = useState<DToast[]>([]);
@@ -66,14 +66,14 @@ export default function DesktopApp() {
   const [verifierList, setVerifierList] = useState<Verifier[]>(() => seedVerifiers());
   const [epoch, setEpoch] = useState<EpochInfo>(() => seedEpoch(SIM_START));
   const [slashLog, setSlashLog] = useState<SlashEvent[]>([]);
-  const [emittedMarc, setEmittedMarc] = useState(0);
+  const [emittedCent, setEmittedCent] = useState(0);
   const [fleetPoints, setFleetPoints] = useState(0);
-  const [marcBal, setMarcBal] = useState(100_000);
+  const [centBal, setCentBal] = useState(100_000);
   const [unbondQueue, setUnbondQueue] = useState<{ id: string; verifier: string; amount: number; completesIn: number }[]>([]);
   const poolRef = useRef(verifierList);
   const epochRef = useRef(epoch);
-  const marcRef = useRef(marcBal);
-  marcRef.current = marcBal;
+  const centRef = useRef(centBal);
+  centRef.current = centBal;
   const queueRef = useRef(unbondQueue);
   queueRef.current = unbondQueue;
   const [wallet, setWallet] = useState({ avail: 2481.1, escrow: 512.3, earned: 388.2, spent: 142.55, stake: 4050 });
@@ -104,7 +104,7 @@ export default function DesktopApp() {
         poolRef.current = r.pool;
         setEpoch({ ...r.epoch });
         setVerifierList([...r.pool]);
-        setEmittedMarc((m) => m + r.emitted);
+        setEmittedCent((m) => m + r.emitted);
         if (r.slashes.length) {
           setSlashLog((s) => [...r.slashes, ...s].slice(0, 12));
         }
@@ -112,8 +112,8 @@ export default function DesktopApp() {
         const due = queueRef.current.filter((x) => x.completesIn <= 1);
         if (due.length) {
           due.forEach((x) => {
-            setMarcBal((m) => m + x.amount);
-            value.toast(`UNBOND COMPLETE — ${x.amount.toLocaleString()} MARC RETURNED`);
+            setCentBal((m) => m + x.amount);
+            value.toast(`UNBOND COMPLETE — ${x.amount.toLocaleString()} CENT RETURNED`);
           });
           setUnbondQueue(queueRef.current.filter((x) => x.completesIn > 1));
           poolRef.current = poolRef.current.filter((v) => !due.some((x) => v.id === x.verifier));
@@ -132,7 +132,7 @@ export default function DesktopApp() {
 
   /* live task stream — via the shared typed client transport */
   useEffect(() => {
-    return mrc.stream.onTick((events, delta) => {
+    return cent.stream.onTick((events, delta) => {
       setFeed([...events]);
       if (delta && (delta.earned || delta.spent || delta.escrowDelta)) {
         setWallet((w) => ({
@@ -149,7 +149,7 @@ export default function DesktopApp() {
 
   /* kill switch pauses the whole network locally */
   useEffect(() => {
-    mrc.transport.setPaused(halted);
+    cent.transport.setPaused(halted);
   }, [halted]);
 
   /* keyboard shortcuts */
@@ -176,7 +176,7 @@ export default function DesktopApp() {
     };
     return {
       view, now, feed, agents, approvals, resolved, batches, limits, wallet, toasts, halted, inspector, selException,
-      verifiers: verifierList, epoch, slashLog, emittedMarc, fleetPoints,
+      verifiers: verifierList, epoch, slashLog, emittedCent, fleetPoints,
       setView: (v) => { setView(v); setInspector(null); },
       setInspector,
       setSelException,
@@ -197,18 +197,18 @@ export default function DesktopApp() {
       hire: (name) => toast(`TASK TEMPLATE COMMITTED → ${name.toUpperCase()}`),
       stakeMore: (v) => setWallet((w) => ({ ...w, stake: w.stake + v, avail: Math.max(0, w.avail - v) })),
       settleFeedItem: (id, state) => {
-        mrc.transport.setTaskState(id, state);
+        cent.transport.setTaskState(id, state);
       },
       gotoIntervention: (apId) => { setView("intervene"); setSelException(apId); },
-      marcBal,
+      centBal,
       unbondQueue,
       bondVerifier: (amount) => {
-        if (amount < 25_000) { toast("BOND FLOOR — 25,000 MARC MINIMUM"); return; }
-        if (amount > marcRef.current) { toast("INSUFFICIENT MARC — SIM ALLOCATION"); return; }
+        if (amount < 25_000) { toast("BOND FLOOR — 25,000 CENT MINIMUM"); return; }
+        if (amount > centRef.current) { toast("INSUFFICIENT CENT — SIM ALLOCATION"); return; }
         const fpId = (op.key?.pubHex ?? "demoops").replace(/[^0-9a-f]/gi, "").slice(0, 6).toLowerCase();
         const id = `vrf:op:${fpId}`;
         if (poolRef.current.some((v) => v.id === id)) { toast("OPERATOR NODE ALREADY BONDED"); return; }
-        setMarcBal((m) => m - amount);
+        setCentBal((m) => m - amount);
         const v: Verifier = {
           id,
           bond: amount,
@@ -216,12 +216,12 @@ export default function DesktopApp() {
           votesEpoch: 0,
           correctEpoch: 0,
           earnedUsdc: 0,
-          accruedMarc: 0,
+          accruedCent: 0,
           status: "BONDED",
         };
         poolRef.current = [...poolRef.current, v];
         setVerifierList([...poolRef.current]);
-        toast(`BONDED ${amount.toLocaleString()} MARC — ${id} JOINS NEXT ELECTION`);
+        toast(`BONDED ${amount.toLocaleString()} CENT — ${id} JOINS NEXT ELECTION`);
       },
       requestUnbond: (verifierId) => {
         const v = poolRef.current.find((x) => x.id === verifierId);
@@ -232,10 +232,10 @@ export default function DesktopApp() {
           ...q,
           { id: `ub_${Date.now()}`, verifier: verifierId, amount: v.bond, completesIn: 3 },
         ]);
-        toast(`UNBOND REQUESTED — ${v.bond.toLocaleString()} MARC FROZEN 3 EPOCHS (7D)`);
+        toast(`UNBOND REQUESTED — ${v.bond.toLocaleString()} CENT FROZEN 3 EPOCHS (7D)`);
       },
     };
-  }, [view, now, feed, agents, approvals, resolved, batches, limits, wallet, toasts, halted, inspector, selException, verifierList, epoch, slashLog, emittedMarc, fleetPoints, marcBal, unbondQueue, op.key]);
+  }, [view, now, feed, agents, approvals, resolved, batches, limits, wallet, toasts, halted, inspector, selException, verifierList, epoch, slashLog, emittedCent, fleetPoints, centBal, unbondQueue, op.key]);
 
   const NavBtn = ({ n, i }: { n: (typeof NAV)[number]; i: number }) => {
     const active = view === n.id;
@@ -273,7 +273,7 @@ export default function DesktopApp() {
             <span className="hidden text-[8.5px] tracking-[0.24em] text-mute/60 xl:inline">SENTRY CONSOLE / V0.2</span>
           </div>
           <div className="hidden items-center gap-2 text-[9px] tracking-[0.14em] text-mute/70 xl:flex">
-            <span className="text-volt">$</span> mrc.stream.attach <span className="text-mute/40">--fleet</span> atlas <span className="text-mute/40">--quorum</span> 3
+            <span className="text-volt">$</span> cent.stream.attach <span className="text-mute/40">--fleet</span> atlas <span className="text-mute/40">--quorum</span> 3
             <span className="animate-blink ml-0.5 inline-block h-3 w-[6px] bg-volt/70" />
           </div>
           <div className="flex items-center gap-4 text-[9px] tracking-[0.16em] text-mute/70">
@@ -294,7 +294,7 @@ export default function DesktopApp() {
                 }`}
               >
                 {net.label}
-                {net.tag === "MARC TGE" && <span className="bg-volt px-1 font-semibold text-void">MARC</span>}
+                {net.tag === "CENT TGE" && <span className="bg-volt px-1 font-semibold text-void">CENT</span>}
                 <ChevronDown size={9} className={`transition-transform ${netOpen ? "rotate-180" : ""}`} />
               </button>
               {netOpen && (
@@ -308,7 +308,7 @@ export default function DesktopApp() {
                       onClick={() => {
                         setNetId(n.id);
                         setNetOpen(false);
-                        value.toast(n.id === "robinhood" ? "ROBINHOOD CHAIN — MARC TGE PENDING · PREVIEW" : `RAIL → ${n.label}`);
+                        value.toast(n.id === "robinhood" ? "ROBINHOOD CHAIN — CENT TGE PENDING · PREVIEW" : `RAIL → ${n.label}`);
                       }}
                       className={`flex w-full items-center gap-3 border-b border-edge/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-panel/70 ${
                         n.id === net.id ? "bg-volt/[0.05]" : ""
@@ -318,7 +318,7 @@ export default function DesktopApp() {
                       <span className="min-w-0 flex-1">
                         <span className="flex items-baseline justify-between gap-2">
                           <span className="text-[9.5px] tracking-[0.1em] text-mist">{n.label}</span>
-                          <span className={`text-[7px] tracking-[0.16em] ${n.tag === "MARC TGE" ? "text-volt" : n.status === "LIVE" ? "text-volt/70" : "text-mute/60"}`}>
+                          <span className={`text-[7px] tracking-[0.16em] ${n.tag === "CENT TGE" ? "text-volt" : n.status === "LIVE" ? "text-volt/70" : "text-mute/60"}`}>
                             {n.tag}
                           </span>
                         </span>
@@ -392,11 +392,11 @@ export default function DesktopApp() {
         {/* ---- status bar ---- */}
         <div className="flex h-8 shrink-0 items-center justify-between border-t border-edge bg-[#0a0d08] px-4 text-[8px] tracking-[0.18em] text-mute/60">
           <div className="flex items-center gap-4">
-            <span className={mrc.transport.kind === "rpc" ? "text-amber-300" : halted ? "text-red-400" : "text-volt"}>
-              ●{mrc.transport.kind.toUpperCase()} {mrc.transport.kind === "rpc" ? "OFFLINE" : halted ? "HALTED" : "LIVE"}
+            <span className={cent.transport.kind === "rpc" ? "text-amber-300" : halted ? "text-red-400" : "text-volt"}>
+              ●{cent.transport.kind.toUpperCase()} {cent.transport.kind === "rpc" ? "OFFLINE" : halted ? "HALTED" : "LIVE"}
             </span>
             <span>STREAM 2.8S · QUORUM 3/3</span>
-            <span className={net.id === "robinhood" ? "text-volt" : ""}>NET {net.short}{net.tag === "MARC TGE" ? " · MARC SOON" : ""}</span>
+            <span className={net.id === "robinhood" ? "text-volt" : ""}>NET {net.short}{net.tag === "CENT TGE" ? " · CENT SOON" : ""}</span>
             <span className="hidden xl:inline">WINDOW {feed.length} TXS</span>
           </div>
           <div className="flex items-center gap-4">

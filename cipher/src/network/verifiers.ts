@@ -1,17 +1,17 @@
 /**
  * V0.2 Verifier Network — epoch engine (simulation binding).
- * Bonds (MARC), deterministic quorum elections, accuracy² weighting,
+ * Bonds (CENT), deterministic quorum elections, accuracy² weighting,
  * slash executor, and the pre-TGE accrual ledger.
  */
 
 export interface Verifier {
   id: string;
-  bond: number; // MARC
+  bond: number; // CENT
   accuracy: number; // 0..1, decayed
   votesEpoch: number;
   correctEpoch: number;
   earnedUsdc: number; // lifetime task-fee share
-  accruedMarc: number; // lifetime emissions
+  accruedCent: number; // lifetime emissions
   status: "BONDED" | "SLASHED" | "UNBONDING";
 }
 
@@ -66,7 +66,7 @@ export function seedVerifiers(): Verifier[] {
     votesEpoch: 0,
     correctEpoch: 0,
     earnedUsdc: Math.round(bond * 0.02 * accuracy * 100) / 100,
-    accruedMarc: Math.round(bond * 0.018 * accuracy),
+    accruedCent: Math.round(bond * 0.018 * accuracy),
     status: "BONDED",
   }));
 }
@@ -95,7 +95,7 @@ export interface RollResult {
   pool: Verifier[];
   slashes: SlashEvent[];
   emitted: number;
-  distribution: { id: string; marc: number; usdc: number }[];
+  distribution: { id: string; cent: number; usdc: number }[];
 }
 
 /** advance one epoch: votes, accuracy drift, slash executor, emission distribution */
@@ -140,7 +140,7 @@ export function rollEpoch(pool: Verifier[], prev: EpochInfo, now: number, week =
     const share = weight(v) / wSum;
     return {
       id: v.id,
-      marc: Math.round(fund * share),
+      cent: Math.round(fund * share),
       usdc: Math.round(fund * 0.0012 * share * 100) / 100,
     };
   });
@@ -149,7 +149,7 @@ export function rollEpoch(pool: Verifier[], prev: EpochInfo, now: number, week =
     if (!d) return v;
     return {
       ...v,
-      accruedMarc: v.accruedMarc + d.marc,
+      accruedCent: v.accruedCent + d.cent,
       earnedUsdc: v.earnedUsdc + d.usdc,
       accuracy: Math.min(0.999, v.accuracy + 0.0004),
     };
