@@ -223,7 +223,7 @@ export default function Protocol() {
             </span>
           </div>
           <div className="grid lg:grid-cols-[1.3fr_1fr]">
-            <div className="surface-code border-0 border-r-0 lg:border-r lg:border-code-edge">
+            <div className="surface-code border-0 border-volt/20 lg:border-r">
               <CodeBlock />
             </div>
             <div className="border-t border-edge lg:border-l-0 lg:border-t-0">

@@ -86,9 +86,10 @@ export default function SdkPlayground() {
   };
 
   return (
-    <div className="surface-code mt-5 border">
-      <div className="flex items-center justify-between border-b border-code-edge px-4 py-2.5">
-        <span className="flex items-center gap-2 font-mono text-[8px] tracking-[0.24em] text-code-mute">
+    <div className="surface-code relative mt-5 border border-volt/25">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-volt/55 to-transparent" />
+      <div className="flex items-center justify-between border-b border-volt/15 px-4 py-2.5">
+        <span className="flex items-center gap-2 font-mono text-[8px] tracking-[0.24em] text-volt/80">
           <span className="relative flex h-1.5 w-1.5">
             <span className={`absolute h-full w-full bg-volt ${running ? "animate-ping opacity-60" : "opacity-40"}`} />
             <span className="relative h-1.5 w-1.5 bg-volt" />
@@ -116,7 +117,7 @@ export default function SdkPlayground() {
         ))}
         {running && <span className="animate-blink inline-block h-3.5 w-[7px] bg-volt align-middle" />}
       </div>
-      <div className="border-t border-code-edge px-4 py-2.5 font-mono text-[8px] tracking-[0.18em] text-code-mute/70">
+      <div className="border-t border-volt/15 px-4 py-2.5 font-mono text-[8px] tracking-[0.18em] text-code-mute">
         SAME API AS WIRE PROTOCOL · ~6% INJECTED NONDETERMINISM TO EXERCISE THE DISPUTE PATH
       </div>
     </div>
