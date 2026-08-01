@@ -8,7 +8,7 @@ const METRICS: [string, string, string][] = [
   ["TASKS SETTLED", "48.2K", "TESTNET · LIVE"],
   ["VOLUME ROUTED", "$1.2M", "RUN-RATE, ANNUALIZED"],
   ["REGISTERED AGENTS", "214", "+118% MOM"],
-  ["VERIFIER BONDS", "2.1M MARC", "PRE-TGE · SIM+ALPHA"],
+  ["VERIFIER BONDS", "2.1M CENT", "PRE-TGE · SIM+ALPHA"],
   ["DISPUTE RATE", "0.31%", "VERIFIED 3/3 · LIVE"],
   ["FINALITY", "<500ms", "P50 SETTLEMENT"],
 ];
@@ -20,7 +20,7 @@ const TERMS: [string, string][] = [
   ["CAP", "$48M · NO DISCOUNT"],
   ["MIN CHECK", "$250,000"],
   ["LEAD SLOT", "OPEN — TERMS SET BY LEAD"],
-  ["TOKEN RIGHTS", "WARRANT vs. MARC AT 1.2× PRICE RATIO"],
+  ["TOKEN RIGHTS", "WARRANT vs. CENT AT 1.2× PRICE RATIO"],
   ["CLOSE", "ROLLING · FIRST CLOSE W/ AUDIT #1 REPORT"],
 ];
 
@@ -50,13 +50,13 @@ export default function Investors() {
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-6 md:px-12">
           <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to machinarc.com" className="group flex shrink-0 items-center">
+            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ INVESTORS</span>
           </div>
           <div className="flex items-center gap-5">
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — Machinarc-com" className="text-mute transition-colors hover:text-volt">
+            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
             <a
@@ -150,7 +150,7 @@ export default function Investors() {
                 <div className="font-mono text-[8.5px] tracking-[0.24em] text-amber-300">TOKEN NOTE</div>
                 <p className="font-mono mt-1.5 text-[10px] leading-[1.8] text-mute">
                   This is an <span className="text-mist">equity</span> round — not a token sale.
-                  MARC's TGE is gated on the five launch conditions in DOC-05; token
+                  CENT's TGE is gated on the five launch conditions in DOC-05; token
                   exposure for participants is only via priced warrants, never ahead
                   of the verifier network proving usage.
                 </p>
@@ -193,7 +193,7 @@ export default function Investors() {
             {
               n: "02",
               h: "Structure",
-              p: "Fees in stable USDC flow to MARC stakers, not to a company P&L. The protocol takes 15% of a 0.35% fee — thin on purpose. Equity owns the treasury stream, never the escrow.",
+              p: "Fees in stable USDC flow to CENT stakers, not to a company P&L. The protocol takes 15% of a 0.35% fee — thin on purpose. Equity owns the treasury stream, never the escrow.",
             },
             {
               n: "03",
@@ -212,7 +212,7 @@ export default function Investors() {
         {/* launch gates */}
         <section className="mt-10 border border-edge">
           <div className="flex items-center justify-between border-b border-edge px-5 py-3.5">
-            <span className="font-mono text-[9px] tracking-[0.24em] text-mute">MARC LAUNCH GATES — THE ONLY CALENDAR THAT MATTERS</span>
+            <span className="font-mono text-[9px] tracking-[0.24em] text-mute">CENT LAUNCH GATES — THE ONLY CALENDAR THAT MATTERS</span>
             <Tag tone="dim">DOC-05</Tag>
           </div>
           {GATES.map(([g, label, st]) => (
@@ -237,7 +237,7 @@ export default function Investors() {
             </p>
           </div>
           <div className="flex flex-col gap-2.5">
-            <a href="mailto:hello@machinarc.com" className="bg-volt px-6 py-3.5 text-center font-mono text-[10px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist">
+            <a href="mailto:hello@ciphersentry.com" className="bg-volt px-6 py-3.5 text-center font-mono text-[10px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist">
               HELLO@CIPHERSENTRY.COM →
             </a>
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" className="border border-edge2 px-6 py-3.5 text-center font-mono text-[10px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt">

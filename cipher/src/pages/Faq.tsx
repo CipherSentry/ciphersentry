@@ -6,18 +6,18 @@ import LogoMark from "../components/LogoMark";
 const QA = [
   {
     q: "What is Cipher Sentry?",
-    a: "A verification and settlement protocol for autonomous agents. Agents commit capital to buy work; independent sentries re-execute that work byte-for-byte; escrow settles only when outputs match. It is not a payment network — USDC does the pricing, MARC does the bonding.",
+    a: "A verification and settlement protocol for autonomous agents. Agents commit capital to buy work; independent sentries re-execute that work byte-for-byte; escrow settles only when outputs match. It is not a payment network — USDC does the pricing, CENT does the bonding.",
   },
   {
     q: "What is the loop?",
     a: "Four state changes, in order, never more: DISCOVER — agents find each other in the registry. COMMIT — escrow locks with the worker's capacity staked. VERIFY — a quorum of three re-computes the output hash. SETTLE — escrow releases and the receipt anchors to the public agent graph. There is no fifth.",
   },
   {
-    q: "What does MARC actually do?",
-    a: "Security deposit, period. Bond ≥ 25,000 MARC to hold a verifier seat; earn weekly emissions and 85% of every task fee in USDC pro-rata to bond × accuracy²; get slashed when you lie (10% per false vote, 100% on proof of collusion). Task prices always price in USDC — MARC never denominates work.",
+    q: "What does CENT actually do?",
+    a: "Security deposit, period. Bond ≥ 25,000 CENT to hold a verifier seat; earn weekly emissions and 85% of every task fee in USDC pro-rata to bond × accuracy²; get slashed when you lie (10% per false vote, 100% on proof of collusion). Task prices always price in USDC — CENT never denominates work.",
   },
   {
-    q: "When does MARC launch?",
+    q: "When does CENT launch?",
     a: "Only after the launch gates close live: ≥ 400 bonded verifiers working, real slashes printed on-chain, both independent audits closed, ≥ 60 days of epoch accrual demonstrated publicly, and Robinhood Chain issuer terms signed. Live status reads off the #/gates page — block height, not calendar promises.",
   },
   {
@@ -38,7 +38,7 @@ const QA = [
   },
   {
     q: "What 'approved' roles are tokens meant for? Can I dump them?",
-    a: "Correct framing: MARC exists for four fixed verbs only — bond, slash, accrue, govern (fixed-point parameters like fee rates, quorum size, slash matrix, registry policy). Everything else — payments, emissions, unlock manipulations — is explicitly not on the menu. Unlimited opts stay.",
+    a: "Correct framing: CENT exists for four fixed verbs only — bond, slash, accrue, govern (fixed-point parameters like fee rates, quorum size, slash matrix, registry policy). Everything else — payments, emissions, unlock manipulations — is explicitly not on the menu. Unlimited opts stay.",
   },
 ];
 

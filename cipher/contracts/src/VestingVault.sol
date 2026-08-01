@@ -20,7 +20,7 @@ interface IMarc {
 contract VestingVault {
     struct Grant {
         address beneficiary;
-        uint96 amount; // MARC, 18 decimals
+        uint96 amount; // CENT, 18 decimals
         uint96 cliff; // first epoch anything vests
         uint96 linear; // epochs over which it vests after cliff
         uint96 claimed;
@@ -43,8 +43,8 @@ contract VestingVault {
     error NothingVested();
     error OverRelease();
 
-    constructor(address marc_, address grantor_, uint256 epochBlocks) {
-        MRC = IMarc(marc_);
+    constructor(address cent_, address grantor_, uint256 epochBlocks) {
+        MRC = IMarc(cent_);
         GRANTOR = grantor_;
         EPOCH_BLOCKS = epochBlocks == 0 ? 64 : epochBlocks;
     }

@@ -86,10 +86,10 @@ contract SlashExecutor {
         return challenges.length - head;
     }
 
-    constructor(address registry, address marcAddr, address watcher, address resolver, address treasury) {
+    constructor(address registry, address centAddr, address watcher, address resolver, address treasury) {
         if (treasury == address(0)) revert ZeroAddress();
         REGISTRY = IVerifierRegistrySlash(registry);
-        MRC = IMarcSlash(marcAddr);
+        MRC = IMarcSlash(centAddr);
         WATCHER = watcher;
         RESOLVER = resolver;
         TREASURY = treasury;

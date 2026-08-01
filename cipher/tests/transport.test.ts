@@ -14,7 +14,7 @@ describe("sim transport", () => {
     t.start();
     const evts = t.events();
     expect(evts.length).toBeGreaterThan(10);
-    expect(evts.some((e) => e.id === "mrc_f81c2a0" && e.state === "DISPUTED")).toBe(true);
+    expect(evts.some((e) => e.id === "cent_f81c2a0" && e.state === "DISPUTED")).toBe(true);
     expect(t.batches()).toHaveLength(4);
   });
 
@@ -75,7 +75,7 @@ describe("sim transport", () => {
     let calls = 0;
     const off = t.onTick(() => calls++);
     const task: TaskEvent = {
-      id: "mrc_test001",
+      id: "cent_test001",
       agent: "agent:vector-7",
       counterparty: "agent:atlas-01",
       role: "work",
@@ -86,10 +86,10 @@ describe("sim transport", () => {
       hash: "0xdeadbeef",
     };
     t.addTask(task);
-    expect(t.events()[0].id).toBe("mrc_test001");
+    expect(t.events()[0].id).toBe("cent_test001");
 
-    t.setTaskState("mrc_test001", "SETTLED");
-    expect(t.getTask("mrc_test001")?.state).toBe("SETTLED");
+    t.setTaskState("cent_test001", "SETTLED");
+    expect(t.getTask("cent_test001")?.state).toBe("SETTLED");
     expect(calls).toBeGreaterThanOrEqual(3); // hydrate + add + setState
 
     off();

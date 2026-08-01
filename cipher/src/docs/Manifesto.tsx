@@ -48,7 +48,7 @@ const DECLARATIONS: { n: string; h: React.ReactNode; p: string }[] = [
 const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] = [
   {
     tag: "E-01",
-    month: "MARCH 2026",
+    month: "CENTH 2026",
     title: "First Signal",
     items: [
       "Landing page live from the original mock — ambient signal grid, animated live task-trace terminal, protocol loop, roadmap.",
@@ -76,9 +76,9 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
   {
     tag: "E-04",
     month: "JUNE 2026",
-    title: "Multi-Network & MARC",
+    title: "Multi-Network & CENT",
     items: [
-      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, Robinhood Chain MARC TGE — selector in the titlebar.",
+      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, Robinhood Chain CENT TGE — selector in the titlebar.",
       "Tokenomics published: fixed supply, decaying verifier emissions, epoch-indexed vesting, five launch gates, Rule Zero.",
       "Typed SDK with the live playground; backend architecture doc.",
     ],
@@ -113,7 +113,7 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
       "Launch Gates board — public G4 accrual counter, freeze-hash anchor log, signed verifier waitlist.",
       "RpcTransport skeleton with ?net=rpc|sim; the seam waits on a node, nothing else.",
       "Key backup (AES-GCM × PBKDF2 ×600K) and passkey-gated device identity.",
-      "Test layer: epoch engine, transport deltas, crypto flows under vitest. Brand v6 — the marc wordmark + checkpoint.",
+      "Test layer: epoch engine, transport deltas, crypto flows under vitest. Brand v6 — the cent wordmark + checkpoint.",
     ],
   },
   {
@@ -123,7 +123,7 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     items: [
       "JSON-RPC write-points armed in the transport.",
       "Verifier applications under review from the launch waitlist.",
-      "MARC token + VestingVault contract package — the ENG-A remainder.",
+      "CENT token + VestingVault contract package — the ENG-A remainder.",
     ],
   },
 ];

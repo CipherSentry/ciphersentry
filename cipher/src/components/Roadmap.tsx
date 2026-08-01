@@ -121,26 +121,26 @@ export default function Roadmap() {
             <div>
               <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.26em] text-volt">
                 <span className="h-1.5 w-1.5 bg-volt" />
-                MULTI-NETWORK / MARC
+                MULTI-NETWORK / CENT
               </div>
               <p className="mt-3.5 max-w-xl text-[13px] leading-[1.8] text-mute">
                 Cipher Sentry settles where the agents are. The protocol is
                 rail-agnostic — identical batch contracts across EVM rails.
                 Mainnet opens with V1.0, and{" "}
-                <span className="text-mist">MARC</span> launches on{" "}
+                <span className="text-mist">CENT</span> launches on{" "}
                 <span className="text-volt">Robinhood Chain</span> as the
                 verifier-bond, slashing and fee asset. Work stays priced in
-                stable USDC; MARC never denominates a task.
+                stable USDC; CENT never denominates a task.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
               {[
                 ["BASE-SEPOLIA", "V0.2 LIVE", "volt"],
                 ["BASE MAINNET", "WITH V1.0", "mist"],
-                ["ROBINHOOD CHAIN", "MARC TGE · SOON", "volt"],
+                ["ROBINHOOD CHAIN", "CENT TGE · SOON", "volt"],
               ].map(([rail, tag, tone]) => (
                 <div key={rail} className="flex items-center gap-3 border border-edge2 px-3 py-2.5">
-                  <span className={`h-1.5 w-1.5 ${tag.includes("LIVE") || tag.includes("MARC") ? "bg-volt" : "bg-amber-300"}`} />
+                  <span className={`h-1.5 w-1.5 ${tag.includes("LIVE") || tag.includes("CENT") ? "bg-volt" : "bg-amber-300"}`} />
                   <span className="font-mono text-[9.5px] tracking-[0.14em] text-mist">{rail}</span>
                   <span className={`font-mono text-[8px] tracking-[0.16em] ${tone === "volt" ? "text-volt" : "text-mute/60"}`}>{tag}</span>
                 </div>

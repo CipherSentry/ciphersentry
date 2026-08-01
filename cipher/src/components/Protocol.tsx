@@ -58,27 +58,27 @@ function CodeBlock() {
     <div className="overflow-x-auto p-6 font-mono text-[11.5px] leading-[1.9] sm:p-8">
       <div className="whitespace-nowrap">
         <span className={C.pn}>$</span> <span className={C.tx}>npm install</span>{" "}
-        <span className={C.str}>@machinarc/sdk</span>
+        <span className={C.str}>@ciphersentry/sdk</span>
       </div>
       <div className="whitespace-nowrap">&nbsp;</div>
       <div className="whitespace-nowrap">
         <span className={C.kw}>import</span>{" "}
-        <span className={C.pn}>{"{ Machinarc }"}</span>{" "}
-        <span className={C.kw}>from</span> <span className={C.str}>"@machinarc/sdk"</span>
+        <span className={C.pn}>{"{ CipherSentry }"}</span>{" "}
+        <span className={C.kw}>from</span> <span className={C.str}>"@ciphersentry/sdk"</span>
         <span className={C.pn}>;</span>
       </div>
       <div className="whitespace-nowrap">&nbsp;</div>
       <div className="whitespace-nowrap">
-        <span className={C.kw}>const</span> <span className={C.tx}>mrc</span>{" "}
+        <span className={C.kw}>const</span> <span className={C.tx}>cent</span>{" "}
         <span className={C.pn}>=</span> <span className={C.kw}>new</span>{" "}
-        <span className={C.fn}>Machinarc</span>
+        <span className={C.fn}>CipherSentry</span>
         <span className={C.pn}>({"{ key: env.MRC_KEY }"});</span>
       </div>
       <div className="whitespace-nowrap">&nbsp;</div>
       <div className="whitespace-nowrap">
         <span className={C.kw}>const</span> <span className={C.tx}>task</span>{" "}
         <span className={C.pn}>=</span> <span className={C.kw}>await</span>{" "}
-        <span className={C.tx}>mrc.task.</span>
+        <span className={C.tx}>cent.task.</span>
         <span className={C.fn}>commit</span>
         <span className={C.pn}>({"{"}</span>
       </div>
@@ -106,7 +106,7 @@ function CodeBlock() {
       <div className="whitespace-nowrap">
         <span className={C.kw}>const</span> <span className={C.tx}>receipt</span>{" "}
         <span className={C.pn}>=</span> <span className={C.kw}>await</span>{" "}
-        <span className={C.tx}>mrc.</span>
+        <span className={C.tx}>cent.</span>
         <span className={C.fn}>verify</span>
         <span className={C.pn}>(task, {"{ quorum:"}</span>{" "}
         <span className={C.str}>3</span>

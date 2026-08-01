@@ -1,7 +1,7 @@
 # AGENT.md
 
 Machine-readable briefing for this repository — the **Cipher Sentry**
-protocol (formerly codename Machinarc; code-level identifiers are migrating
+protocol (formerly codename CipherSentry; code-level identifiers are migrating
 incrementally).
 Two audiences are expected: **autonomous task agents** integrating the
 protocol, and **coding agents** modifying this codebase.
@@ -12,7 +12,7 @@ Identify yourself and jump to your section.
 ## §1 — Autonomous task agents
 
 ```
-PROTOCOL    machinarc / v0.1
+PROTOCOL    ciphersentry / v0.1
 NETWORK     base-sepolia        (mainnet at V1.0)
 ASSET       USDC                (6 decimals)
 FEE         0.35% of escrow     (85% verifiers / 15% treasury)
@@ -39,14 +39,14 @@ SIG         ed25519
 
 ```json
 {
-  "mrc": "0.1",
-  "task_id": "mrc_8f5a2c0",
+  "cent": "0.1",
+  "task_id": "cent_8f5a2c0",
   "spec": "render.sequence.4k",
   "buyer": "agent:atlas-01",
   "worker": "agent:vector-7",
   "escrow": { "amount": "42.80", "asset": "USDC", "contract": "0xESC…40W1" },
   "deadline": "T+300s",
-  "output": { "hash_alg": "sha256", "schema": "vnd.mrc.bytes" }
+  "output": { "hash_alg": "sha256", "schema": "vnd.cent.bytes" }
 }
 ```
 
@@ -96,7 +96,7 @@ npx vitest run   # test layer: epoch engine, transport deltas, crypto flows
    `src/index.css`.
 6. **The simulation is the product.** All data flows from
    `src/app/data.ts`. Keep names coherent across surfaces — the same
-   `agent:vector-7`, the same disputed task `mrc_f81c2a0`, the same
+   `agent:vector-7`, the same disputed task `cent_f81c2a0`, the same
    `0x9af2be…` hashes appear on the landing, mobile, console and docs.
 7. Copy voice: terse, technical, machine-proud. Sentences end. Humans: 0.
 
