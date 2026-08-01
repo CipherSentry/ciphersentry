@@ -1,15 +1,13 @@
 {
-  "batcher": "0xdbd23CF2b0944552C17C2db73b5e8a14a1649e14",
-  "cent": "0xEfDAdd5080435Ac87C4689131ace12d9AE0ec887",
+  "batcher": "0x66855FBa76034B04053E6C419c0af1FE55867669",
+  "cent": "0xF29069482Cd4f01EC0Fa6a8930164a873C969074",
   "chainId": 84532,
   "deployer": "0x96a438924ACE133D5909bd3BAF3263845B760eF4",
-  "election": "0x4aB2205CcCF3d71126769bDb90B5ca06C3A61694",
-  "escrow": "0x597CD2fA7c74FBAcE24e7c141D4dc54Bd8e567b4",
+  "election": "0x5dcec279b58D25b7242a48A0e98F08bED187646F",
+  "escrow": "0xB41EC9A2E9fD7b9226E53a93daef0E1655729890",
   "mode": "base-sepolia-mockusdc",
-  "registry": "0x1424a75aB1bab8bBE6fAa19Df14797156442a73c",
-  "slashExecutor": "0x4FED88cbD0065d832ac8f54444E8498a56f9bc0b",
-  "usdc": "0x9F1212c51F52e5964eafae16b624E980CB0b3E4f",
-  "vestingVault": "0x870071096f7a2630820Df6B482fdd845e999A20d",
-  "note": "MockUSDC faucet stack for write-path smoke; production USDC stack is base-sepolia.json",
-  "smokeCommitTx": "0x8741743272ba7ae60e7dc56b7335a70e3454ee2544a0cc8b6cd3f50ea4dc20f6"
+  "registry": "0x27648C8472881Bd770ccD370A97c01521e91b88c",
+  "slashExecutor": "0x39b0D1E0fED8e22775631974402bc5f6CFa9865b",
+  "usdc": "0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0",
+  "vestingVault": "0x0825E500d2bc22e18bfCE5b4c13001DB35958346"
 }
