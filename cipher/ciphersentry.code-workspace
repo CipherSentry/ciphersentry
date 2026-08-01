@@ -1,11 +1,11 @@
 {
   "folders": [
     {
-      "name": "machinarc (frontend)",
-      "path": "machinarc"
+      "name": "cipher (frontend)",
+      "path": "cipher"
     },
     {
-      "name": "machinarc/services (backend)",
+      "name": "cipher/services (backend)",
       "path": "services"
     }
   ],
