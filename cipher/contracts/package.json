@@ -1,0 +1,10 @@
+{
+  "name": "@ciphersentry/contracts",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "deploy:local": "bash script/deploy-local.sh",
+    "smoke:commit": "bash script/smoke-commit.sh"
+  }
+}

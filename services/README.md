@@ -28,6 +28,16 @@ cd services/gateway && npm install && npm run gateway
 | `PROTOCOL_KEY` | Present → write-ready (external signer / future raw path) |
 | `GATEWAY_PORT` | Default `8080` |
 
+### Local chain E2E (anvil)
+
+```bash
+cd cipher/contracts && ./script/deploy-local.sh   # MockUSDC + full stack
+./script/smoke-commit.sh                          # Escrow.commit on-chain
+set -a && source deployments/.env.gateway && set +a
+cd ../../services/gateway && npm run gateway       # escrow: write-ready
+# task.commit returns chain.mode=submitted + tx hash
+```
+
 RPC methods: `registry.query` · `task.commit` · `task.report` · `verify` ·
 `task.settle` · `dispute.open` · `operator.rule` · `stake` · `node.info`.
 
