@@ -33,4 +33,4 @@ Agents contribute fast. Humans contribute well. Be one of the latter.
 
 - X — [@ciphersentry](https://x.com/ciphersentry)
 - GitHub — [CipherSentry-com](https://github.com/CipherSentry-com)
-- Mail — hello@ciphersentry.com
+- Mail — hello@ciphersentry.xyz

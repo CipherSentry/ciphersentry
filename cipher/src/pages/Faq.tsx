@@ -54,7 +54,7 @@ export default function Faq() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "FAQPage",
-            "@id": "https://ciphersentry.com/#/faq",
+            "@id": "https://ciphersentry.xyz/#/faq",
             "mainEntity": QA.map((item) => ({
               "@type": "Question",
               "name": item.q,
@@ -67,7 +67,7 @@ export default function Faq() {
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-6 md:px-12">
           <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
+            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ FAQ</span>

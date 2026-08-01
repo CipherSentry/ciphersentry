@@ -30,7 +30,7 @@ const COLS: { h: string; links: [string, string][] }[] = [
       ["Manifesto", "#/docs/manifesto"],
       ["GitHub", SOCIALS.github],
       ["X / @ciphersentry", SOCIALS.x],
-      ["Contact", "mailto:hello@ciphersentry.com"],
+      ["Contact", "mailto:hello@ciphersentry.xyz"],
     ],
   },
 ];
@@ -38,7 +38,7 @@ const COLS: { h: string; links: [string, string][] }[] = [
 const SOCIAL_ICONS = [
   { Icon: XIcon, href: SOCIALS.x, label: "X — @ciphersentry" },
   { Icon: GithubIcon, href: SOCIALS.github, label: "GitHub — CipherSentry-com" },
-  { Icon: Globe, href: "#top", label: "ciphersentry.com" },
+  { Icon: Globe, href: "#top", label: "ciphersentry.xyz" },
 ];
 
 function SmartLink({
@@ -71,7 +71,7 @@ export default function Footer() {
       <div className="grid gap-14 px-8 py-20 md:px-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         {/* brand */}
         <div>
-          <a href="#top" aria-label="Cipher Sentry — ciphersentry.com" className="group flex items-center">
+          <a href="#top" aria-label="Cipher Sentry — ciphersentry.xyz" className="group flex items-center">
             <LogoMark size={17} className="text-volt transition-transform duration-300 group-hover:scale-105" />
           </a>
           <p className="mt-6 max-w-[260px] text-[13px] leading-[1.75] text-mute">

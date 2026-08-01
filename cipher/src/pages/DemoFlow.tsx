@@ -64,7 +64,7 @@ function Chrome({ children, right }: { children: React.ReactNode; right?: React.
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-6 md:px-12">
           <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
+            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ TRY THE FLOW</span>
@@ -474,7 +474,7 @@ function FeedbackCard({ notes, setNotes }: { runId: number; notes: string; setNo
             className="mt-3 w-full resize-none border border-edge2 bg-ink px-4 py-3 font-mono text-[10.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
           />
           <a
-            href={`mailto:hello@ciphersentry.com?subject=DEMO%20EXPECTATIONS%20—&body=${encodeURIComponent(`VOTE: ${vote ?? "unanswered"}\nNOTES: ${notes || "no notes"}`)}`}
+            href={`mailto:hello@ciphersentry.xyz?subject=DEMO%20EXPECTATIONS%20—&body=${encodeURIComponent(`VOTE: ${vote ?? "unanswered"}\nNOTES: ${notes || "no notes"}`)}`}
             onClick={() => {
               setSent(true);
               try { navigator.clipboard?.writeText(`VOTE: ${vote ?? "unanswered"}\nNOTES: ${notes || "no notes"}`); } catch { /* noop */ }

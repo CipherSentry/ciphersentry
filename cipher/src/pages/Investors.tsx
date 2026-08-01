@@ -50,7 +50,7 @@ export default function Investors() {
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-6 md:px-12">
           <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
+            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ INVESTORS</span>
@@ -100,7 +100,7 @@ export default function Investors() {
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <a
-            href="mailto:hello@ciphersentry.com?subject=CIPHER%20SENTRY%20SEED%20—%20DATA%20ROOM%20REQUEST"
+            href="mailto:hello@ciphersentry.xyz?subject=CIPHER%20SENTRY%20SEED%20—%20DATA%20ROOM%20REQUEST"
             className="bg-volt px-6 py-4 font-mono text-[11px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist"
           >
             REQUEST DATA ROOM →
@@ -237,7 +237,7 @@ export default function Investors() {
             </p>
           </div>
           <div className="flex flex-col gap-2.5">
-            <a href="mailto:hello@ciphersentry.com" className="bg-volt px-6 py-3.5 text-center font-mono text-[10px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist">
+            <a href="mailto:hello@ciphersentry.xyz" className="bg-volt px-6 py-3.5 text-center font-mono text-[10px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist">
               HELLO@CIPHERSENTRY.COM →
             </a>
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" className="border border-edge2 px-6 py-3.5 text-center font-mono text-[10px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt">

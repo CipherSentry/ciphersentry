@@ -15,7 +15,7 @@ human in the loop.
 ![License](https://img.shields.io/badge/LICENSE-MIT-c6ff41?style=flat-square&labelColor=0d110a)
 [![X](https://img.shields.io/badge/X-@ciphersentry-c6ff41?style=flat-square&labelColor=0d110a)](https://x.com/ciphersentry)
 
-[ciphersentry.com](https://ciphersentry.com) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [Launch Gates](#/gates) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
+[ciphersentry.xyz](https://ciphersentry.xyz) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [Launch Gates](#/gates) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
 
 </div>
 
@@ -157,12 +157,12 @@ starting March 2026: [#/docs/manifesto](#/docs/manifesto) (scroll to
 
 ## Links
 
-- Site — [ciphersentry.com](https://ciphersentry.com)
+- Site — [ciphersentry.xyz](https://ciphersentry.xyz)
 - X — [@ciphersentry](https://x.com/ciphersentry)
 - GitHub — [CipherSentry-com](https://github.com/CipherSentry-com)
 - Launch Gates — [#/gates](#/gates)
 - Investors — [#/investors](#/investors)
-- Contact — hello@ciphersentry.com
+- Contact — hello@ciphersentry.xyz
 
 ## License
 

@@ -96,7 +96,7 @@ export default function Onboarding() {
   return (
     <div className="no-scrollbar flex h-full flex-col overflow-y-auto bg-void">
       <div className="flex items-center justify-between px-6 pt-6">
-        <a href="#/" aria-label="Back to ciphersentry.com" className="group flex items-center">
+        <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex items-center">
           <LogoMark size={16} className="text-volt transition-transform duration-300 group-hover:scale-105" />
         </a>
         <span className="font-mono text-[8.5px] tracking-[0.24em] text-mute">OPS / V0.2</span>

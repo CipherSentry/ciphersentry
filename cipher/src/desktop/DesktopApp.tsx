@@ -267,7 +267,7 @@ export default function DesktopApp() {
         {/* ---- title bar ---- */}
         <div className="flex h-10 shrink-0 items-center justify-between border-b border-edge bg-[#0a0d08] px-4">
           <div className="flex items-center gap-3">
-            <a href="#/" aria-label="Back to ciphersentry.com home" className="group flex items-center">
+            <a href="#/" aria-label="Back to ciphersentry.xyz home" className="group flex items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden text-[8.5px] tracking-[0.24em] text-mute/60 xl:inline">SENTRY CONSOLE / V0.2</span>

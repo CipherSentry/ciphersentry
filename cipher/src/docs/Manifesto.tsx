@@ -70,7 +70,7 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     title: "Console & Docs",
     items: [
       "Desktop ops console — stream, escrow state machine, Guardrails with live policy write-back, kill switch, Intervene.",
-      "Docs center: Specification, SDK Reference, Verification, Whitepaper. ciphersentry.com structured; X and GitHub wired in.",
+      "Docs center: Specification, SDK Reference, Verification, Whitepaper. ciphersentry.xyz structured; X and GitHub wired in.",
     ],
   },
   {
