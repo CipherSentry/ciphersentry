@@ -1,6 +1,6 @@
 # Deploy Cipher Sentry contracts to Base Sepolia.
 # Secrets (repo Settings → Secrets and variables → Actions):
-#   PRIVATE_KEY       — funded deployer EOA (0x-prefixed)
+#   PRIVATE_KEY       — funded deployer EOA (with or without 0x; we normalize)
 #   BASE_SEPOLIA_RPC  — Alchemy/QuickNode HTTPS endpoint
 #
 # Optional:
@@ -68,6 +68,13 @@ jobs:
           set -euo pipefail
           test -n "${PRIVATE_KEY:-}" || { echo "missing secret PRIVATE_KEY"; exit 1; }
           test -n "${BASE_SEPOLIA_RPC:-}" || { echo "missing secret BASE_SEPOLIA_RPC"; exit 1; }
+          # forge vm.envUint requires 0x; GitHub secrets often omit it
+          case "$PRIVATE_KEY" in
+            0x*|0X*) PK="$PRIVATE_KEY" ;;
+            *) PK="0x${PRIVATE_KEY}" ;;
+          esac
+          export PRIVATE_KEY="$PK"
+          echo "PRIVATE_KEY=$PK" >> "$GITHUB_ENV"
           ADDR=$(cast wallet address --private-key "$PRIVATE_KEY")
           BAL=$(cast balance "$ADDR" --rpc-url "$BASE_SEPOLIA_RPC")
           echo "deployer=$ADDR"
@@ -82,26 +89,28 @@ jobs:
 
       - name: Broadcast Deploy.s.sol
         env:
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           BASE_SEPOLIA_RPC: ${{ secrets.BASE_SEPOLIA_RPC }}
           LOCAL: ${{ inputs.mode == 'local' && 'true' || 'false' }}
           SIGNER_2: ${{ secrets.SIGNER_2 }}
           SIGNER_3: ${{ secrets.SIGNER_3 }}
         run: |
           set -euo pipefail
+          # PRIVATE_KEY already normalized into GITHUB_ENV
+          test -n "${PRIVATE_KEY:-}" || { echo "PRIVATE_KEY missing after normalize"; exit 1; }
           export SIGNER_1="${DEPLOYER}"
           export SIGNER_2="${SIGNER_2:-0x70997970C51812dc3A010C7d01b50e0d17dc79C8}"
           export SIGNER_3="${SIGNER_3:-0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC}"
           mkdir -p deployments
-          EXTRA=()
+          # only pass LOCAL=true when requested (envOr bool treats "false" string oddly)
           if [ "${LOCAL}" = "true" ]; then
-            EXTRA+=(LOCAL=true)
+            export LOCAL=true
+          else
+            unset LOCAL || true
           fi
-          env "${EXTRA[@]}" forge script script/Deploy.s.sol:Deploy \
+          forge script script/Deploy.s.sol:Deploy \
             --rpc-url "$BASE_SEPOLIA_RPC" \
             --broadcast \
             -vv
-
       - name: Normalize deployment artifact name
         run: |
           set -euo pipefail
