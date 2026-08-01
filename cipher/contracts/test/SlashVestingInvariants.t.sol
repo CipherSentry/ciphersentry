@@ -102,7 +102,7 @@ contract SlashVestingInvariants is StdInvariant, Test {
 
         uint64 e0 = vault.currentEpoch();
         // strictly before cliff+1: nothing (I-V2)
-        assertEq(vault.vestedAt(id, e0 + cliff - 1), 0, "I-V2 pre-cliff vested");
+        assertEq(vault.vestedAt(id, uint64(uint256(e0) + uint256(cliff) - 1)), 0, "I-V2 pre-cliff vested");
 
         vm.roll((uint256(e0) + 1 + cliff) * 64);
         uint96 vA = vault.vestedAt(id, vault.currentEpoch());
@@ -155,7 +155,7 @@ contract SlashVestingInvariants is StdInvariant, Test {
         uint256 queueId = slash.submitEvidence(evidenceHash, claimant, SlashExecutor.Severity.FalseVote);
         assertEq(queueId, 0, "queue index drifted");
 
-        vm.expectRevert(SlashExecutor.EvidenceReplayed.selector);
+        vm.expectRevert(abi.encodeWithSelector(SlashExecutor.EvidenceReplayed.selector, evidenceHash));
         vm.prank(watcher);
         slash.submitEvidence(evidenceHash, claimant, SlashExecutor.Severity.FalseVote);
     }
@@ -174,9 +174,17 @@ contract SlashVestingInvariants is StdInvariant, Test {
         vm.prank(watcher);
         slash.submitEvidence(_evidence("b"), colluderB, SlashExecutor.Severity.Collusion);
 
-        slash.processNext(); // first 80k cut — within 100k epoch cap ✓
+        slash.processNext(); // first 80k cut - within 100k epoch cap
 
-        vm.expectRevert(SlashExecutor.EpochCapExceeded.selector);
+        // remaining attempt is 80k against remaining 20k headroom
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SlashExecutor.EpochCapExceeded.selector,
+                80_000 ether,
+                80_000 ether,
+                100_000 ether
+            )
+        );
         slash.processNext(); // +80k > 100k cap: defers cleanly, never truncates
 
         vm.roll(block.number + 64 + 1); // epoch rotates; cap refreshes

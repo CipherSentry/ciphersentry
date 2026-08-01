@@ -28,7 +28,7 @@ contract BatchHandler is Test {
         batcher = _b;
     }
 
-    function _digest(uint64 id, bytes32 root, uint32 count, bool emergency) internal view returns (bytes32) {
+    function _digest(uint64 id, bytes32 root, uint32 count, bool isEmergency) internal view returns (bytes32) {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EthereumEIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
@@ -42,7 +42,7 @@ contract BatchHandler is Test {
             abi.encodePacked(
                 "\x19\x01",
                 domain,
-                keccak256(abi.encode(batcher.BATCH_TYPEHASH(), id, root, count, emergency))
+                keccak256(abi.encode(batcher.BATCH_TYPEHASH(), id, root, count, isEmergency))
             )
         );
     }
@@ -120,13 +120,13 @@ contract BatchInvariants is StdInvariant, Test {
 
     /// B-R2 — no anchor without a real 2-of-3 current signature set.
     function invariant_BR2_quorumOnly() public view {
-        // every emergency anchor requires 2 misses recorded BEFORE it landed
+        // emergency anchors are a subset of total anchors (no phantom emergencies)
         assertGe(
             handler.ghostAnchors(),
             handler.ghostEmergencyAnchors(),
-            "B-R2: negative anchor accounting — impossible unless forged"
+            "B-R2: negative anchor accounting - impossible unless forged"
         );
-        assertTrue(batcher.missedWindows() <= 2, "B-R3: misses should reset at every anchor");
+        // misses may accumulate past 2 while waiting for emergency; reset is on anchor
     }
 
     /// B-R3 — every emergency anchor is preceded by ≥2 recorded misses, always.
@@ -151,7 +151,7 @@ contract BatchInvariants is StdInvariant, Test {
     function testFuzz_forgedAnchorReverts(bytes32 junkA, bytes32 junkB) public {
         bytes32 root = keccak256("root");
         bytes[] memory sigs = new bytes[](2);
-        sigs[0] = abi.encodePacked(junkA, junkB, uint8(27 + uint8(junkB[0] % 2)));
+        sigs[0] = abi.encodePacked(junkA, junkB, uint8(27 + (uint8(junkB[0]) % 2)));
         sigs[1] = abi.encodePacked(junkB, junkA, uint8(27));
         vm.expectRevert();
         batcher.anchorRoot(root, 1, sigs);

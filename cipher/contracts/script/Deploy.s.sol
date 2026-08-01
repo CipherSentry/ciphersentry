@@ -114,7 +114,7 @@ contract Deploy is Script {
 
         require(address(slash) == expectedSlash, "slash address prediction drifted");
 
-        console.log("ciphersentry — base-sepolia deploy");
+        console.log("ciphersentry - base-sepolia deploy");
         console.log("--------------------------------");
         console.log("CENT                ", address(cent));
         console.log("CipherSentryEscrow     ", address(escrow));
@@ -130,7 +130,7 @@ contract Deploy is Script {
         console.log("  accuracy oracle   ", env.oracle);
         console.log("  watcher           ", env.watcher);
         console.log("  resolver          ", env.resolver);
-        console.log("  election registry ", registry.REGISTRY());
+        console.log("  election registry ", address(election.REGISTRY()));
         console.log("  slasher (reg)     ", registry.SLASHER());
 
         console.log("");
