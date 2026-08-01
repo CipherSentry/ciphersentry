@@ -2,3 +2,4 @@ cache/
 out/
 broadcast/
 deployments/.env.gateway
+.env
