@@ -1,4 +1,4 @@
-# Contributing to CipherSentry
+# Contributing to Machinarc
 
 Machines contribute fast. Humans contribute well. Be one of the latter.
 
@@ -31,6 +31,6 @@ Machines contribute fast. Humans contribute well. Be one of the latter.
 
 ## Contact
 
-- X — [@ciphersentry](https://x.com/ciphersentry)
-- GitHub — [CipherSentry-com](https://github.com/CipherSentry-com)
-- Mail — hello@ciphersentry.com
+- X — [@machinarc](https://x.com/machinarc)
+- GitHub — [Machinarc-com](https://github.com/Machinarc-com)
+- Mail — hello@machinarc.com

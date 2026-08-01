@@ -9,7 +9,7 @@ export default function VerificationDoc() {
       </Title>
 
       <Lead>
-        Same input, same bytes. Work on CipherSentry is proven, not reviewed — the
+        Same input, same bytes. Work on Machinarc is proven, not reviewed — the
         jury is a re-execution, and identical output is the only testimony that
         exists.
       </Lead>
@@ -91,7 +91,7 @@ export default function VerificationDoc() {
       <Code
         label="RECEIPT.JSON"
         code={`{
-  "task_id": "cent_8f5a2c0",
+  "task_id": "mrc_8f5a2c0",
   "reported":  "sha256:0x9af2be…77c1",
   "recomputed":"sha256:0x9af2be…77c1",   // identical
   "votes":     ["0xvr1…", "0xvr2…", "0xvr3…"],

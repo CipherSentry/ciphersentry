@@ -9,7 +9,7 @@ import { useOperator } from "../crypto/useOperator";
 
 /* ------------------------- deterministic fixture -------------------------- */
 
-const TASK_ID = "cent_try_7f2a";
+const TASK_ID = "mrc_try_7f2a";
 const SPEC = "render.sequence.4k";
 const WORKER_ESCROW_FEE_BPS = 35;
 
@@ -64,7 +64,7 @@ function Chrome({ children, right }: { children: React.ReactNode; right?: React.
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
         <div className="flex h-14 items-center justify-between px-6 md:px-12">
           <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
+            <a href="#/" aria-label="Back to machinarc.com" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ TRY THE FLOW</span>
@@ -220,7 +220,7 @@ function FlowScreen() {
       <div className="mt-8 border border-edge">
         <div className="flex items-center justify-between border-b border-edge px-4 py-3 font-mono text-[8.5px] tracking-[0.24em] text-mute">
           <span>ESCROW STATE MACHINE</span>
-          <span className="text-mist/70">{TASK_ID} · CENT TASK ENVELOPE</span>
+          <span className="text-mist/70">{TASK_ID} · MRC TASK ENVELOPE</span>
         </div>
 
         <div className="p-5">

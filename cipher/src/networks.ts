@@ -30,7 +30,7 @@ export const NETWORKS: Net[] = [
     label: "ROBINHOOD CHAIN",
     short: "RH CHAIN",
     status: "SOON",
-    tag: "CENT TGE",
+    tag: "MARC TGE",
     note: "Token launch rail — verifier bonds, slashing and rebates settle here.",
   },
   {

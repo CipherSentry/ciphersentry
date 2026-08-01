@@ -1,6 +1,6 @@
 <div align="center">
 
-![CipherSentry — the trust layer for machines that work](docs/screenshots/logo-mark.jpg)
+![Machinarc — the trust layer for machines that work](docs/screenshots/logo-mark.jpg)
 
 # CIPHER SENTRY
 
@@ -11,11 +11,11 @@ human in the loop.
 
 ![Protocol](https://img.shields.io/badge/PROTOCOL-V0.2-c6ff41?style=flat-square&labelColor=0d110a)
 ![Testnet](https://img.shields.io/badge/TESTNET-BASE--SEPOLIA-c6ff41?style=flat-square&labelColor=0d110a)
-![CENT](https://img.shields.io/badge/CENT-LAUNCH%20GATES%20OPEN-c6ff41?style=flat-square&labelColor=0d110a)
+![MARC](https://img.shields.io/badge/MARC-LAUNCH%20GATES%20OPEN-c6ff41?style=flat-square&labelColor=0d110a)
 ![License](https://img.shields.io/badge/LICENSE-MIT-c6ff41?style=flat-square&labelColor=0d110a)
-[![X](https://img.shields.io/badge/X-@ciphersentry-c6ff41?style=flat-square&labelColor=0d110a)](https://x.com/ciphersentry)
+[![X](https://img.shields.io/badge/X-@machinarc-c6ff41?style=flat-square&labelColor=0d110a)](https://x.com/machinarc)
 
-[ciphersentry.com](https://ciphersentry.com) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [Launch Gates](#/gates) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
+[machinarc.com](https://machinarc.com) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [Launch Gates](#/gates) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
 
 </div>
 
@@ -23,7 +23,7 @@ human in the loop.
 
 ## What this repository is
 
-An interactive, end-to-end implementation of the entire CipherSentry surface —
+An interactive, end-to-end implementation of the entire Machinarc surface —
 **marketing site, ops console, operator mobile app, public ledger explorer,
 launch readiness board, docs center, smart contracts, and backend services** —
 plus a typed SDK that every surface shares. The console reads a simulated
@@ -31,7 +31,7 @@ network today; the transport seam is cut for a real JSON-RPC node tomorrow.
 
 | Surface | Route / path | Description |
 | --- | --- | --- |
-| Landing | `#/` | Live task-trace hero, ambient signal grid, protocol loop, roadmap, CENT rails |
+| Landing | `#/` | Live task-trace hero, ambient signal grid, protocol loop, roadmap, MARC rails |
 | Ops Console | `#/app` (≥ lg) | Terminal-dense cockpit: stream, escrow state machine, verifiers, interventions, kill switch |
 | Mobile Ops | `#/app` (< lg) | Operator phone app: feed, registry, wallet, hold-to-sign disputes |
 | Task Explorer | `#/explorer` | Public ledger: batches, receipts, client-verified merkle proofs |
@@ -69,7 +69,7 @@ LOCKED ── output.report ──▸ PROVEN ── window(64 blocks) ──▸ 
 - **Escrowed capital** — buyers lock USDC before execution; the contract holds it, nobody else.
 - **Deterministic verification** — a quorum re-executes inside a WASM sandbox; identical bytes are ground truth.
 - **Public reputation** — every settlement anchors to the agent graph. Trust is compute, not review.
-- **Multi-network** — rail-agnostic across EVM chains; CENT launches on Robinhood Chain as the verifier-bond, slashing and fee asset. Work always prices in stable USDC.
+- **Multi-network** — rail-agnostic across EVM chains; MARC launches on Robinhood Chain as the verifier-bond, slashing and fee asset. Work always prices in stable USDC.
 
 ## Stack
 
@@ -108,7 +108,7 @@ src/
 ├── docs/             # docs center: shell + 8 documents + SDK live playground
 ├── explorer/         # public ledger: data helpers + explorer page
 ├── pages/            # Investors, Launch Gates (verifier waitlist + G4 counter)
-├── sdk/              # ciphersentry.ts (typed client), transport.ts (stream),
+├── sdk/              # machinarc.ts (typed client), transport.ts (stream),
 │                     # rpc.ts (JSON-RPC skeleton, ?net=rpc|sim), ledger.ts (merkle)
 ├── crypto/           # keys.ts (WebCrypto custody), keystore.ts (AES-GCM export),
 │                     # passkey.ts (WebAuthn gate), useOperator.ts
@@ -133,7 +133,7 @@ docs/screenshots/     # images used by this README
 | Display | Inter Tight | −4% tracking headlines |
 | Accent | Instrument Serif italic | The word *machines*, editorial emphasis |
 | Technical | JetBrains Mono | All labels, data, code |
-| Brand | Hand-drawn vector wordmark "cent" | Chunky display strokes + checkpoint diamond |
+| Brand | Hand-drawn vector wordmark "marc" | Chunky display strokes + checkpoint diamond |
 
 Rules: squared corners, 1px hairlines, no photographic imagery in-product, no
 emojis (lucide icons only), `prefers-reduced-motion` respected everywhere,
@@ -157,13 +157,13 @@ starting March 2026: [#/docs/manifesto](#/docs/manifesto) (scroll to
 
 ## Links
 
-- Site — [ciphersentry.com](https://ciphersentry.com)
-- X — [@ciphersentry](https://x.com/ciphersentry)
-- GitHub — [CipherSentry-com](https://github.com/CipherSentry-com)
+- Site — [machinarc.com](https://machinarc.com)
+- X — [@machinarc](https://x.com/machinarc)
+- GitHub — [Machinarc-com](https://github.com/Machinarc-com)
 - Launch Gates — [#/gates](#/gates)
 - Investors — [#/investors](#/investors)
-- Contact — hello@ciphersentry.com
+- Contact — hello@machinarc.com
 
 ## License
 
-[MIT](LICENSE) © 2025 CipherSentry Labs — no humans were consulted.
+[MIT](LICENSE) © 2025 Machinarc Labs — no humans were consulted.

@@ -46,9 +46,9 @@ export interface DesktopValue {
   verifiers: Verifier[];
   epoch: EpochInfo;
   slashLog: SlashEvent[];
-  emittedCent: number;
+  emittedMarc: number;
   fleetPoints: number;
-  centBal: number;
+  marcBal: number;
   unbondQueue: { id: string; verifier: string; amount: number; completesIn: number }[];
   bondVerifier: (amount: number) => void;
   requestUnbond: (verifierId: string) => void;

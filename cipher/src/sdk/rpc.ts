@@ -11,7 +11,7 @@ import type { TaskEvent } from "../app/data";
 import type { ExBatch } from "./ledger";
 import type { BatchCb, TickCb, Transport } from "./transport";
 
-export const DEFAULT_NODE = "wss://node.base-sepolia.ciphersentry.com";
+export const DEFAULT_NODE = "wss://node.base-sepolia.machinarc.com";
 
 /* ---------------- method map — docs/architecture.md §5 ---------------- */
 
@@ -29,15 +29,15 @@ export const RPC_METHODS = {
 
 export type RpcMethod = (typeof RPC_METHODS)[keyof typeof RPC_METHODS];
 
-/** Errors are the six CEN_E_* codes from the spec — nothing else escapes. */
+/** Errors are the six MRC_E_* codes from the spec — nothing else escapes. */
 export interface RpcErrorObject {
   code:
-    | "CEN_E_TIMEOUT"
-    | "CEN_E_HASH_MISMATCH"
-    | "CEN_E_NONDETERMINISTIC"
-    | "CEN_E_QUORUM_SLOW"
-    | "CEN_E_CAP_BREACH"
-    | "CEN_E_SCHEMA";
+    | "MRC_E_TIMEOUT"
+    | "MRC_E_HASH_MISMATCH"
+    | "MRC_E_NONDETERMINISTIC"
+    | "MRC_E_QUORUM_SLOW"
+    | "MRC_E_CAP_BREACH"
+    | "MRC_E_SCHEMA";
   message: string;
 }
 
@@ -113,7 +113,7 @@ export class RpcTransport implements Transport {
    *   body: JSON.stringify(envelope),
    * });
    * const { result, error } = (await res.json()) as { result?: T; error?: RpcErrorObject };
-   * if (error) throw new CenError(error.code, error.message);
+   * if (error) throw new MrcError(error.code, error.message);
    * return result as T;
    */
   private buildEnvelope<T>(method: RpcMethod, params: T) {
@@ -124,7 +124,7 @@ export class RpcTransport implements Transport {
     const envelope = this.buildEnvelope(method, params);
     void envelope; // kept for WRITE-POINT #2 introspection
     throw new Error(
-      `CENT node unreachable — RpcTransport skeleton (open WRITE-POINT #2 in src/sdk/rpc.ts, method "${method}")`,
+      `MRC node unreachable — RpcTransport skeleton (open WRITE-POINT #2 in src/sdk/rpc.ts, method "${method}")`,
     );
   }
 

@@ -1,7 +1,7 @@
 /**
  * Cipher Sentry mark — v1 ("cipher" wordform).
  * Hand-drawn chunky display letterforms for "cipher", round everywhere,
- * kissing tight. The trailing diamond at the registered position: the CENT
+ * kissing tight. The trailing diamond at the registered position: the MARC
  * checkpoint. Horizontal lockup; svg sizes by height, width follows glyphs.
  */
 const ASPECT = 130 / 40;
@@ -34,7 +34,7 @@ export default function LogoMark({
         <path d="M88.5 30V13.5H95A4.9 4.9 0 0 1 95 23H88.5" />
         <path d="M91.5 23L100 30" />
       </g>
-      {/* the checkpoint diamond — registered position, CENT sentinel */}
+      {/* the checkpoint diamond — registered position, MARC sentinel */}
       <path d="M110.5 21.2L115.7 26.4L110.5 31.6L105.3 26.4Z" fill={accent} stroke="none" />
     </svg>
   );

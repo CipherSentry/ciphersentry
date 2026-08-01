@@ -6,13 +6,13 @@ pragma solidity ^0.8.26;
 /*  Holds verifier bonds. Skin-in-game must be slashable, proportional, and   */
 /*  network-native (DOC-07 §04).                                              */
 /*                                                                            */
-/*  I-R1  Σ bond credits + unbond queue == contract CENT balance              */
-/*  I-R2  no bonded seat below the 25,000 CENT floor                          */
+/*  I-R1  Σ bond credits + unbond queue == contract MARC balance              */
+/*  I-R2  no bonded seat below the 25,000 MARC floor                          */
 /*  I-R3  unbonding is strictly FIFO, one queue per verifier, ≥ 7-day delay   */
 /*  I-R4  a jailed verifier cannot unbond, stake, or hold a seat              */
 /* -------------------------------------------------------------------------- */
 
-interface ICENTToken {
+interface IMarcToken {
     function balanceOf(address account) external view returns (uint256);
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
@@ -35,18 +35,18 @@ contract VerifierRegistry {
 
     /* ---------------------------- constants -------------------------------- */
 
-    uint256 public constant BOND_FLOOR = 25_000 ether; // CENT · DOC-05
+    uint256 public constant BOND_FLOOR = 25_000 ether; // MARC · DOC-05
     uint64 public constant UNBONDING_PERIOD = 7 days; // DOC-05
 
     address public constant GRAVEYARD = address(0x000000000000000000000000000000000000dEaD);
 
     /* ----------------------------- storage --------------------------------- */
 
-    ICENTToken public immutable CENT;
+    IMarcToken public immutable MRC;
     address public immutable ACCURACY_ORACLE; // updates accuracy bps
     address public immutable SLASHER; // SlashExecutor — the only caller of slash()
 
-    mapping(address => uint256) public bondOf; // verifier → bonded CENT
+    mapping(address => uint256) public bondOf; // verifier → bonded MARC
     mapping(address => Status) public statusOf;
     mapping(address => uint16) public accuracyBps; // 0..10_000, oracle-written
     mapping(address => UnbondReq) public queueOf; // ONE entry per verifier (I-R3)
@@ -96,9 +96,9 @@ contract VerifierRegistry {
 
     /* -------------------------- constructor -------------------------------- */
 
-    constructor(address cent, address accuracyOracle, address slasher) {
-        if (cent == address(0) || accuracyOracle == address(0) || slasher == address(0)) revert ZeroAddress();
-        CENT = ICENTToken(cent);
+    constructor(address marc, address accuracyOracle, address slasher) {
+        if (marc == address(0) || accuracyOracle == address(0) || slasher == address(0)) revert ZeroAddress();
+        MRC = IMarcToken(marc);
         ACCURACY_ORACLE = accuracyOracle;
         SLASHER = slasher;
     }
@@ -224,17 +224,17 @@ contract VerifierRegistry {
     /* ------------------------------ internals ------------------------------- */
 
     function _pull(address from, uint256 amount) internal {
-        if (!CENT.transferFrom(from, address(this), amount)) revert PullFailed();
+        if (!MRC.transferFrom(from, address(this), amount)) revert PullFailed();
     }
 
     function _push(address to, uint256 amount) internal {
         if (amount == 0) return;
-        if (!CENT.transfer(to, amount)) revert PushFailed();
+        if (!MRC.transfer(to, amount)) revert PushFailed();
     }
 
     /// @notice The I-R1 triple the invariant suite asserts:
-    ///         CENT.balanceOf(this) == totalBonded + unbondedOutstanding at all times.
+    ///         MRC.balanceOf(this) == totalBonded + unbondedOutstanding at all times.
     function accounting() external view returns (uint256 bonded, uint256 queued, uint256 balance) {
-        return (totalBonded, unbondedOutstanding, CENT.balanceOf(address(this)));
+        return (totalBonded, unbondedOutstanding, MRC.balanceOf(address(this)));
     }
 }

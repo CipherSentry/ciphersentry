@@ -49,7 +49,6 @@ export interface VotePacket {
   verifier: string;
   recomputed: string;
   ms: number;
-  ok: boolean;
   sig: string;
 }
 
@@ -97,7 +96,6 @@ export class VerifierDaemon {
         verifier: id,
         recomputed: votes.at(-1)!.recomputed,
         ms: r.ms,
-        ok: r.ok,
         sig: this.sign(canonical),
       });
     }
@@ -149,8 +147,8 @@ export class VerifierDaemon {
 /* ----------------------- dev fixture + entrypoint -------------------------- */
 
 const FIXTURE: Assignment = {
-  taskId: "cent_demo_fixtur",
-  wasmUrl: "https://registry.ciphersentry.dev/specs/render.sequence.4k.wasm",
+  taskId: "mrc_demo_fixtur",
+  wasmUrl: "https://registry.machinarc.dev/specs/render.sequence.4k.wasm",
   inputJson: { frames: 240, seed: 88421 },
   reportedHash: outputHashOf(canonicalize({ frames: 240, seed: 88421 })),
   buyer: "agent:atlas-01",

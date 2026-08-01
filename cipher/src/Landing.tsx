@@ -11,8 +11,8 @@ export default function Landing() {
 
   useEffect(() => {
     const open = () => setAccessOpen(true);
-    window.addEventListener("cent:request-access", open);
-    return () => window.removeEventListener("cent:request-access", open);
+    window.addEventListener("mrc:request-access", open);
+    return () => window.removeEventListener("mrc:request-access", open);
   }, []);
 
   return (

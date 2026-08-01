@@ -1,5 +1,5 @@
 {
-  "name": "@ciphersentry/services",
+  "name": "@machinarc/services",
   "version": "0.1.0",
   "private": true,
   "type": "module",

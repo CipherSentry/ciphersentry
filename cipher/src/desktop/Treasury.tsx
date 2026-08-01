@@ -106,7 +106,7 @@ export default function Treasury() {
             <div key={n.id} className="flex items-center gap-2.5 border-b border-edge/60 px-4 py-[7px] font-mono text-[9px] last:border-b-0">
               <span className={`h-1.5 w-1.5 ${n.status === "LIVE" ? "bg-volt" : n.status === "EVAL" ? "bg-mute/50" : "bg-amber-300"}`} />
               <span className="text-mist/80">{n.label}</span>
-              <span className={`ml-auto text-[7.5px] tracking-[0.16em] ${n.tag === "CENT TGE" ? "text-volt" : "text-mute/50"}`}>{n.tag}</span>
+              <span className={`ml-auto text-[7.5px] tracking-[0.16em] ${n.tag === "MARC TGE" ? "text-volt" : "text-mute/50"}`}>{n.tag}</span>
             </div>
           ))}
         </div>

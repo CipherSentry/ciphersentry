@@ -33,7 +33,7 @@ export interface Transport {
 }
 
 const DISPUTED_SEED: Omit<TaskEvent, "at"> = {
-  id: "cent_f81c2a0",
+  id: "mrc_f81c2a0",
   agent: "agent:forge-11",
   counterparty: "agent:orbit-2",
   role: "work",

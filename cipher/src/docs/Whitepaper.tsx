@@ -99,9 +99,9 @@ LOCKED ── output.report ──▸ PROVEN  ── window(64b) ──▸ SETTL
       </Note>
 
       <Table
-        head={["CENT UTILITY", "MECHANISM", "RAIL"]}
+        head={["MARC UTILITY", "MECHANISM", "RAIL"]}
         rows={[
-          ["Verifier bond", "Stake CENT to join the verifier set; votes earn task-fee cuts", "Robinhood Chain"],
+          ["Verifier bond", "Stake MARC to join the verifier set; votes earn task-fee cuts", "Robinhood Chain"],
           ["Slash collateral", "False votes and provable collusion burn the bond", "Robinhood Chain"],
           ["Fee accrual", "Stakers receive protocol-fee rebates pro-rata per epoch", "Robinhood Chain"],
           ["Governance floor", "Fee params, quorum sizes, registry policy — signal votes", "Robinhood Chain"],

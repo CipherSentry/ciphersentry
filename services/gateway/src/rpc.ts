@@ -1,7 +1,7 @@
 /**
  * JSON-RPC dispatch — handlers for the wire surface defined in
  * docs/architecture.md §5 and consumed by src/sdk/rpc.ts WRITE-POINT #2.
- * Errors are the six CEN_E_* codes. Nothing else escapes.
+ * Errors are the six MRC_E_* codes. Nothing else escapes.
  */
 
 import { SimDriver, randHex, sh, type ReceiptRow, type TaskRow } from "./sim";
@@ -24,20 +24,20 @@ export interface ErrResult {
 }
 
 export type RpcCode =
-  | "CEN_E_TIMEOUT"
-  | "CEN_E_HASH_MISMATCH"
-  | "CEN_E_NONDETERMINISTIC"
-  | "CEN_E_QUORUM_SLOW"
-  | "CEN_E_CAP_BREACH"
-  | "CEN_E_SCHEMA";
+  | "MRC_E_TIMEOUT"
+  | "MRC_E_HASH_MISMATCH"
+  | "MRC_E_NONDETERMINISTIC"
+  | "MRC_E_QUORUM_SLOW"
+  | "MRC_E_CAP_BREACH"
+  | "MRC_E_SCHEMA";
 
 export const M = {
-  TIMEOUT: "CEN_E_TIMEOUT",
-  HASH_MISMATCH: "CEN_E_HASH_MISMATCH",
-  NONDET: "CEN_E_NONDETERMINISTIC",
-  QUORUM_SLOW: "CEN_E_QUORUM_SLOW",
-  CAP_BREACH: "CEN_E_CAP_BREACH",
-  SCHEMA: "CEN_E_SCHEMA",
+  TIMEOUT: "MRC_E_TIMEOUT",
+  HASH_MISMATCH: "MRC_E_HASH_MISMATCH",
+  NONDET: "MRC_E_NONDETERMINISTIC",
+  QUORUM_SLOW: "MRC_E_QUORUM_SLOW",
+  CAP_BREACH: "MRC_E_CAP_BREACH",
+  SCHEMA: "MRC_E_SCHEMA",
 } as const;
 
 const err = (code: RpcCode, message: string): ErrResult => ({ ok: false, error: { code, message } });
@@ -65,7 +65,7 @@ export function makeDispatcher(ctx: RpcContext) {
 
   const addTask = (partial: Partial<TaskRow>): TaskRow => {
     const t: TaskRow = {
-      id: partial.id ?? `cent_${randHex(7)}`,
+      id: partial.id ?? `mrc_${randHex(7)}`,
       agent: String(partial.agent ?? "agent:atlas-01"),
       counterparty: String(partial.counterparty ?? "agent:orbit-2"),
       role: (partial.role as TaskRow["role"]) ?? "buy",
@@ -195,7 +195,7 @@ export function makeDispatcher(ctx: RpcContext) {
       case "stake": {
         const { amount, tier = "T2" } = p as { amount?: string; tier?: string };
         const n = parseFloat(String(amount ?? "0"));
-        if (!Number.isFinite(n) || n < 25_000) return err(M.CAP_BREACH, "minimum verifier bond is 25,000 CENT");
+        if (!Number.isFinite(n) || n < 25_000) return err(M.CAP_BREACH, "minimum verifier bond is 25,000 MARC");
         return ok({ epoch: ctx.epoch, bond: amount, tier });
       }
 

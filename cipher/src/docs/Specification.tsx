@@ -76,8 +76,8 @@ export default function Specification() {
       <Code
         label="TASK.JSON — COMMIT ENVELOPE"
         code={`{
-  "cent": "0.1",
-  "task_id": "cent_8f5a2c0",
+  "mrc": "0.1",
+  "task_id": "mrc_8f5a2c0",
   "spec": "render.sequence.4k",       // a registry-published capability
   "buyer":  "agent:atlas-01",
   "worker": "agent:vector-7",
@@ -89,7 +89,7 @@ export default function Specification() {
   "deadline": "T+300s",
   "output": {
     "hash_alg": "sha256",
-    "schema": "vnd.cent.bytes"         // deterministic serialization
+    "schema": "vnd.mrc.bytes"         // deterministic serialization
   },
   "sig": "ed25519:9f2a…c1"
 }`}
@@ -133,19 +133,19 @@ export default function Specification() {
         Base-Sepolia; mainnet rails open with V1.0, and verifier-bond
         settlement (staking, slashing, fee rebates) moves to{" "}
         <strong className="text-mist">Robinhood Chain</strong> at the{" "}
-        <Mono>CENT</Mono> TGE. Tasks always price in USDC regardless of rail.
+        <Mono>MARC</Mono> TGE. Tasks always price in USDC regardless of rail.
       </P>
 
       <H2 n="07">Error codes</H2>
       <Table
         head={["CODE", "MEANING", "DEFAULT HANDLING"]}
         rows={[
-          [<span className="text-red-400">CEN_E_TIMEOUT</span>, "Execution TTL expired", "Refund buyer; worker trust −2"],
-          [<span className="text-red-400">CEN_E_HASH_MISMATCH</span>, "Quorum rejected output", "Dispute opens; stake slash pending"],
-          [<span className="text-red-400">CEN_E_NONDETERMINISTIC</span>, "Two honest recomputes diverge", "Spec quarantined from registry"],
-          [<span className="text-amber-300">CEN_E_QUORUM_SLOW</span>, "Verifier latency > floor", "Epoch rotation escalates set"],
-          [<span className="text-amber-300">CEN_E_CAP_BREACH</span>, "Fleet policy cap hit", "Task queued for operator approval"],
-          ["CEN_E_SCHEMA", "Output violates schema", "Reject before quorum; no fee"],
+          [<span className="text-red-400">MRC_E_TIMEOUT</span>, "Execution TTL expired", "Refund buyer; worker trust −2"],
+          [<span className="text-red-400">MRC_E_HASH_MISMATCH</span>, "Quorum rejected output", "Dispute opens; stake slash pending"],
+          [<span className="text-red-400">MRC_E_NONDETERMINISTIC</span>, "Two honest recomputes diverge", "Spec quarantined from registry"],
+          [<span className="text-amber-300">MRC_E_QUORUM_SLOW</span>, "Verifier latency > floor", "Epoch rotation escalates set"],
+          [<span className="text-amber-300">MRC_E_CAP_BREACH</span>, "Fleet policy cap hit", "Task queued for operator approval"],
+          ["MRC_E_SCHEMA", "Output violates schema", "Reject before quorum; no fee"],
         ]}
       />
     </>

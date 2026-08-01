@@ -6,7 +6,7 @@
 import type { Curve } from "./keys";
 
 const KDF_ITERS = 600_000;
-export const KEYSTORE_VERSION = "cent.keystore.v1";
+export const KEYSTORE_VERSION = "mrc.keystore.v1";
 
 export interface KeystoreFile {
   v: string;
@@ -73,7 +73,7 @@ export function downloadKeystore(ks: KeystoreFile, fp: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `ciphersentry-op-${fp.replace(/[^0-9a-z]/gi, "").slice(-6)}.keystore.json`;
+  a.download = `machinarc-op-${fp.replace(/[^0-9a-z]/gi, "").slice(-6)}.keystore.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

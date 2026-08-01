@@ -1,5 +1,5 @@
 /**
- * @ciphersentry/sdk — typed client (simulation binding).
+ * @machinarc/sdk — typed client (simulation binding).
  *
  * This module is the actual client surface documented in DOC-02. It runs
  * against the in-browser simulation network, but every method, event name
@@ -100,7 +100,7 @@ export type EventName =
   | "task.settled"
   | "dispute.opened";
 
-export interface CipherSentryOptions {
+export interface MachinarcOptions {
   key: string;
   network?: NetworkId;
   quorum?: number;
@@ -140,11 +140,11 @@ export function outputHash(input: unknown): string {
 
 /* ---------------- error ---------------- */
 
-export class CenError extends Error {
+export class MrcError extends Error {
   code: string;
   constructor(code: string, message: string) {
     super(message);
-    this.name = "CenError";
+    this.name = "MrcError";
     this.code = code;
   }
 }
@@ -160,9 +160,9 @@ const SPEC_PREFIX: Record<string, string> = {
   AUDIT: "audit.",
 };
 
-let SHARED: CipherSentry | null = null;
+let SHARED: Machinarc | null = null;
 
-export class CipherSentry {
+export class Machinarc {
   private listeners = new Map<EventName, Set<(payload: unknown) => void>>();
   private quorum: number;
   readonly network: NetworkId;
@@ -171,20 +171,20 @@ export class CipherSentry {
 
   /* ---- shared instance: every surface in the app reads ONE network ---- */
 
-  static shared(opts?: CipherSentryOptions): CipherSentry {
+  static shared(opts?: MachinarcOptions): Machinarc {
     if (!SHARED) {
       const mode = readNetMode();
       const transport: Transport =
         mode === "rpc"
           ? new RpcTransport({ url: readNodeUrl() })
           : new SimTransport({ cap: 34, tickMs: 2800 });
-      SHARED = new CipherSentry(opts ?? { key: "op:demo" }, transport);
+      SHARED = new Machinarc(opts ?? { key: "op:demo" }, transport);
     }
     return SHARED;
   }
 
-  constructor(opts: CipherSentryOptions, transport?: Transport) {
-    if (!opts.key) throw new CenError("CEN_E_KEY", "key is required: ed25519 or op: device key");
+  constructor(opts: MachinarcOptions, transport?: Transport) {
+    if (!opts.key) throw new MrcError("MRC_E_KEY", "key is required: ed25519 or op: device key");
     this.network = opts.network ?? "base-sepolia";
     this.quorum = opts.quorum ?? 3;
     this.transport = transport ?? new SimTransport();
@@ -240,14 +240,14 @@ export class CipherSentry {
   task = {
     commit: async (params: CommitParams): Promise<Task> => {
       if (!SPECS.includes(params.spec)) {
-        throw new CenError("CEN_E_SCHEMA", `spec "${params.spec}" is not in the registry or is nondeterministic`);
+        throw new MrcError("MRC_E_SCHEMA", `spec "${params.spec}" is not in the registry or is nondeterministic`);
       }
       const worker = AGENTS.find((a) => a.name === params.worker);
-      if (!worker) throw new CenError("CEN_E_NOT_FOUND", `worker ${params.worker} unknown`);
-      if (worker.status === "PAUSED") throw new CenError("CEN_E_CAP_BREACH", `${params.worker} is not accepting tasks`);
+      if (!worker) throw new MrcError("MRC_E_NOT_FOUND", `worker ${params.worker} unknown`);
+      if (worker.status === "PAUSED") throw new MrcError("MRC_E_CAP_BREACH", `${params.worker} is not accepting tasks`);
 
       const task: Task = {
-        id: `cent_${randHex(7)}`,
+        id: `mrc_${randHex(7)}`,
         spec: params.spec,
         buyer: this.buyerId,
         worker: params.worker,
@@ -296,7 +296,7 @@ export class CipherSentry {
     while (task.state === "COMMITTED" || task.state === "EXECUTING") {
       if (Date.now() > deadline) {
         task.state = "FAILED";
-        throw new CenError("CEN_E_TIMEOUT", "execution TTL expired — escrow auto-refunded");
+        throw new MrcError("MRC_E_TIMEOUT", "execution TTL expired — escrow auto-refunded");
       }
       await sleep(120);
     }
@@ -311,8 +311,8 @@ export class CipherSentry {
     if (fault || reported !== recomputed) {
       task.state = "DISPUTED";
       this.emit("dispute.opened", { task, expected: recomputed, reported });
-      throw new CenError(
-        "CEN_E_HASH_MISMATCH",
+      throw new MrcError(
+        "MRC_E_HASH_MISMATCH",
         `quorum ${q - 1}/${q} rejected the reported output — escrow frozen, intervention opened`,
       );
     }
@@ -343,7 +343,7 @@ export class CipherSentry {
   ): Promise<{ epoch: number; bond: string; tier: Tier }> => {
     const n = parseFloat(amount);
     if (!Number.isFinite(n) || n < 25_000) {
-      throw new CenError("CEN_E_BOND_FLOOR", "minimum verifier bond is 25,000 CENT");
+      throw new MrcError("MRC_E_BOND_FLOOR", "minimum verifier bond is 25,000 MARC");
     }
     await sleep(300);
     return { epoch: 88421, bond: amount, tier: opts.tier ?? "T2" };

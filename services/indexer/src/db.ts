@@ -87,8 +87,8 @@ function authHeaders(user: string, password: string): Record<string, string> {
 /* ------------------------- schema application ------------------------------ */
 
 export const CH_DDL_STATEMENTS: string[] = [
-  "CREATE DATABASE IF NOT EXISTS ciphersentry",
-  `CREATE TABLE IF NOT EXISTS ciphersentry.receipts (
+  "CREATE DATABASE IF NOT EXISTS machinarc",
+  `CREATE TABLE IF NOT EXISTS machinarc.receipts (
     receipt_id String, task_id String, buyer String, worker String,
     spec String, amount Decimal(20,6), state String,
     reported String, recomputed String,
@@ -96,12 +96,12 @@ export const CH_DDL_STATEMENTS: string[] = [
     ms UInt32, epoch UInt64, batch_id String, leaf String,
     path Array(String), settled_at DateTime64(3)
   ) ENGINE = MergeTree() ORDER BY (epoch, batch_id, receipt_id)`,
-  `CREATE TABLE IF NOT EXISTS ciphersentry.trust_series (
+  `CREATE TABLE IF NOT EXISTS machinarc.trust_series (
     agent_id String, epoch UInt64,
     stake Decimal(20,6), success Decimal(5,2), settled_count UInt32,
     trust_score Decimal(6,4), computed_at DateTime64(3)
   ) ENGINE = MergeTree() ORDER BY (agent_id, epoch)`,
-  `CREATE TABLE IF NOT EXISTS ciphersentry.batch_stats (
+  `CREATE TABLE IF NOT EXISTS machinarc.batch_stats (
     batch_id String, epoch UInt64, count UInt32, total Decimal(20,6),
     settled_at DateTime64(3)
   ) ENGINE = MergeTree() ORDER BY epoch`,
@@ -116,7 +116,7 @@ export async function applyChSchema(ch: ClickHouseHttp): Promise<void> {
 if (process.argv.includes("--apply-ch-schema")) {
   const ch = new ClickHouseHttp(
     process.env.CH_URL ?? "http://127.0.0.1:8123",
-    process.env.CH_DB ?? "ciphersentry",
+    process.env.CH_DB ?? "machinarc",
     process.env.CH_USER ?? "default",
     process.env.CH_PASSWORD ?? "",
   );

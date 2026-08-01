@@ -70,14 +70,14 @@ describe("epoch roll", () => {
 
     // fund splits across non-slashed electees, within integer rounding
     const fund = epochEmission(3);
-    const distributed = r.distribution.reduce((s, x) => s + x.cent, 0);
+    const distributed = r.distribution.reduce((s, x) => s + x.marc, 0);
     expect(Math.abs(distributed - fund)).toBeLessThanOrEqual(3);
     expect(r.emitted).toBe(fund);
 
-    // correct voters earned accuracy and lifetime CENT
+    // correct voters earned accuracy and lifetime MARC
     for (const d of r.distribution) {
       const v = r.pool.find((x) => x.id === d.id)!;
-      expect(v.accruedCent).toBeGreaterThan(0);
+      expect(v.accruedMarc).toBeGreaterThan(0);
       expect(d.usdc).toBeGreaterThan(0);
     }
     expect(r.slashes).toHaveLength(0);

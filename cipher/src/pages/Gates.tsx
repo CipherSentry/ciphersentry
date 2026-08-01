@@ -76,7 +76,7 @@ export default function Gates() {
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ LAUNCH GATES</span>
           </div>
           <div className="flex items-center gap-5">
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
+            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — Machinarc-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
             <a
@@ -103,7 +103,7 @@ export default function Gates() {
             <span className="absolute h-full w-full animate-ping bg-volt opacity-60" />
             <span className="relative h-1.5 w-1.5 bg-volt" />
           </span>
-          READINESS BOARD · GATES TO CENT · UPDATES IN BLOCK HEIGHT
+          READINESS BOARD · GATES TO MARC · UPDATES IN BLOCK HEIGHT
         </div>
 
         <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-end">
@@ -116,7 +116,7 @@ export default function Gates() {
             </h1>
             <p className="mt-5 max-w-[520px] text-[14px] leading-[1.8] text-mute">
               Gate #4 can't be gamed or negotiated: sixty public days of epoch
-              accrual, verifiable by anyone, before CENT trades. The clock
+              accrual, verifiable by anyone, before MARC trades. The clock
               below is the clock — start-anchored, ticked by this page, signed
               by an operator key.
             </p>
@@ -212,7 +212,7 @@ export default function Gates() {
                 <div className="space-y-4 p-5">
                   <p className="text-[12px] leading-[1.7] text-mute">
                     Names now, bonds at the B2 deploy. Waitlist order is
-                    signed and public; bonds post in order, 25,000 CENT floor.
+                    signed and public; bonds post in order, 25,000 MARC floor.
                   </p>
                   <div>
                     <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.22em] text-mute">NODE HANDLE</label>
@@ -271,7 +271,7 @@ export default function Gates() {
                   </span>
                   <div className="mt-4 font-display text-[18px] font-semibold">In the queue.</div>
                   <div className="mt-1.5 font-mono text-[9px] tracking-[0.18em] text-mute">
-                    POSITION #{queueNumber} · BOND {bond.toLocaleString()} CENT
+                    POSITION #{queueNumber} · BOND {bond.toLocaleString()} MARC
                   </div>
                   {sig && (
                     <div className="mt-4 w-full border border-volt/40 bg-volt/[0.05] p-3.5 text-left font-mono text-[8.5px] leading-[1.9]">

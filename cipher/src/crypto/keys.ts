@@ -4,7 +4,7 @@
  * Keys are generated on-device, persisted locally, and never transmitted.
  */
 
-import { canonicalize } from "../sdk/ciphersentry";
+import { canonicalize } from "../sdk/machinarc";
 import { randHex } from "../app/data";
 
 export type Curve = "Ed25519" | "P-256";
@@ -29,7 +29,7 @@ export interface SignedRuling {
   tx: string;
 }
 
-const LS_KEY = "cent.opkey.v2";
+const LS_KEY = "mrc.opkey.v2";
 let cached: OperatorKey | null = null;
 let pending: Promise<OperatorKey> | null = null;
 
@@ -207,7 +207,7 @@ export async function installImportedKey(
   const pub = await crypto.subtle.importKey("raw", hex2buf(pubHex) as BufferSource, alg, true, ["verify"]);
 
   // prove the pair before installing: sign, verify, refuse on mismatch
-  const probe = new TextEncoder().encode("cent:install:probe");
+  const probe = new TextEncoder().encode("mrc:install:probe");
   const sig = await crypto.subtle.sign(signAlgo(curve), priv, probe);
   const ok = await crypto.subtle.verify(signAlgo(curve), pub, sig, probe);
   if (!ok) throw new Error("public component does not match private key — keystore rejected");

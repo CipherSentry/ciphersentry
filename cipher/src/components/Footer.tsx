@@ -30,13 +30,13 @@ const COLS: { h: string; links: [string, string][] }[] = [
       ["Manifesto", "#/docs/manifesto"],
       ["GitHub", SOCIALS.github],
       ["X / @ciphersentry", SOCIALS.x],
-      ["Contact", "mailto:hello@ciphersentry.com"],
+      ["Contact", "mailto:hello@machinarc.com"],
     ],
   },
 ];
 
 const SOCIAL_ICONS = [
-  { Icon: XIcon, href: SOCIALS.x, label: "X — @ciphersentry" },
+  { Icon: XIcon, href: SOCIALS.x, label: "X — @machinarc" },
   { Icon: GithubIcon, href: SOCIALS.github, label: "GitHub — CipherSentry-com" },
   { Icon: Globe, href: "#top", label: "ciphersentry.com" },
 ];

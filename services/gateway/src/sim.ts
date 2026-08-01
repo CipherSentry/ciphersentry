@@ -128,7 +128,7 @@ export class SimDriver {
       this.state.tasks.push(t);
     }
     const f81 = {
-      id: "cent_f81c2a0",
+      id: "mrc_f81c2a0",
       agent: "agent:forge-11",
       counterparty: "agent:orbit-2",
       role: "work" as const,
@@ -148,7 +148,7 @@ export class SimDriver {
 
   private genTask(at: number): TaskRow {
     return {
-      id: `cent_${randHex(7)}`,
+      id: `mrc_${randHex(7)}`,
       agent: `${pick(AGENTS)}`,
       counterparty: `${pick(AGENTS)}`,
       role: Math.random() > 0.45 ? "work" : "buy",

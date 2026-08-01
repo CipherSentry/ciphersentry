@@ -1,5 +1,5 @@
 /**
- * CipherSentry Edge Gateway — B0.
+ * Machinarc Edge Gateway — B0.
  *
  *   POST /rpc    — JSON-RPC 2.0 over the §5 method map (dispatch in rpc.ts)
  *   GET  /events — WebSocket hub (task.event / batch.event frames)
@@ -53,13 +53,13 @@ async function boot(): Promise<void> {
 
   /* --------------------------------- API --------------------------------- */
 
-  fastify.get("/health", async () => ({ ok: true, service: "ciphersentry-gateway", epoch: EPOCH, clients: undefined }));
+  fastify.get("/health", async () => ({ ok: true, service: "machinarc-gateway", epoch: EPOCH, clients: undefined }));
 
   fastify.post("/rpc", async (req, reply) => {
     const env = req.body as { jsonrpc?: string; id: number | string; method?: string; params?: Record<string, unknown> };
     if (!env?.jsonrpc || typeof env.method !== "string") {
       reply.code(400);
-      return { jsonrpc: "2.0", id: null, error: { code: "CEN_E_SCHEMA", message: "not a JSON-RPC 2.0 envelope" } };
+      return { jsonrpc: "2.0", id: null, error: { code: "MRC_E_SCHEMA", message: "not a JSON-RPC 2.0 envelope" } };
     }
     const out = await dispatch({
       jsonrpc: "2.0",
@@ -86,12 +86,12 @@ async function boot(): Promise<void> {
   });
 
   fastify.setNotFoundHandler((_req, reply) => {
-    reply.code(404).send({ jsonrpc: "2.0", id: null, error: { code: "CEN_E_SCHEMA", message: "unknown route" } });
+    reply.code(404).send({ jsonrpc: "2.0", id: null, error: { code: "MRC_E_SCHEMA", message: "unknown route" } });
   });
 
   await fastify.listen({ host: HOST, port: PORT });
 
-  console.log("ciphersentry-gateway");
+  console.log("machinarc-gateway");
   console.log(`  rpc      → http://${HOST}:${PORT}/rpc`);
   console.log(`  events   → ws://${HOST}:${PORT}/events  (subscribe: ["tasks","batches"])`);
   console.log(`  epoch    → ${EPOCH}`);
@@ -111,7 +111,7 @@ async function registerChainBinding(hub: SubscriptionHub, sim: SimDriver): Promi
   const watcher = new ChainWatcher(cfg, {
     onTaskFrame: (t) => {
       // sim and chain never collide on ids: on-chain tasks are bytes32 hex
-      // and the sim's live feed reads cent_* strings.
+      // and the sim's live feed reads mrc_* strings.
       hubBroadcast(hub, "tasks", t);
     },
     onBatchFrame: (b) => {

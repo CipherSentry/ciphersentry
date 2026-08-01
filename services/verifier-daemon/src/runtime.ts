@@ -8,7 +8,7 @@
  *     honest recomputes of the same task produce identical behavior.
  *
  * Production note: true instruction fueling requires `wasm-instrumentation`
- * metering injection. This runtime exposes `cent_budget_checkpoint` and the
+ * metering injection. This runtime exposes `mrc_budget_checkpoint` and the
  * BUDGET_HOOK seam below; swap the no-op for the metered variant without
  * touching daemon code.
  */
@@ -77,10 +77,10 @@ export class SeededRng {
 /* ------------------------- frozen syscall table --------------------------- */
 
 export const FROZEN_IMPORTS = [
-  "cent_now",
-  "cent_rng_next",
-  "cent_log",
-  "cent_budget_checkpoint",
+  "mrc_now",
+  "mrc_rng_next",
+  "mrc_log",
+  "mrc_budget_checkpoint",
 ] as const;
 
 export type FrozenImport = (typeof FROZEN_IMPORTS)[number];
@@ -137,13 +137,13 @@ export class DeterministicSandbox {
 
     const env: Record<string, WebAssembly.ImportValue> = {
       memory,
-      cent_now: () => taskNow, // always the same answer for this task
-      cent_rng_next: () => rng.next(),
-      cent_log: (ptr: number, len: number) => {
+      mrc_now: () => taskNow, // always the same answer for this task
+      mrc_rng_next: () => rng.next(),
+      mrc_log: (ptr: number, len: number) => {
         logs.push(decodeMemory(memory, ptr, len).slice(0, 240));
       },
       // BUDGET_HOOK: replace with metered countdown once fueling is injected.
-      cent_budget_checkpoint: (remaining: number) => {
+      mrc_budget_checkpoint: (remaining: number) => {
         if (remaining <= 0) budgetOk = false;
         return budgetOk ? 1 : 0;
       },
@@ -163,9 +163,9 @@ export class DeterministicSandbox {
     ensureMemory(memory, INPUT_PTR + inputBytes.length);
     new Uint8Array(memory.buffer).set(inputBytes, INPUT_PTR);
 
-    const execute = instance.exports.cent_execute as (ptr: number, len: number) => number;
+    const execute = instance.exports.mrc_execute as (ptr: number, len: number) => number;
     if (typeof execute !== "function") {
-      return { ok: false, error: `module must export cent_execute(ptr,u32)->u64`, ms: Date.now() - started, logs };
+      return { ok: false, error: `module must export mrc_execute(ptr,u32)->u64`, ms: Date.now() - started, logs };
     }
 
     let packed: number;
@@ -183,7 +183,8 @@ export class DeterministicSandbox {
     const outPtr = packed >>> 0;
     const memOut = instance.exports.memory as WebAssembly.Memory | undefined;
     const mem = memOut ?? memory;
-    const prefix = decodeMemory(mem, outPtr, readU32(mem, outPtr));
+    const outJsonString = decodeMemory(mem, outPtr, readU32(mem, outPtr));
+    const prefix = new TextDecoder().decode(new Uint8Array(outJsonString));
 
     let outputJson: unknown;
     try {

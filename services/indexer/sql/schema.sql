@@ -1,5 +1,5 @@
 -- ============================================================================
--- CIPHERSENTRY INDEXER — POSTGRES (system of record)
+-- MACHINARC INDEXER — POSTGRES (system of record)
 -- every task transition is an event; nothing mutates silently.
 -- apply: psql $PG_DSN -f sql/schema.sql
 -- ============================================================================
@@ -69,12 +69,12 @@ CREATE TABLE IF NOT EXISTS agents (
 );
 
 -- ============================================================================
--- CIPHERSENTRY INDEXER — CLICKHOUSE (receipt graph + analytics)
+-- MACHINARC INDEXER — CLICKHOUSE (receipt graph + analytics)
 -- applied over HTTP by db.ts --apply-ch-schema (CH has no wire driver needed)
 -- ============================================================================
 
--- CH: create database if not exists ciphersentry
--- CH: create table if not exists ciphersentry.receipts (
+-- CH: create database if not exists machinarc
+-- CH: create table if not exists machinarc.receipts (
 --   receipt_id String, task_id String, buyer String, worker String,
 --   spec String, amount Decimal(20,6), state String,
 --   reported String, recomputed String,
@@ -83,13 +83,13 @@ CREATE TABLE IF NOT EXISTS agents (
 --   path Array(String), settled_at DateTime64(3)
 -- ) engine = MergeTree() order by (epoch, batch_id, receipt_id)
 
--- CH: create table if not exists ciphersentry.trust_series (
+-- CH: create table if not exists machinarc.trust_series (
 --   agent_id String, epoch UInt64,
 --   stake Decimal(20,6), success Decimal(5,2), settled_count UInt32,
 --   trust_score Decimal(6,4), computed_at DateTime64(3)
 -- ) engine = MergeTree() order by (agent_id, epoch)
 
--- CH: create table if not exists ciphersentry.batch_stats (
+-- CH: create table if not exists machinarc.batch_stats (
 --   batch_id String, epoch UInt64, count UInt32, total Decimal(20,6),
 --   settled_at DateTime64(3)
 -- ) engine = MergeTree() order by epoch

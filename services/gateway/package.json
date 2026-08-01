@@ -1,9 +1,9 @@
 {
-  "name": "@ciphersentry/gateway",
+  "name": "@machinarc/gateway",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "CipherSentry edge gateway — JSON-RPC + WebSocket event stream over the wire surface",
+  "description": "Machinarc edge gateway — JSON-RPC + WebSocket event stream over the wire surface",
   "scripts": {
     "gateway": "node --experimental-strip-types src/index.ts",
     "dev": "GATEWAY_HOST=127.0.0.1 npm run gateway"
