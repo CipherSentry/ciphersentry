@@ -12,7 +12,7 @@ import { SimTransport } from "./transport";
 import type { BatchCb, TickCb, Transport } from "./transport";
 import type { ExBatch } from "./ledger";
 import type { TaskEvent } from "../app/data";
-import { DEFAULT_NODE, RpcTransport } from "./rpc";
+import { DEFAULT_NODE, RpcTransport, RpcWireError } from "./rpc";
 
 export type NetMode = "sim" | "rpc";
 
@@ -205,10 +205,30 @@ export class CipherSentry {
     onBatch: (cb: BatchCb): (() => void) => this.transport.onBatch(cb),
   };
 
+  private get rpc(): RpcTransport | null {
+    return this.transport.kind === "rpc" ? (this.transport as RpcTransport) : null;
+  }
+
+  private rethrow(e: unknown): never {
+    if (e instanceof CenError) throw e;
+    if (e instanceof RpcWireError) throw new CenError(e.code, e.message);
+    throw e;
+  }
+
   /* ---- registry ---- */
 
   registry = {
     query: async (filter: QueryFilter = {}): Promise<AgentInfo[]> => {
+      const rpc = this.rpc;
+      if (rpc) {
+        try {
+          const rows = (await rpc.rpcRegistryQuery(filter)) as AgentInfo[];
+          return rows;
+        } catch (e) {
+          this.rethrow(e);
+        }
+      }
+
       await sleep(180);
       const minTierIdx = filter.minTier ? TIER_ORDER.indexOf(filter.minTier) : 0;
       const maxPrice = filter.maxPrice ? parseFloat(filter.maxPrice) : Infinity;
@@ -239,6 +259,58 @@ export class CipherSentry {
 
   task = {
     commit: async (params: CommitParams): Promise<Task> => {
+      const rpc = this.rpc;
+      if (rpc) {
+        try {
+          const res = await rpc.rpcTaskCommit({
+            worker: params.worker,
+            spec: params.spec,
+            input: params.input,
+            escrow: params.escrow,
+            buyer: this.buyerId,
+            deadline: params.deadline,
+          });
+          const task: Task = {
+            id: String(res.task_id),
+            spec: params.spec,
+            buyer: this.buyerId,
+            worker: params.worker,
+            escrowAmount: params.escrow.amount,
+            state: "COMMITTED",
+            createdAt: Date.now(),
+          };
+          this.emit("task.committed", task);
+          this.transport.addTask({
+            id: task.id,
+            agent: params.worker,
+            counterparty: this.buyerId,
+            role: "work",
+            spec: params.spec,
+            amount: params.escrow.amount,
+            state: "RUNNING",
+            at: Date.now(),
+            hash: `0x${randHex(6)}…${randHex(4)}`,
+          });
+          // worker report over the wire after local execution hash
+          void (async () => {
+            await sleep(700 + Math.random() * 500);
+            const hash = outputHash(params.input);
+            task.state = "VERIFYING";
+            task.reportedHash = hash;
+            try {
+              await rpc.rpcTaskReport(task.id, hash);
+            } catch {
+              /* stream may already show VERIFYING */
+            }
+            this.transport.setTaskState(task.id, "VERIFYING");
+            this.emit("task.reported", { task, hash });
+          })();
+          return task;
+        } catch (e) {
+          this.rethrow(e);
+        }
+      }
+
       if (!SPECS.includes(params.spec)) {
         throw new CenError("CEN_E_SCHEMA", `spec "${params.spec}" is not in the registry or is nondeterministic`);
       }
@@ -257,7 +329,6 @@ export class CipherSentry {
       };
       this.emit("task.committed", task);
 
-      // register into the shared network stream — consoles see it live
       this.transport.addTask({
         id: task.id,
         agent: params.worker,
@@ -270,7 +341,6 @@ export class CipherSentry {
         hash: `0x${randHex(6)}…${randHex(4)}`,
       });
 
-      // worker executes asynchronously and reports its output hash
       void (async () => {
         await sleep(700 + Math.random() * 500);
         task.state = "VERIFYING";
@@ -291,7 +361,51 @@ export class CipherSentry {
     opts: { quorum?: number } = {},
   ): Promise<Receipt> => {
     const q = opts.quorum ?? this.quorum;
-    // wait for the async report to land (TTL-bound)
+    const rpc = this.rpc;
+
+    if (rpc) {
+      try {
+        const deadline = Date.now() + 5_000;
+        while (task.state === "COMMITTED" || task.state === "EXECUTING") {
+          if (Date.now() > deadline) {
+            task.state = "FAILED";
+            throw new CenError("CEN_E_TIMEOUT", "execution TTL expired — escrow auto-refunded");
+          }
+          await sleep(120);
+        }
+        if (!task.reportedHash) {
+          task.reportedHash = outputHash({ taskId: task.id });
+          await rpc.rpcTaskReport(task.id, task.reportedHash);
+          task.state = "VERIFYING";
+        }
+        const start = Date.now();
+        const res = await rpc.rpcVerify(task.id, q);
+        const receipt: Receipt = {
+          taskId: task.id,
+          status: "SETTLED",
+          reported: String(res.reported ?? task.reportedHash),
+          recomputed: String(res.recomputed ?? task.reportedHash),
+          votes: Array.isArray(res.votes) ? (res.votes as string[]) : [],
+          ms: Number(res.ms ?? Date.now() - start),
+          epoch: Number(res.epoch ?? 88421),
+          tx: String(res.tx ?? `0x${randHex(6)}…${randHex(4)}`),
+        };
+        task.state = "SETTLED";
+        this.transport.setTaskState(task.id, "SETTLED");
+        this.emit("task.verified", { task, ms: receipt.ms });
+        this.emit("task.settled", receipt);
+        return receipt;
+      } catch (e) {
+        if (e instanceof RpcWireError && e.code === "CEN_E_HASH_MISMATCH") {
+          task.state = "DISPUTED";
+          this.transport.setTaskState(task.id, "DISPUTED");
+          this.emit("dispute.opened", { task });
+          throw new CenError(e.code, e.message);
+        }
+        this.rethrow(e);
+      }
+    }
+
     const deadline = Date.now() + 5_000;
     while (task.state === "COMMITTED" || task.state === "EXECUTING") {
       if (Date.now() > deadline) {
@@ -304,8 +418,11 @@ export class CipherSentry {
     const start = Date.now();
     await sleep(420 + Math.random() * 380);
 
-    const fault = Math.random() < 0.06; // ~6% injected nondeterminism for realism
-    const recomputed = outputHash({ /* worker input preimage */ ...(task as unknown as Record<string, unknown>), nonce: fault ? randHex(4) : "88421" });
+    const fault = Math.random() < 0.06;
+    const recomputed = outputHash({
+      ...(task as unknown as Record<string, unknown>),
+      nonce: fault ? randHex(4) : "88421",
+    });
     const reported = fault ? `0x${randHex(8)}${randHex(8)}` : recomputed;
 
     if (fault || reported !== recomputed) {
@@ -341,6 +458,20 @@ export class CipherSentry {
     amount: string,
     opts: { tier?: Tier } = {},
   ): Promise<{ epoch: number; bond: string; tier: Tier }> => {
+    const rpc = this.rpc;
+    if (rpc) {
+      try {
+        const res = await rpc.rpcStake(amount, opts.tier ?? "T2");
+        return {
+          epoch: Number(res.epoch ?? 88421),
+          bond: String(res.bond ?? amount),
+          tier: (res.tier as Tier) ?? opts.tier ?? "T2",
+        };
+      } catch (e) {
+        this.rethrow(e);
+      }
+    }
+
     const n = parseFloat(amount);
     if (!Number.isFinite(n) || n < 25_000) {
       throw new CenError("CEN_E_BOND_FLOOR", "minimum verifier bond is 25,000 CENT");

@@ -1,13 +1,35 @@
 # CipherSentry Services — Backend
 
-Two services from `docs/architecture.md`, packaged independently of the web
-app. Neither touches the frontend bundle; each has its own `package.json`.
+Services from `docs/architecture.md`, packaged independently of the web app.
+Each package has its own `package.json`.
 
 ```
 services/
+├── gateway/           # B0 edge: JSON-RPC + WS events + optional escrow writer
 ├── verifier-daemon/   # V0.2 alpha: WASM sandbox for deterministic re-execution
 └── indexer/           # receipt graph: Postgres state + ClickHouse analytics
 ```
+
+## gateway (B0 Ledger)
+
+```bash
+cd services/gateway && npm install && npm run gateway
+# → http://127.0.0.1:8080/rpc
+# → ws://127.0.0.1:8080/events
+# console:  ?net=rpc&node=http://127.0.0.1:8080
+```
+
+| Env | Effect |
+| --- | --- |
+| `ESCROW_ADDRESS` | Enable chain watch + commit attempts |
+| `BATCHER_ADDRESS` | Watch SettlementBatcher anchors |
+| `CHAIN_RPC` | Default `https://base-sepolia.publicnode.com` |
+| `PROTOCOL_FROM` | Unlocked EOA for `eth_sendTransaction` (anvil/dev) |
+| `PROTOCOL_KEY` | Present → write-ready (external signer / future raw path) |
+| `GATEWAY_PORT` | Default `8080` |
+
+RPC methods: `registry.query` · `task.commit` · `task.report` · `verify` ·
+`task.settle` · `dispute.open` · `operator.rule` · `stake` · `node.info`.
 
 ## verifier-daemon
 
