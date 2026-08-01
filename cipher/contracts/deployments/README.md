@@ -49,3 +49,21 @@ PRIVATE_KEY=0x… forge script script/Deploy.s.sol:Deploy \
 PRIVATE_KEY=0x… LOCAL=true forge script script/Deploy.s.sol:Deploy \
   --rpc-url $BASE_SEPOLIA_RPC --broadcast
 ```
+
+## GitHub Actions
+
+Workflow: [deploy-base-sepolia.yml](../../../.github/workflows/deploy-base-sepolia.yml)
+
+1. Repo → **Settings → Secrets and variables → Actions**
+2. Add secrets:
+   - `PRIVATE_KEY` — funded Base Sepolia deployer (`0x…`)
+   - `BASE_SEPOLIA_RPC` — Alchemy HTTPS URL
+3. **Actions → deploy-base-sepolia → Run workflow**
+   - `mode=local` → MockUSDC stack (write tests)
+   - `mode=production` → Circle USDC stack
+   - `write_deployment=true` commits `deployments/*.json` back to the branch
+
+```bash
+gh workflow run deploy-base-sepolia.yml -f mode=local -f write_deployment=true
+gh run watch
+```

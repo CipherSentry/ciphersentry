@@ -2,19 +2,22 @@
  * Escrow gateway — optional on-chain commit writer for B0.
  *
  * Modes:
- *   OFFLINE  — no ESCROW_ADDRESS: returns null (ledger stays in-memory)
- *   WATCH    — address set, no key: read-only via ChainWatcher
- *   WRITE    — PROTOCOL_KEY (or unlocked eth_sendTransaction account):
- *              encodes Escrow.commit and submits a tx on Base-Sepolia
+ *   OFFLINE  — no ESCROW_ADDRESS
+ *   WATCH    — address set, no key
+ *   WRITE    — PROTOCOL_KEY → eth_sendRawTransaction (Alchemy/public RPC)
+ *              or PROTOCOL_FROM → eth_sendTransaction (anvil unlocked)
  *
  * Escrow.commit(bytes32 spec, address worker, uint96 amount, uint96 bond)
- * selector = keccak256("commit(bytes32,address,uint96,uint96)")[0:4]
  */
+
+import { createWalletClient, http, type Hex, type Address } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { baseSepolia, foundry } from "viem/chains";
 
 export interface EscrowWriteConfig {
   rpcUrl: string;
   escrowAddress: string | null;
-  /** 0x-prefixed private key — only used if the RPC rejects eth_sendTransaction */
+  /** 0x-prefixed private key for eth_sendRawTransaction */
   protocolKey: string | null;
   /** from address when using eth_sendTransaction (unlocked / anvil) */
   fromAddress: string | null;
@@ -25,9 +28,9 @@ export interface EscrowWriteConfig {
 
 export interface ChainCommitParams {
   taskIdHint: string;
-  worker: string; // 0x address OR agent id (hashed when not address)
+  worker: string;
   buyer?: string;
-  amountUsdc: string; // decimal string e.g. "10.00"
+  amountUsdc: string;
   spec: string;
 }
 
@@ -38,7 +41,7 @@ export interface ChainCommitResult {
   error?: string;
 }
 
-/** first 4 bytes of keccak256("commit(bytes32,address,uint96,uint96)") — cast sig */
+/** cast sig "commit(bytes32,address,uint96,uint96)" */
 const COMMIT_SELECTOR = "8ecbf09f";
 
 function isAddress(s: string): boolean {
@@ -53,7 +56,6 @@ function encodeAddress(addr: string): string {
   return pad32(addr.toLowerCase().replace(/^0x/, ""));
 }
 
-/** FNV-ish bytes32 stand-in for non-address agent ids / specs (deterministic). */
 function fnvBytes32(s: string): string {
   let h1 = 0x811c9dc5;
   let h2 = 0x9af2be11;
@@ -76,12 +78,14 @@ function usdcToUint96(amount: string): bigint {
   return BigInt(whole || "0") * 1_000_000n + BigInt(f || "0");
 }
 
-function encodeCommitCalldata(spec: string, worker: string, amount: bigint, bond: bigint): string {
+function encodeCommitCalldata(spec: string, worker: string, amount: bigint, bond: bigint): Hex {
   const specWord = isAddress(spec) ? pad32(spec) : fnvBytes32(spec);
-  const workerWord = isAddress(worker) ? encodeAddress(worker) : encodeAddress("0x" + fnvBytes32(worker).slice(0, 40));
+  const workerWord = isAddress(worker)
+    ? encodeAddress(worker)
+    : encodeAddress("0x" + fnvBytes32(worker).slice(0, 40));
   const amountWord = pad32(amount.toString(16));
   const bondWord = pad32(bond.toString(16));
-  return "0x" + COMMIT_SELECTOR + specWord + workerWord + amountWord + bondWord;
+  return ("0x" + COMMIT_SELECTOR + specWord + workerWord + amountWord + bondWord) as Hex;
 }
 
 async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T> {
@@ -95,14 +99,22 @@ async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T
   return body.result as T;
 }
 
+function pickChain(chainId: number) {
+  if (chainId === 31337) return foundry;
+  if (chainId === 84532) return baseSepolia;
+  return { ...baseSepolia, id: chainId };
+}
+
 export function makeEscrowConfigFromEnv(): EscrowWriteConfig {
+  let key = process.env.PROTOCOL_KEY ?? process.env.PRIVATE_KEY ?? null;
+  if (key && !key.startsWith("0x")) key = `0x${key}`;
   return {
-    rpcUrl: process.env.CHAIN_RPC ?? "https://base-sepolia.publicnode.com",
+    rpcUrl: process.env.CHAIN_RPC ?? process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia.publicnode.com",
     escrowAddress: process.env.ESCROW_ADDRESS ?? null,
-    protocolKey: process.env.PROTOCOL_KEY ?? null,
+    protocolKey: key,
     fromAddress: process.env.PROTOCOL_FROM ?? process.env.OPERATOR_ADDRESS ?? null,
-    chainId: Number(process.env.CHAIN_ID ?? 84532), // Base Sepolia
-    defaultBond: BigInt(process.env.DEFAULT_BOND_USDC_UNITS ?? "10000"), // 0.01 USDC
+    chainId: Number(process.env.CHAIN_ID ?? 84532),
+    defaultBond: BigInt(process.env.DEFAULT_BOND_USDC_UNITS ?? "10000"),
   };
 }
 
@@ -115,14 +127,10 @@ export class EscrowGateway {
 
   get mode(): "offline" | "write-ready" | "watch-only" {
     if (!this.cfg.escrowAddress) return "offline";
-    if (this.cfg.fromAddress || this.cfg.protocolKey) return "write-ready";
+    if (this.cfg.protocolKey || this.cfg.fromAddress) return "write-ready";
     return "watch-only";
   }
 
-  /**
-   * Attempt on-chain commit. Never throws into the RPC path —
-   * returns simulated/offline so the in-memory ledger still advances.
-   */
   async commit(params: ChainCommitParams): Promise<ChainCommitResult> {
     if (!this.cfg.escrowAddress) {
       return { mode: "offline" };
@@ -135,25 +143,42 @@ export class EscrowGateway {
     }
 
     const data = encodeCommitCalldata(params.spec, params.worker, amount, bond);
-    const to = this.cfg.escrowAddress;
+    const to = this.cfg.escrowAddress as Address;
 
-    // Dev path: unlocked account on local/dev RPC
+    // Preferred: signed raw tx (Alchemy / public RPC)
+    if (this.cfg.protocolKey) {
+      try {
+        const account = privateKeyToAccount(this.cfg.protocolKey as Hex);
+        const chain = pickChain(this.cfg.chainId);
+        const client = createWalletClient({
+          account,
+          chain,
+          transport: http(this.cfg.rpcUrl),
+        });
+        const txHash = await client.sendTransaction({
+          to,
+          data,
+          value: 0n,
+          chain,
+          account,
+        });
+        return { mode: "submitted", txHash, taskId: params.taskIdHint };
+      } catch (e) {
+        return {
+          mode: "simulated",
+          taskId: params.taskIdHint,
+          error: `sendRawTransaction failed: ${(e as Error).message}`,
+        };
+      }
+    }
+
+    // Anvil / unlocked RPC
     if (this.cfg.fromAddress) {
       try {
         const txHash = await rpc<string>(this.cfg.rpcUrl, "eth_sendTransaction", [
-          {
-            from: this.cfg.fromAddress,
-            to,
-            data,
-            // value 0 — USDC pulled via transferFrom; caller must have approved
-            value: "0x0",
-          },
+          { from: this.cfg.fromAddress, to, data, value: "0x0" },
         ]);
-        return {
-          mode: "submitted",
-          txHash,
-          taskId: params.taskIdHint,
-        };
+        return { mode: "submitted", txHash, taskId: params.taskIdHint };
       } catch (e) {
         return {
           mode: "simulated",
@@ -163,24 +188,11 @@ export class EscrowGateway {
       }
     }
 
-    // PROTOCOL_KEY present but no raw-signer library bundled in B0 —
-    // record intent for the operator / external signer.
-    if (this.cfg.protocolKey) {
-      return {
-        mode: "simulated",
-        taskId: params.taskIdHint,
-        error: "PROTOCOL_KEY set — use external signer or PROTOCOL_FROM unlocked account; calldata ready",
-        txHash: undefined,
-      };
-    }
-
     return { mode: "simulated", taskId: params.taskIdHint };
   }
 
-  /** Expose calldata for external signers / docs. */
   encodeCommit(params: ChainCommitParams): string {
     const amount = usdcToUint96(params.amountUsdc);
     return encodeCommitCalldata(params.spec, params.worker, amount, this.cfg.defaultBond);
   }
 }
-
