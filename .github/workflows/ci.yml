@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: forge test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: cipher/contracts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Install forge-std
+        run: |
+          if [ ! -d lib/forge-std/src ]; then
+            forge install foundry-rs/forge-std --no-git
+          fi
+      - name: Build
+        run: forge build
+      - name: Test (reduced invariant campaign for CI)
+        run: |
+          FOUNDRY_FUZZ_RUNS=256 \
+          FOUNDRY_INVARIANT_RUNS=32 \
+          FOUNDRY_INVARIANT_DEPTH=32 \
+          forge test -vv
+
+  frontend:
+    name: vitest + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: cipher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: cipher/package-lock.json
+      - run: npm ci
+      - run: npx vitest run --pool=threads tests/rpc-transport.test.ts tests/chain-decoder.test.ts tests/crypto.test.ts tests/epoch.test.ts
+      - run: npm run build

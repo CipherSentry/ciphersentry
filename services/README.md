@@ -38,6 +38,28 @@ cd ../../services/gateway && npm run gateway       # escrow: write-ready
 # task.commit returns chain.mode=submitted + tx hash
 ```
 
+### Base Sepolia E2E (MockUSDC write stack)
+
+```bash
+# contracts/.env: PRIVATE_KEY + BASE_SEPOLIA_RPC
+cd services/gateway && bash scripts/e2e-sepolia.sh
+# → chain.mode=submitted + cast receipt
+```
+
+Writes use **PROTOCOL_KEY / PRIVATE_KEY** via `eth_sendRawTransaction` (Alchemy-compatible).
+
+### GitHub Actions deploy
+
+Workflow: `.github/workflows/deploy-base-sepolia.yml` (`workflow_dispatch`).
+
+Repo secrets:
+- `PRIVATE_KEY` — funded Base Sepolia deployer
+- `BASE_SEPOLIA_RPC` — HTTPS RPC (Alchemy)
+
+```bash
+gh workflow run deploy-base-sepolia.yml -f mode=local -f write_deployment=true
+```
+
 RPC methods: `registry.query` · `task.commit` · `task.report` · `verify` ·
 `task.settle` · `dispute.open` · `operator.rule` · `stake` · `node.info`.
 
