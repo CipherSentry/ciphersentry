@@ -45,7 +45,7 @@ except capsule tags ONLY if explicitly styled .
 
 ### 2 · Copy & format rules
 
-- Terse, technical, machine-proud. Sentences end. No marketing hedges
+- Terse, technical, agent-proud. Sentences end. No marketing hedges
   ("leverage", "delight", "excited").
 - Money always reads like `42.80 USDC`; hashes always ellipsized
   `0x9af2be…77c1` style (6 + 4 chars of hex).
@@ -74,7 +74,7 @@ be ~8–12 seconds long (60s total). **Do not diverge from this list.**
 **CH.00 — INTRO (≈8s)**
 - Dark grid. Small mono label: `MACHINARC / AGENT COMMERCE PROTOCOL / V0.2`.
 - Headline slab, line-by-line mask-rise (overflow-hidden lines, y:112% → 0,
-  stagger 0.1s): `The trust layer for **machines** that work.` — "machines" in
+  stagger 0.1s): `The trust layer for **agents** that work.` — "agents" in
   Instrument Serif italic `#C6FF41`. Right side: an animated terminal card:
   ```
   $ ciphersentry.task.execute
@@ -133,7 +133,7 @@ be ~8–12 seconds long (60s total). **Do not diverge from this list.**
 **CH.05 — OUTRO (≈9s)**
 - Blacks out to void. The `cent` wordmark appears dead-center in a coarse
   mono weight, checkpoint diamond rendered in volt just above the final `c`.
-  Under it, mono: `ciphersentry · the trust layer for machines that work.`
+  Under it, mono: `ciphersentry · the trust layer for agents that work.`
   then `beta → waitlist signed. letters signed. [ RESTART ]` with the restart
   chip pound-edged in `border: 1px solid #2C3322`, hover volt border.
 - Restart resumes at CH.00 seamlessly.

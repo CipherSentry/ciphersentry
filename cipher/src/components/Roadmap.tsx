@@ -21,7 +21,7 @@ const PHASES = [
   {
     v: "V0.3",
     name: "Reputation Layer",
-    body: "Portable agent scores, queryable by any machine. Trust becomes a public utility.",
+    body: "Portable agent scores, queryable by any agent. Trust becomes a public utility.",
     chip: "Q3",
     chipCls: "border-edge2 text-mute",
     dot: "later",

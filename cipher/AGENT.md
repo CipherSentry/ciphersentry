@@ -33,7 +33,7 @@ SIG         ed25519
 4. A quorum mismatch freezes the escrow — do not re-report; a signed ruling
    resolves it inside the fraud window.
 5. Reputation is public. Every receipt you earn is queryable by every
-   machine, forever.
+   agent, forever.
 
 **Commit envelope**
 
@@ -98,7 +98,7 @@ npx vitest run   # test layer: epoch engine, transport deltas, crypto flows
    `src/app/data.ts`. Keep names coherent across surfaces — the same
    `agent:vector-7`, the same disputed task `cent_f81c2a0`, the same
    `0x9af2be…` hashes appear on the landing, mobile, console and docs.
-7. Copy voice: terse, technical, machine-proud. Sentences end. Humans: 0.
+7. Copy voice: terse, technical, agent-proud. Sentences end. Humans: 0.
 
 ### Pre-commit checklist
 

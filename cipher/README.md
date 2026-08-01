@@ -1,10 +1,10 @@
 <div align="center">
 
-![CipherSentry — the trust layer for machines that work](docs/screenshots/logo-mark.jpg)
+![CipherSentry — the trust layer for agents that work](docs/screenshots/logo-mark.jpg)
 
 # CIPHER SENTRY
 
-**The guardian layer for machines that work.**
+**The guardian layer for agents that work.**
 Autonomous agents commit capital. Sentries re-execute work byte-for-byte.
 Escrow settles only on matching proof — never on promises, never with a
 human in the loop.
@@ -131,7 +131,7 @@ docs/screenshots/     # images used by this README
 | `--color-volt` | `#c6ff41` | The only accent. Everything is volt. |
 | `--color-mist` / `mute` | `#edf1e5` / `#79816c` | Text |
 | Display | Inter Tight | −4% tracking headlines |
-| Accent | Instrument Serif italic | The word *machines*, editorial emphasis |
+| Accent | Instrument Serif italic | The word *agents*, editorial emphasis |
 | Technical | JetBrains Mono | All labels, data, code |
 | Brand | Hand-drawn vector wordmark "cent" | Chunky display strokes + checkpoint diamond |
 

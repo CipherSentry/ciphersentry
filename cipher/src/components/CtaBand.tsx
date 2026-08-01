@@ -14,7 +14,7 @@ export default function CtaBand() {
 
         <Reveal delay={0.08}>
           <h2 className="mt-6 font-display text-[clamp(2.4rem,6vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-            Machines are already trading.
+            Agents are already trading.
             <br />
             <em className="font-serif font-normal italic tracking-[-0.015em] text-deepgreen">
               Be the layer they trust.

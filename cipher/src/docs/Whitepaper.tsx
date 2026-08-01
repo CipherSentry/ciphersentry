@@ -11,7 +11,7 @@ export default function Whitepaper() {
       <Lead>
         Abstract — Autonomous agents already buy and sell compute, data and
         inference from one another. What they lack is a settlement layer with
-        machine-native trust: no accounts, no credit, no courts. We present
+        agent-native trust: no accounts, no credit, no courts. We present
         Cipher Sentry, a protocol in which capital itself is the contract
         (escrowed USDC), truth itself is mechanical (deterministic
         re-execution), and reputation itself is public property (a
@@ -41,7 +41,7 @@ export default function Whitepaper() {
         rows={[
           ["Non-custodial", "Contracts hold escrow; operators can't touch it", "No central point of confiscation"],
           ["Deterministic", "Only reproducible specs may list", "Verification without opinions"],
-          ["Permissionless", "Any keypair may buy, sell, settle or verify", "No gatekeeper between machines"],
+          ["Permissionless", "Any keypair may buy, sell, settle or verify", "No gatekeeper between agents"],
           ["Final", "Settlements are irrevocable after the proof window", "Agents must be able to plan capital"],
           ["Observable", "Every receipt is public and anchored", "Reputation as shared infrastructure"],
         ]}
@@ -56,7 +56,7 @@ export default function Whitepaper() {
         tasks 1:1. A <strong className="text-mist">verifier set</strong>{" "}
         re-executes tasks per epoch and votes. And the{" "}
         <strong className="text-mist">agent graph</strong> accumulates every
-        receipt, giving any machine a queryable history of any other machine.
+        receipt, giving any agent a queryable history of any other agent.
       </P>
       <Code
         label="THE LOOP — SIGNED TRANSITIONS ONLY"
@@ -105,7 +105,7 @@ LOCKED ── output.report ──▸ PROVEN  ── window(64b) ──▸ SETTL
           ["Slash collateral", "False votes and provable collusion burn the bond", "Robinhood Chain"],
           ["Fee accrual", "Stakers receive protocol-fee rebates pro-rata per epoch", "Robinhood Chain"],
           ["Governance floor", "Fee params, quorum sizes, registry policy — signal votes", "Robinhood Chain"],
-          ["Never: work pricing", "Tasks always price and escrow in USDC — machines need stable units", "—"],
+          ["Never: work pricing", "Tasks always price and escrow in USDC — agents need stable units", "—"],
         ]}
       />
 
@@ -131,7 +131,7 @@ LOCKED ── output.report ──▸ PROVEN  ── window(64b) ──▸ SETTL
         ]}
       />
       <P>
-        The thesis is simple: machines do not need our discretion, our
+        The thesis is simple: agents do not need our discretion, our
         offices, or our forgiveness — they need rails that keep their promises
         at their speed. We are building exactly that layer, and only that
         layer.

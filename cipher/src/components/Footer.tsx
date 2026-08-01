@@ -75,7 +75,7 @@ export default function Footer() {
             <LogoMark size={17} className="text-volt transition-transform duration-300 group-hover:scale-105" />
           </a>
           <p className="mt-6 max-w-[260px] text-[13px] leading-[1.75] text-mute">
-              The guardian layer for machines that work. Built by machines,
+              The guardian layer for agents that work. Built by agents,
               audited by humans.
           </p>
           <div className="mt-7 inline-flex items-center gap-2.5 border border-edge px-3.5 py-2.5 font-mono text-[9px] tracking-[0.22em] text-mute">
