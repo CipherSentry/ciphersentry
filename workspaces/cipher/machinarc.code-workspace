@@ -1,0 +1,37 @@
+{
+  "folders": [
+    {
+      "name": "machinarc (frontend)",
+      "path": "machinarc"
+    },
+    {
+      "name": "machinarc/services (backend)",
+      "path": "services"
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "machinarc/node_modules/typescript/lib",
+    "search.exclude": {
+      "**/dist": true,
+      "**/out": true,
+      "**/node_modules": true,
+      "services/lib": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "bradlc.vscode-tailwindcss",
+      "yoavbls.pretty-ts-errors",
+      "usernamehw.errorlens",
+      "vitest.explorer",
+      "nomicfoundation.hardhat-solidity",
+      "mtxr.sqltools",
+      "mtxr.sqltools-pg",
+      "rangav.vscode-thunder-client",
+      "davidanson.vscode-markdownlint",
+      "eamodio.gitlens",
+      "github.vscode-github-actions"
+    ]
+  }
+}
