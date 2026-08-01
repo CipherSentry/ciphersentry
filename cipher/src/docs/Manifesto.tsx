@@ -111,7 +111,7 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     title: "Launch Readiness",
     items: [
       "Launch Gates board — public G4 accrual counter, freeze-hash anchor log, signed verifier waitlist.",
-      "RpcTransport skeleton with ?net=rpc|sim; the seam waits on a node, nothing else.",
+      "RpcTransport live: ?net=rpc&node=http://127.0.0.1:8080 against the B0 gateway.",
       "Key backup (AES-GCM × PBKDF2 ×600K) and passkey-gated device identity.",
       "Test layer: epoch engine, transport deltas, crypto flows under vitest. Brand v6 — the cent wordmark + checkpoint.",
     ],
