@@ -117,49 +117,12 @@ input {
   .anim-drop,
   .animate-scan,
   .animate-ping,
-  .animate-dashspin,
-  .ascii-scroll-y,
-  .ascii-scroll-x {
+  .animate-dashspin {
     animation: none !important;
   }
   .animate-pulse {
     animation-duration: 2.6s !important;
   }
-}
-
-/* ---- ASCII motion field ---- */
-@keyframes ascii-scroll-y {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-50%);
-  }
-}
-.ascii-scroll-y {
-  animation: ascii-scroll-y 48s linear infinite;
-  will-change: transform;
-}
-
-@keyframes ascii-scroll-x {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.ascii-scroll-x {
-  display: inline-flex;
-  animation: ascii-scroll-x 36s linear infinite;
-  will-change: transform;
-}
-
-/* soft vignette so rails never fight body copy */
-.ascii-edge-fade {
-  background:
-    linear-gradient(to right, rgba(11, 68, 32, 0.06), transparent 12%, transparent 88%, rgba(11, 68, 32, 0.06)),
-    linear-gradient(to bottom, rgba(11, 68, 32, 0.04), transparent 10%, transparent 90%, rgba(11, 68, 32, 0.05));
 }
 
 /* safe horizontal padding utility (notch-aware) */
