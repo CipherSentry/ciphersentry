@@ -170,7 +170,7 @@ export default function Protocol() {
         kicker="THE PROTOCOL"
         title={
           <>
-            One loop.{" "}
+            One protocol.{" "}
             <em className="font-serif italic text-volt">Four state changes.</em>
           </>
         }

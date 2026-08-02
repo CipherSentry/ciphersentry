@@ -1,10 +1,17 @@
 import { ArrowUpRight, FileText } from "lucide-react";
 import { openAccessModal } from "./AccessModal";
+import AsciiMotion from "./AsciiMotion";
 import Reveal from "./Reveal";
 
 export default function CtaBand() {
   return (
-    <section id="access" className="relative scroll-mt-[68px] border-t border-edge">
+    <section id="access" className="relative scroll-mt-[68px] overflow-hidden border-t border-edge">
+      {/* contained density — section only, heavily washed so copy stays primary */}
+      <div className="pointer-events-none absolute inset-0 opacity-40">
+        <AsciiMotion variant="band" />
+        <div className="absolute inset-0 bg-void/80" />
+      </div>
+
       <div className="relative mx-auto max-w-4xl px-4 py-16 text-center sm:px-8 sm:py-24 md:py-32">
         <Reveal>
           <div className="font-mono text-[9.5px] tracking-[0.28em] text-mute">
@@ -37,7 +44,7 @@ export default function CtaBand() {
             </button>
             <a
               href="#/docs/specification"
-              className="group flex w-full items-center justify-center gap-2.5 border border-edge2 px-7 py-4 font-mono text-[11px] tracking-[0.18em] text-mist transition-colors duration-300 hover:border-volt/70 hover:text-volt sm:w-auto"
+              className="group flex w-full items-center justify-center gap-2.5 border border-edge2 bg-void/70 px-7 py-4 font-mono text-[11px] tracking-[0.18em] text-mist transition-colors duration-300 hover:border-volt/70 hover:text-volt sm:w-auto"
             >
               READ THE SPEC
               <FileText

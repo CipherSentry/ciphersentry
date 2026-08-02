@@ -122,20 +122,20 @@ export default function Gates() {
             </p>
           </div>
 
-          {/* the counter */}
-          <div className="border border-volt/50 bg-deepgreen p-5 md:p-6">
-            <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-mute">
+          {/* the counter — dark well: use code-fg tokens for readable type */}
+          <div className="surface-code border border-code-edge p-5 md:p-6">
+            <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-code-mute">
               <span>G4 — EPOCH ACCRUAL</span>
-              <span className="text-volt">DAY {days} / {GATE4_DAYS}</span>
+              <span className="text-volthot">DAY {days} / {GATE4_DAYS}</span>
             </div>
-            <div className="mt-3 font-display text-[54px] font-medium tabular-nums leading-none tracking-[-0.03em] text-volt md:text-[64px]">
+            <div className="mt-3 font-display text-[54px] font-medium tabular-nums leading-none tracking-[-0.03em] text-volthot md:text-[64px]">
               {String(days).padStart(2, "0")}
-              <span className="ml-3 font-mono text-[11px] tracking-[0.2em] text-mute">DAYS</span>
+              <span className="ml-3 font-mono text-[11px] tracking-[0.2em] text-code-mute">DAYS</span>
             </div>
-            <div className="mt-4 h-1.5 w-full bg-edge">
-              <div className="h-full bg-volt transition-all duration-1000" style={{ width: `${pct}%` }} />
+            <div className="mt-4 h-1.5 w-full bg-code-edge">
+              <div className="h-full bg-volthot transition-all duration-1000" style={{ width: `${pct}%` }} />
             </div>
-            <div className="mt-2.5 flex justify-between font-mono text-[7.5px] tracking-[0.18em] text-mute/60">
+            <div className="mt-2.5 flex justify-between font-mono text-[7.5px] tracking-[0.18em] text-code-mute/80">
               <span>GENESIS · BLK 12,840,117 · op:0x71be…e8d3</span>
               <span>ETA ≥ {formatEta(now)}</span>
             </div>
@@ -167,31 +167,39 @@ export default function Gates() {
               ))}
             </div>
 
-            {/* freeze-hash anchor */}
-            <div className="mt-6 border border-amber-300/40 bg-amber-300/[0.05] p-5">
-              <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-code-fg/70">
+            {/* freeze-hash anchor — light canvas: mist/mute, never code-fg */}
+            <div className="mt-6 border border-amber-300/50 bg-panel p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[8.5px] tracking-[0.24em] text-mute">
                 <span>ENG-A FREEZE HASH — AUDIT ANCHOR</span>
-                <span className="text-amber-300">PENDING BROADCAST</span>
+                <span className="text-amber-600">PENDING BROADCAST</span>
               </div>
               <div className="mt-3 space-y-2 font-mono text-[10.5px]">
-                <div className="flex justify-between gap-6">
-                  <span className="text-code-fg/70">SCOPE</span>
-                  <span className="text-code-fg">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
+                <div className="flex flex-wrap justify-between gap-x-6 gap-y-1">
+                  <span className="text-mute">SCOPE</span>
+                  <span className="text-mist">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
                 </div>
-                <div className="flex justify-between gap-6">
-                  <span className="text-code-fg/70">HASH</span>
-                  <span className="text-code-fg/50">sha256(contracts/) — computed at broadcast</span>
+                <div className="flex flex-wrap justify-between gap-x-6 gap-y-1">
+                  <span className="text-mute">HASH</span>
+                  <span className="text-mute/80">sha256(contracts/) — computed at broadcast</span>
                 </div>
-                <div className="flex justify-between gap-6">
-                  <span className="text-code-fg/70">ANCHOR</span>
-                  <span className="text-code-fg/50">first batch root on Base-Sepolia · pending</span>
+                <div className="flex flex-wrap justify-between gap-x-6 gap-y-1">
+                  <span className="text-mute">ANCHOR</span>
+                  <span className="text-mute/80">first batch root on Base-Sepolia · pending</span>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-300/25 pt-4">
-                <a href="https://github.com/CipherSentry-com" target="_blank" rel="noreferrer" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-code-fg transition-colors hover:border-volt/70 hover:text-volt">
+              <div className="mt-4 flex flex-wrap gap-3 border-t border-edge pt-4">
+                <a
+                  href={SOCIALS.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
+                >
                   AUDIT PACK — DOC-07 →
                 </a>
-                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-code-fg transition-colors hover:border-volt/70 hover:text-volt">
+                <a
+                  href="#/docs/audit"
+                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
+                >
                   /contracts/README.md →
                 </a>
               </div>

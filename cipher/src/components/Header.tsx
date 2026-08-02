@@ -5,7 +5,7 @@ import LogoMark from "./LogoMark";
 import { openAccessModal } from "./AccessModal";
 
 const NAV = [
-  { label: "THE LOOP", href: "#/protocol" },
+  { label: "THE PROTOCOL", href: "#/protocol" },
   { label: "DOCS", href: "#/docs" },
   { label: "TRY THE FLOW", href: "#/demo" },
   { label: "LAUNCH", href: "#/gates" },

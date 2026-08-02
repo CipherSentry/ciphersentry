@@ -40,7 +40,7 @@ export default function Roadmap() {
   return (
     <section id="roadmap" className="scroll-mt-[68px] border-b border-edge">
       <SectionHead
-        index="03"
+        index="04"
         kicker="ROADMAP"
         title={
           <>

@@ -411,8 +411,8 @@ export default function ExplorerPage() {
                   setSelFraudId(null);
                   setRemoteValid(null);
                 }}
-                className={`flex w-full items-center gap-3 border-b border-edge px-4 py-3 text-left transition-colors hover:bg-panel/60 ${
-                  sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
+                className={`flex w-full items-center gap-3 border-b border-edge px-4 py-3 text-left transition-colors hover:bg-panel/70 ${
+                  sel ? "bg-volt/[0.08] shadow-[inset_2px_0_0_var(--color-volt)]" : ""
                 }`}
               >
                 <span className={`h-1.5 w-1.5 shrink-0 ${b.state === "SETTLING" ? "animate-pulse bg-amber-300" : "bg-volt"}`} />
@@ -451,8 +451,8 @@ export default function ExplorerPage() {
                   setVerifyStep(-1);
                   setVerifiedFor(null);
                 }}
-                className={`flex w-full items-center gap-3 border-b border-edge px-4 py-3 text-left transition-colors hover:bg-panel/60 ${
-                  sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
+                className={`flex w-full items-center gap-3 border-b border-edge px-4 py-3 text-left transition-colors hover:bg-panel/70 ${
+                  sel ? "bg-volt/[0.08] shadow-[inset_2px_0_0_var(--color-volt)]" : ""
                 }`}
               >
                 <span className={`h-1.5 w-1.5 shrink-0 ${f.status === "RESOLVED" || f.status === "DEFAULTED" ? "bg-amber-300" : "animate-pulse bg-red-400"}`} />
@@ -624,11 +624,11 @@ export default function ExplorerPage() {
                           setRemoteValid(null);
                           setLastProof(null);
                         }}
-                        className={`grid w-full grid-cols-[100px_minmax(0,1fr)_70px_55px_70px] items-center gap-2 border-b border-edge/60 px-3 py-2.5 text-left font-mono text-[10px] transition-colors last:border-b-0 hover:bg-panel/60 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px] ${
-                          sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
+                        className={`grid w-full grid-cols-[100px_minmax(0,1fr)_70px_55px_70px] items-center gap-2 border-b border-edge/60 px-3 py-2.5 text-left font-mono text-[10px] transition-colors last:border-b-0 hover:bg-panel/70 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px] ${
+                          sel ? "bg-volt/[0.08] shadow-[inset_2px_0_0_var(--color-volt)]" : ""
                         }`}
                       >
-                        <span className={`truncate ${sel ? "text-code-fg" : "text-mist"}`}>{r.id}</span>
+                        <span className={`truncate ${sel ? "text-volt" : "text-mist"}`}>{r.id}</span>
                         <span className="flex min-w-0 items-center gap-1.5 text-[9px] text-mute">
                           <span className="truncate">
                             {r.buyer.replace("agent:", "")}→{r.worker.replace("agent:", "")}
@@ -696,7 +696,7 @@ export default function ExplorerPage() {
                     </div>
                     <ProofLadder r={selReceipt} verifyStep={verifyStep} remoteValid={remoteValid} />
                     {verifiedFor === selReceipt.id && remoteValid !== false && (
-                      <div className="mt-3 flex items-center gap-2 border border-volt/50 bg-deepgreen px-3 py-2.5 font-mono text-[9px] tracking-[0.18em] text-volt">
+                      <div className="mt-3 flex items-center gap-2 border border-volt/40 bg-volt/[0.08] px-3 py-2.5 font-mono text-[9px] tracking-[0.18em] text-volt">
                         <Check size={12} strokeWidth={3} />
                         {source === "indexer" && remoteValid
                           ? "INDEXER VALID · ROOT MATCHES ANCHOR"

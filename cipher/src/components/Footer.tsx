@@ -29,7 +29,7 @@ const COLS: { h: string; links: [string, string][] }[] = [
       ["Investors", "#/investors"],
       ["Manifesto", "#/docs/manifesto"],
       ["GitHub", SOCIALS.github],
-      ["X / @ciphersentry", SOCIALS.x],
+      ["X / @cipher_sentry", SOCIALS.x],
       ["Contact", "mailto:hello@ciphersentry.xyz"],
     ],
   },
@@ -37,7 +37,7 @@ const COLS: { h: string; links: [string, string][] }[] = [
 
 const SOCIAL_ICONS = [
   { Icon: XIcon, href: SOCIALS.x, label: "X — @ciphersentry" },
-  { Icon: GithubIcon, href: SOCIALS.github, label: "GitHub — CipherSentry-com" },
+  { Icon: GithubIcon, href: SOCIALS.github, label: "GitHub — CipherSentry" },
   { Icon: Globe, href: "#top", label: "ciphersentry.xyz" },
 ];
 
@@ -94,7 +94,7 @@ export default function Footer() {
               </SmartLink>
             ))}
             <span className="ml-1 font-mono text-[8px] tracking-[0.2em] text-mute/50">
-              @CIPHERSENTRY · OSS
+              @CIPHER_SENTRY · OSS
             </span>
           </div>
         </div>
