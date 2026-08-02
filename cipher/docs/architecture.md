@@ -86,7 +86,7 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 | B4 — Settlement batcher | **Merkle fold** of settled leaves, **2-of-3** EIP-712 `anchorRoot`, `batch.anchor` / auto-flush, on-chain `BatchAnchored` via Alchemy/anvil | B3 + batcher signers |
 | B5 — Fraud-proof worker | **Challenge cases** on mismatch, fresh quorum recompute, **ruling** (Refund/Release/Split), `fraud.*` RPC, optional **Escrow.rule** / defaultRefund | B4 + ruler key |
 | B6 — Indexer / receipt graph | **WS listener** on gateway events (tasks/batches/**fraud**), Postgres SoR + ClickHouse analytics, **keccak Merkle reconcile**, `/receipts/:id/proof` + `/fraud/:taskId` | B4/B5 events + compose (pg/ch) |
-| Hardening (post-B6) | Live **registry stake** into trust `s_i`, fraud `s_i ← 0.95·s_i`, **ed25519 WS verify** + pin, `?net=rpc&auth=1`, CI: `e2e:compose` / `e2e:full` (pg+ch+nats) / `e2e:rails:smoke` (anvil) | B6 + AUTH + compose |
+| Hardening (post-B6) | Live **registry stake** into trust `s_i`, fraud `s_i ← 0.95·s_i`, **ed25519 WS verify** + pin, `?net=rpc&auth=1`, CI: `e2e:compose` / `e2e:full` (**NATS-only**, no WS fallback) / `e2e:rails:smoke` (anvil + **SlashExecutor** write-ready) · explorer live trust chart | B6 + AUTH + compose |
 
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.

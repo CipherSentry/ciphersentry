@@ -24,6 +24,7 @@
     "e2e:compose": "bash scripts/e2e-compose.sh",
     "e2e:full": "bash scripts/e2e-full.sh",
     "e2e:rails": "bash scripts/e2e-rails.sh",
-    "e2e:rails:smoke": "bash scripts/e2e-rails-smoke.sh"
+    "e2e:rails:smoke": "bash scripts/e2e-rails-smoke.sh",
+    "demo:sepolia": "bash scripts/demo-sepolia.sh"
   }
 }

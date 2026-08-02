@@ -295,6 +295,18 @@ export default function ExplorerPage() {
     };
   }, [agent, client]);
 
+  /** Open agent trust panel (chart + receipts). */
+  const openAgent = useCallback((id: string) => {
+    const agentId = id.startsWith("agent:") ? id : `agent:${id}`;
+    setAgent(agentId);
+    setSelReceiptId(null);
+    setSelFraudId(null);
+    setVerifyStep(-1);
+    setVerifiedFor(null);
+    setQ(agentId);
+    writeExplorerQ(agentId);
+  }, []);
+
   const selBatch = batches.find((b) => b.id === selBatchId) ?? batches[batches.length - 1];
   const selReceipt = selBatch?.receipts.find((r) => r.id === selReceiptId) ?? null;
   const selFraud = fraud.find((f) => f.task_id === selFraudId) ?? null;
@@ -652,16 +664,26 @@ export default function ExplorerPage() {
               </div>
               <div className="mt-4 grid grid-cols-1 gap-px border border-edge bg-edge font-mono text-[9px] sm:grid-cols-3">
                 {[
-                  ["STATUS", selFraud.status],
-                  ["RULING", selFraud.ruling ?? "—"],
-                  ["AMOUNT", `${selFraud.amount} USDC`],
-                  ["BUYER", selFraud.buyer || "—"],
-                  ["WORKER", selFraud.worker || "—"],
-                  ["CHAIN", selFraud.chain_mode ?? "offline"],
-                ].map(([k, v]) => (
-                  <div key={k} className="bg-void p-3">
-                    <div className="text-[7px] tracking-[0.2em] text-mute/50">{k}</div>
-                    <div className="mt-1.5 truncate text-[10px] text-mist">{v}</div>
+                  ["STATUS", selFraud.status, false],
+                  ["RULING", selFraud.ruling ?? "—", false],
+                  ["AMOUNT", `${selFraud.amount} USDC`, false],
+                  ["BUYER", selFraud.buyer || "—", Boolean(selFraud.buyer)],
+                  ["WORKER", selFraud.worker || "—", Boolean(selFraud.worker)],
+                  ["CHAIN", selFraud.chain_mode ?? "offline", false],
+                ].map(([k, v, click]) => (
+                  <div key={k as string} className="bg-void p-3">
+                    <div className="text-[7px] tracking-[0.2em] text-mute/50">{k as string}</div>
+                    {click && typeof v === "string" && v !== "—" ? (
+                      <button
+                        type="button"
+                        onClick={() => openAgent(v)}
+                        className="mt-1.5 truncate text-[10px] text-volt underline-offset-2 hover:underline"
+                      >
+                        {v}
+                      </button>
+                    ) : (
+                      <div className="mt-1.5 truncate text-[10px] text-mist">{v as string}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -782,7 +804,41 @@ export default function ExplorerPage() {
                         <span className={`truncate ${sel ? "text-volt" : "text-mist"}`}>{r.id}</span>
                         <span className="flex min-w-0 items-center gap-1.5 text-[9px] text-mute">
                           <span className="truncate">
-                            {r.buyer.replace("agent:", "")}→{r.worker.replace("agent:", "")}
+                            <span
+                              role="link"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openAgent(r.buyer);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.stopPropagation();
+                                  openAgent(r.buyer);
+                                }
+                              }}
+                              className="cursor-pointer text-mist hover:text-volt"
+                            >
+                              {r.buyer.replace("agent:", "")}
+                            </span>
+                            →
+                            <span
+                              role="link"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openAgent(r.worker);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.stopPropagation();
+                                  openAgent(r.worker);
+                                }
+                              }}
+                              className="cursor-pointer text-mist hover:text-volt"
+                            >
+                              {r.worker.replace("agent:", "")}
+                            </span>
                           </span>
                           <span className="truncate text-mist/80">{r.spec}</span>
                         </span>
@@ -818,6 +874,14 @@ export default function ExplorerPage() {
                           </div>
                         </div>
                       ))}
+                      <div className="flex flex-wrap gap-3 font-mono text-[8px] tracking-[0.14em]">
+                        <button type="button" onClick={() => openAgent(selReceipt.buyer)} className="text-mute hover:text-volt">
+                          BUYER {selReceipt.buyer.replace("agent:", "")}
+                        </button>
+                        <button type="button" onClick={() => openAgent(selReceipt.worker)} className="text-mute hover:text-volt">
+                          WORKER {selReceipt.worker.replace("agent:", "")} · TRUST
+                        </button>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2 font-mono text-[8px] tracking-[0.14em]">
                         <span className="text-mute">VOTES:</span>
                         {selReceipt.votes.length === 0 && <span className="text-mute/50">—</span>}

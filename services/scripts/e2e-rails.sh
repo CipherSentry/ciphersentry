@@ -57,10 +57,12 @@ export AUTH_REQUIRED="${AUTH_REQUIRED:-0}"
 echo "  CHAIN_RPC=$CHAIN_RPC"
 echo "  ESCROW=$ESCROW_ADDRESS"
 echo "  BATCHER=$BATCHER_ADDRESS"
+echo "  SLASH=${SLASH_EXECUTOR_ADDRESS:-}"
 echo "  PROTOCOL/RULER/BATCHER keys set (anvil #0–#2)"
 echo ""
 echo "→ chain e2e:  bash services/gateway/scripts/e2e-chain.sh"
 echo "→ batcher:    bash services/gateway/scripts/e2e-batcher.sh"
+echo "→ rails smoke: bash services/scripts/e2e-rails-smoke.sh"
 echo "→ compose:    bash services/scripts/e2e-compose.sh"
 echo ""
 echo "env snippet:"
@@ -68,6 +70,7 @@ cat <<EOF
 export CHAIN_RPC=$CHAIN_RPC CHAIN_ID=$CHAIN_ID
 export ESCROW_ADDRESS=$ESCROW_ADDRESS BATCHER_ADDRESS=$BATCHER_ADDRESS
 export USDC_ADDRESS=${USDC_ADDRESS:-}
+export SLASH_EXECUTOR_ADDRESS=${SLASH_EXECUTOR_ADDRESS:-}
 export PROTOCOL_KEY=$PROTOCOL_KEY RULER_KEY=$RULER_KEY
 export BATCHER_KEY_1=$BATCHER_KEY_1 BATCHER_KEY_2=$BATCHER_KEY_2 BATCHER_KEY_3=$BATCHER_KEY_3
 export PROTOCOL_FROM=${PROTOCOL_FROM:-}

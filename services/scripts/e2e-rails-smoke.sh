@@ -23,9 +23,11 @@ set +a
 export RULER_KEY="${RULER_KEY:-$PROTOCOL_KEY}"
 export PROTOCOL_KEY BATCHER_KEY_1 BATCHER_KEY_2 BATCHER_KEY_3
 export CHAIN_RPC CHAIN_ID ESCROW_ADDRESS BATCHER_ADDRESS USDC_ADDRESS PROTOCOL_FROM
+export SLASH_EXECUTOR_ADDRESS="${SLASH_EXECUTOR_ADDRESS:-}"
 
 echo "  escrow=$ESCROW_ADDRESS"
 echo "  batcher=$BATCHER_ADDRESS"
+echo "  slash=$SLASH_EXECUTOR_ADDRESS"
 echo "  ruler=set"
 
 # health probe: gateway with chain env must be write-ready
@@ -64,7 +66,10 @@ assert h.get("escrow") in ("write","WRITE","write-ready","WRITE-READY") or "writ
 # batcher modes: write-ready | offline | watch
 b=str(h.get("batcher","")).lower()
 assert "write" in b or b == "write-ready", h
-print("  rails write-ready OK")
+# B3 SlashExecutor must be wired (not offline)
+sx=str(h.get("slash_executor","")).lower()
+assert sx in ("write-ready","write","watch-only"), f"slash_executor offline — set SLASH_EXECUTOR_ADDRESS: {h}"
+print("  rails write-ready OK (slash=%s)" % sx)
 PY
 
 RPC_HELPER="$ROOT/services/gateway/scripts/rpc-call.mjs"
@@ -125,6 +130,21 @@ LIST=$(rpc fraud.list '{}')
 echo "$LIST" | grep -q "$BAD_ID" || { echo "fraud case missing: $LIST"; exit 1; }
 echo "  fraud case present (ruling path live; on-chain rule optional)"
 
+echo "== slash.submit (B3 chain encode/post) =="
+# evidence_hash bytes32; target can be agent id (fnv→address) or 0x address
+# on-chain may simulate if CENT bond not pre-funded — mode must not be offline
+SLASH=$(rpc slash.submit '{"evidence_hash":"0x'"$(python3 -c 'print("ab"*32)')"'","target":"agent:forge-11","severity":"FalseVote"}')
+echo "$SLASH" | tee /tmp/cs-rails-slash.json
+python3 - <<'PY'
+import json
+r=json.load(open("/tmp/cs-rails-slash.json"))
+assert r.get("slash_mode") in ("write-ready","watch-only"), r
+assert r.get("mode") in ("submitted","simulated","offline"), r
+assert r.get("mode") != "offline" or r.get("slash_mode") == "watch-only", r
+assert r.get("calldata") or r.get("txHash"), r
+print("  slash.submit", r.get("mode"), "slash_mode="+str(r.get("slash_mode")))
+PY
+
 echo ""
-echo "RAILS smoke OK  anvil escrow+batcher+ruler"
+echo "RAILS smoke OK  anvil escrow+batcher+ruler+slash"
 echo "  batch tx=$TX task=$TID1 fraud=$BAD_ID"

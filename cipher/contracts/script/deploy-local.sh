@@ -42,6 +42,7 @@ ESCROW=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))
 BATCHER=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))["batcher"])')
 USDC=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))["usdc"])')
 DEPLOYER=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))["deployer"])')
+SLASH=$(python3 -c 'import json;print(json.load(open("deployments/local.json")).get("slashExecutor",""))')
 
 # Anvil #0/#1/#2 — match Deploy.s.sol LOCAL batcher signers
 ANVIL_KEY1="${BATCHER_KEY_2:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
@@ -53,6 +54,7 @@ CHAIN_ID=31337
 ESCROW_ADDRESS=$ESCROW
 BATCHER_ADDRESS=$BATCHER
 USDC_ADDRESS=$USDC
+SLASH_EXECUTOR_ADDRESS=$SLASH
 PROTOCOL_FROM=$DEPLOYER
 PROTOCOL_KEY=$ANVIL_KEY
 BATCHER_KEY_1=$ANVIL_KEY
