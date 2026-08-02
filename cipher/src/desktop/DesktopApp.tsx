@@ -8,6 +8,7 @@ import {
   seedBatches,
 } from "../app/data";
 import { CipherSentry } from "../sdk/ciphersentry";
+import type { RpcTransport } from "../sdk/rpc";
 
 const cent = CipherSentry.shared();
 import type { Agent, Approval, TaskEvent } from "../app/data";
@@ -412,7 +413,17 @@ export default function DesktopApp() {
             <span className={cent.transport.kind === "rpc" ? "text-amber-600" : halted ? "text-red-400" : "text-volt"}>
               ●{cent.transport.kind.toUpperCase()} {cent.transport.kind === "rpc" ? "NODE" : halted ? "HALTED" : "LIVE"}
             </span>
-            <span>STREAM 2.8S · QUORUM 3/3</span>
+            {cent.transport.kind === "rpc" ? (() => {
+              const r = cent.transport as RpcTransport;
+              if (r.lastCapBreach) return <span className="text-red-400">CAP BREACH</span>;
+              if (r.eventRejectStats.pinMismatch > 0) return <span className="text-red-400">KEY MISMATCH</span>;
+              if (r.sessionActive && r.sessionMeta)
+                return <span className="text-volt">AUTH · {r.sessionMeta.rpm}/min · S={r.sessionMeta.stake}</span>;
+              if (r.pinnedPubkey) return <span>PIN {r.pinnedPubkey.slice(0, 8)}…</span>;
+              return <span>WS {r.lastEventSigned === true ? "SIGNED" : r.status}</span>;
+            })() : (
+              <span>STREAM 2.8S · QUORUM 3/3</span>
+            )}
             <span className={net.id === "robinhood" ? "text-volt" : ""}>NET {net.short}{net.tag === "CENT TGE" ? " · CENT SOON" : ""}</span>
             <span className="hidden xl:inline">WINDOW {feed.length} TXS</span>
           </div>

@@ -13,9 +13,15 @@ export default function Feed() {
   const { feed, approvals, now } = app;
   const streamLabel = (() => {
     if (cent.transport.kind !== "rpc") return "SYNCED";
-    const signed = (cent.transport as RpcTransport).lastEventSigned;
-    if (signed === true) return "SIGNED AS THEY FIRE";
-    if (signed === false) return "UNSIGNED STREAM";
+    const rpc = cent.transport as RpcTransport;
+    if (rpc.lastCapBreach) return "RATE / AUTH CAP";
+    if (rpc.eventRejectStats.pinMismatch > 0) return "KEY MISMATCH";
+    if (rpc.eventRejectStats.rejected > 0 && rpc.lastEventSigned === false) return "SIG REJECTED";
+    if (rpc.lastEventSigned === true) {
+      return rpc.sessionActive ? "SIGNED · AUTH" : "SIGNED AS THEY FIRE";
+    }
+    if (rpc.lastEventSigned === false) return "UNSIGNED STREAM";
+    if (rpc.pinnedPubkey) return "PINNED";
     return "SYNCED";
   })();
 

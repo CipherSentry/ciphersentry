@@ -22,7 +22,7 @@ import {
   type NormalizedBatch,
 } from "./normalize.ts";
 import { TrustSeriesWriter } from "./trust.ts";
-import { seedStake } from "./stakes.ts";
+import { liveStake, type StakeCache } from "./stakes.ts";
 
 /* ------------------------------- types ------------------------------------ */
 
@@ -79,12 +79,15 @@ export interface ChInserter {
 
 export class LedgerWriter {
   private trust: TrustSeriesWriter;
+  /** Idempotent fraud stake cuts (duplicate RESOLVED events). */
+  private fraudSlashed = new Set<string>();
 
   constructor(
     private pg: Querier,
     private ch: ChInserter,
+    stakes?: StakeCache | null,
   ) {
-    this.trust = new TrustSeriesWriter(pg, ch);
+    this.trust = new TrustSeriesWriter(pg, ch, stakes);
   }
 
   async upsertTask(e: TaskEventRow): Promise<void> {
@@ -110,9 +113,9 @@ export class LedgerWriter {
       ],
     );
 
-    // ensure agent rows exist for search/trust — seed s_i from registry/bond
+    // ensure agent rows exist for search/trust — s_i from live registry / bond
     for (const agent_id of [e.buyer, e.worker]) {
-      const stake = seedStake(agent_id);
+      const stake = liveStake(agent_id);
       await this.pg.exec(
         `INSERT INTO agents (agent_id, tier, trust, stake, success, status)
          VALUES ($1,$2,$3,$4,$5,$6)
@@ -390,6 +393,24 @@ export class LedgerWriter {
       ]);
     } catch (e) {
       console.warn(`[ch] fraud insert skipped: ${e instanceof Error ? e.message : e}`);
+    }
+
+    // Whitepaper §5: proven fault (Refund → worker) → s_i ← 0.95·s_i, T_i ← T_i/2
+    if (f.status === "RESOLVED" && f.ruling === "Refund" && f.worker) {
+      const key = `${f.task_id}:${f.worker}`;
+      if (!this.fraudSlashed.has(key)) {
+        this.fraudSlashed.add(key);
+        try {
+          const pt = await this.trust.applyFraudSlash(f.worker);
+          if (pt) {
+            console.log(
+              `[trust] fraud-slash worker=${f.worker} s_i=${pt.stake} T_i=${pt.trust_score.toFixed(1)}`,
+            );
+          }
+        } catch (e) {
+          console.warn(`[trust] fraud slash skipped: ${e instanceof Error ? e.message : e}`);
+        }
+      }
     }
   }
 }

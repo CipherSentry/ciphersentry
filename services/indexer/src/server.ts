@@ -21,6 +21,7 @@ import {
 } from "./ledger.ts";
 import { normalizeTask, normalizeBatch, normalizeFraud } from "./normalize.ts";
 import { verifyInclusionEitherOrder } from "./merkle.ts";
+import { StakeCache, setStakeCache } from "./stakes.ts";
 
 /* ------------------------------- config ------------------------------------ */
 
@@ -39,6 +40,7 @@ const NATS_URL = process.env.NATS_URL ?? "nats://127.0.0.1:4222";
 const FORCE_WS = process.env.INDEXER_FORCE_WS === "1";
 const PORT = Number(process.env.PORT ?? process.env.INDEXER_PORT ?? 8081);
 const MEMORY = process.env.INDEXER_MEMORY === "1";
+const GATEWAY_URL = (process.env.GATEWAY_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
 
 /* ----------------------------- trust score --------------------------------- */
 
@@ -69,6 +71,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         events: NODE_EVENTS,
         nats: NATS_URL || null,
         memory: MEMORY,
+        gateway: GATEWAY_URL,
       },
     };
   }
@@ -213,7 +216,15 @@ export async function boot(): Promise<void> {
     }
   }
 
-  const writer = new LedgerWriter(pg, ch as import("./ledger.ts").ChInserter);
+  // live s_i from gateway registry / bonds (seed fallback while cold)
+  const stakes = new StakeCache({ gatewayUrl: GATEWAY_URL });
+  setStakeCache(stakes);
+  const stakeRefresh = await stakes.refresh();
+  console.log(
+    `  stakes   → ${stakeRefresh.ok ? `live (${stakeRefresh.agents} ids)` : `seed fallback (${stakes.lastError ?? "rpc cold"})`} @ ${GATEWAY_URL}`,
+  );
+
+  const writer = new LedgerWriter(pg, ch as import("./ledger.ts").ChInserter, stakes);
   let tasksIn = 0;
   let batchesIn = 0;
   let fraudIn = 0;

@@ -17,6 +17,7 @@ import { LedgerWriter, ChainListener, trustScoreImport } from "./_helpers.ts";
 import { MemoryStore, MemoryClickHouse } from "../src/memory.ts";
 import { trustScore } from "../src/server.ts";
 import { TrustSeriesWriter } from "../src/trust.ts";
+import { applyFraudStakeCut, seedStake, StakeCache } from "../src/stakes.ts";
 
 void trustScoreImport;
 
@@ -312,6 +313,59 @@ describe("trustScore", () => {
     const bare = trustScore(0, 1, 0);
     const staked = trustScore(12_000, 1, 0);
     assert.ok(staked > bare, `expected stake to raise T (${staked} > ${bare})`);
+  });
+});
+
+describe("stakes / fraud slash", () => {
+  it("seedStake mirrors registry", () => {
+    assert.equal(seedStake("agent:atlas-01"), 12_000);
+    assert.equal(seedStake("vrf:gamma-1"), 40_000);
+    assert.equal(seedStake("unknown"), 0);
+  });
+
+  it("applyFraudStakeCut is 0.95", () => {
+    assert.equal(applyFraudStakeCut(1000), 950);
+    assert.equal(applyFraudStakeCut(850), 807.5);
+  });
+
+  it("Refund fraud cuts worker s_i and halves T", async () => {
+    const pg = new MemoryStore();
+    const ch = new MemoryClickHouse();
+    const stakes = new StakeCache({ refreshMs: 0 });
+    const writer = new LedgerWriter(pg, ch, stakes);
+    await writer.upsertTask({
+      task_id: "cent_f",
+      buyer: "agent:orbit-2",
+      worker: "agent:forge-11",
+      spec: "s",
+      amount: "3",
+      state: "DISPUTED",
+      state_at_block: 1,
+    });
+    const before = Number(pg.agents.get("agent:forge-11")!.stake);
+    assert.equal(before, 850);
+    await writer.writeFraud({
+      task_id: "cent_f",
+      status: "RESOLVED",
+      reported: "0xbad",
+      recomputed: "0xgood",
+      buyer: "agent:orbit-2",
+      worker: "agent:forge-11",
+      amount: "3",
+      ruling: "Refund",
+      reason: "mismatch",
+      open_at: Date.now(),
+      open_block: 1,
+      window_blocks: 64,
+      resolved_at: Date.now(),
+      original_votes: [],
+      challenge_votes: [],
+      chain_mode: "offline",
+      chain_tx: null,
+    });
+    const after = Number(pg.agents.get("agent:forge-11")!.stake);
+    assert.equal(after, applyFraudStakeCut(850));
+    assert.ok(Number(pg.agents.get("agent:forge-11")!.trust) < 100);
   });
 });
 

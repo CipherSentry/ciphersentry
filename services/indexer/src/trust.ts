@@ -5,12 +5,14 @@
  *
  * Triggered after each settled batch (and resolved fraud). Updates Postgres
  * `agents.trust` / `success` and appends `trust_series` rows for the batch epoch.
+ *
+ * Proven fault (Refund): T_i ← T_i/2 and s_i ← 0.95·s_i (whitepaper §5).
  */
 
 import type { Querier } from "./db.ts";
 import type { ChInserter } from "./ledger.ts";
 import type { ReceiptRow } from "./ledger.ts";
-import { seedStake } from "./stakes.ts";
+import { liveStake, type StakeCache } from "./stakes.ts";
 
 export interface AgentStats {
   agent_id: string;
@@ -52,10 +54,16 @@ WHERE t.worker = $1 OR t.buyer = $1
 
 export const AGENT_GET_SQL = `SELECT agent_id, stake, success, trust FROM agents WHERE agent_id = $1`;
 
+/** Explicit stake write (allows decrease on fraud slash). */
+export const AGENT_SET_STAKE_SQL = `
+UPDATE agents SET stake = $2, trust = $3, updated_at = now() WHERE agent_id = $1
+`.replace(/\s+/g, " ").trim();
+
 export class TrustSeriesWriter {
   constructor(
     private pg: Querier,
     private ch: ChInserter,
+    private stakes?: StakeCache | null,
   ) {}
 
   /**
@@ -105,6 +113,49 @@ export class TrustSeriesWriter {
     return points;
   }
 
+  /**
+   * Whitepaper proven fault on worker (Refund ruling):
+   *   s_i ← 0.95·s_i
+   *   T_i ← T_i / 2
+   */
+  async applyFraudSlash(agentId: string, epoch = 0): Promise<TrustPoint | null> {
+    if (!agentId) return null;
+    const before = await this.statsOf(agentId);
+    const newStake = this.stakes
+      ? this.stakes.slashFraud(agentId)
+      : Math.floor(before.stake * 0.95 * 100) / 100;
+    const scoreBefore = trustScore(before.stake, before.success, before.settled_count);
+    const scoreAfter = Math.min(100, Math.max(0, scoreBefore / 2));
+    const stats: AgentStats = { ...before, stake: newStake };
+    await this.forceAgent(agentId, scoreAfter, stats);
+
+    const point: TrustPoint = {
+      agent_id: agentId,
+      epoch,
+      stake: newStake,
+      success: stats.success,
+      settled_count: stats.settled_count,
+      trust_score: scoreAfter,
+      computed_at: Date.now(),
+    };
+    try {
+      await this.ch.insert("trust_series", [
+        {
+          agent_id: point.agent_id,
+          epoch: point.epoch,
+          stake: point.stake,
+          success: Number(point.success.toFixed(4)),
+          settled_count: point.settled_count,
+          trust_score: Number(point.trust_score.toFixed(4)),
+          computed_at: point.computed_at,
+        },
+      ]);
+    } catch (e) {
+      console.warn(`[ch] fraud trust_series skipped: ${e instanceof Error ? e.message : e}`);
+    }
+    return point;
+  }
+
   async statsOf(agent_id: string): Promise<AgentStats> {
     let stake = 0;
     try {
@@ -113,8 +164,10 @@ export class TrustSeriesWriter {
     } catch {
       /* agent row may not exist yet */
     }
-    // s#0: wire registry/bond stake when SoR row is still zero
-    if (stake <= 0) stake = seedStake(agent_id);
+    // Prefer live registry / bond when SoR row is still zero
+    if (stake <= 0) {
+      stake = this.stakes ? this.stakes.stakeOf(agent_id) : liveStake(agent_id);
+    }
 
     let total = 0;
     let ok = 0;
@@ -142,6 +195,8 @@ export class TrustSeriesWriter {
   private async upsertAgent(agent_id: string, score: number, stats: AgentStats): Promise<void> {
     try {
       // 6 bind params — matches MemoryStore INSERT agents layout
+      // stake uses GREATEST so concurrent batch writes never lower s_i;
+      // fraud path uses forceAgent instead.
       await this.pg.exec(
         `INSERT INTO agents (agent_id, tier, trust, stake, success, status)
          VALUES ($1,$2,$3,$4,$5,$6)
@@ -161,6 +216,35 @@ export class TrustSeriesWriter {
       );
     } catch (e) {
       console.warn(`[pg] agents trust update skipped: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  /** Force stake/trust (fraud slash — may decrease). */
+  private async forceAgent(agent_id: string, score: number, stats: AgentStats): Promise<void> {
+    try {
+      await this.pg.exec(
+        `INSERT INTO agents (agent_id, tier, trust, stake, success, status)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (agent_id) DO UPDATE
+         SET trust = EXCLUDED.trust,
+             success = EXCLUDED.success,
+             stake = EXCLUDED.stake,
+             updated_at = now()`,
+        [
+          agent_id,
+          "SEAT",
+          Number(score.toFixed(2)),
+          stats.stake,
+          Number(stats.success.toFixed(4)),
+          "ONLINE",
+        ],
+      );
+      // also try explicit UPDATE for stores that only match UPDATE pattern
+      await this.pg.exec(AGENT_SET_STAKE_SQL, [agent_id, stats.stake, Number(score.toFixed(2))]).catch(
+        () => undefined,
+      );
+    } catch (e) {
+      console.warn(`[pg] agents fraud slash skipped: ${e instanceof Error ? e.message : e}`);
     }
   }
 }

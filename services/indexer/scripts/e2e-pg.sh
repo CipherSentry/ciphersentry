@@ -27,9 +27,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "== postgres =="
+echo "== postgres + clickhouse =="
 if ! docker compose -f "$COMPOSE" ps --status running 2>/dev/null | grep -q ciphersentry-pg; then
-  docker compose -f "$COMPOSE" up -d postgres
+  docker compose -f "$COMPOSE" up -d postgres clickhouse
   STARTED_COMPOSE=1
   for i in $(seq 1 40); do
     if docker compose -f "$COMPOSE" exec -T postgres pg_isready -U cent -d ciphersentry >/dev/null 2>&1; then
@@ -38,7 +38,14 @@ if ! docker compose -f "$COMPOSE" ps --status running 2>/dev/null | grep -q ciph
     sleep 0.5
   done
 fi
+docker compose -f "$COMPOSE" up -d clickhouse 2>/dev/null || true
+for i in $(seq 1 40); do
+  curl -sf http://127.0.0.1:8123/ping >/dev/null 2>&1 && break
+  sleep 0.5
+done
 export PG_DSN="${PG_DSN:-postgres://cent:cent@127.0.0.1:5432/ciphersentry}"
+export CH_URL="${CH_URL:-http://127.0.0.1:8123}"
+export CH_USER="${CH_USER:-cent}" CH_PASSWORD="${CH_PASSWORD:-cent}"
 
 if command -v psql >/dev/null 2>&1; then
   psql "$PG_DSN" -f services/indexer/sql/schema.sql >/dev/null
@@ -105,6 +112,15 @@ curl -sf "$IBASE/batches" | grep -q batch_
 curl -sf "$IBASE/search?q=$TASK" | grep -q "$TASK"
 echo "  proof+search ok against Postgres"
 
+echo "== CH trust (best-effort) =="
+for i in $(seq 1 20); do
+  if curl -sf "$IBASE/trust/agent:vector-7" | grep -q trust_score; then
+    echo "  trust series ok"
+    break
+  fi
+  sleep 0.3
+done
+
 echo ""
-echo "B6 e2e-pg OK  gateway→pg indexer→proof"
+echo "B6 e2e-pg OK  gateway→pg+ch indexer→proof"
 echo "  task=$TASK"
