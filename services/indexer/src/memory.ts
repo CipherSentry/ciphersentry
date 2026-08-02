@@ -75,12 +75,14 @@ export class MemoryStore implements Querier {
         .slice(0, 50) as T[];
     }
 
-    // INSERT agents
+    // INSERT agents (create or upsert trust/success)
     if (/^INSERT INTO agents/i.test(sql)) {
       const [agent_id, tier, trust, stake, success, status] = p as (string | number)[];
-      if (!this.agents.has(String(agent_id))) {
-        this.agents.set(String(agent_id), {
-          agent_id,
+      const id = String(agent_id);
+      const prev = this.agents.get(id);
+      if (!prev) {
+        this.agents.set(id, {
+          agent_id: id,
           tier: tier ?? "SEAT",
           trust: trust ?? 50,
           stake: stake ?? 0,
@@ -88,8 +90,38 @@ export class MemoryStore implements Querier {
           status: status ?? "ONLINE",
           updated_at: new Date().toISOString(),
         });
+      } else if (/ON CONFLICT/i.test(sql)) {
+        this.agents.set(id, {
+          ...prev,
+          trust: trust ?? prev.trust,
+          success: success ?? prev.success,
+          stake: stake ?? prev.stake,
+          updated_at: new Date().toISOString(),
+        });
       }
       return [] as T[];
+    }
+
+    // agent stake/trust lookup
+    if (/SELECT agent_id, stake, success, trust FROM agents WHERE agent_id/i.test(sql)) {
+      const a = this.agents.get(String(p[0]));
+      return (a ? [a] : []) as T[];
+    }
+
+    // participation stats for trust series
+    if (/FROM receipts r\s+JOIN tasks t ON t\.task_id = r\.task_id/i.test(sql) ||
+        (/FROM receipts r JOIN tasks t/i.test(sql) && /worker = \$1 OR t\.buyer = \$1/i.test(sql))) {
+      const agent = String(p[0]);
+      let total = 0;
+      let ok = 0;
+      for (const r of this.receipts.values()) {
+        const t = this.tasks.get(String(r.task_id));
+        if (!t) continue;
+        if (t.worker !== agent && t.buyer !== agent) continue;
+        total++;
+        if (String(r.reported) === String(r.recomputed)) ok++;
+      }
+      return [{ total, ok, settled: ok }] as T[];
     }
 
     // INSERT tasks
@@ -303,7 +335,25 @@ export class MemoryStore implements Querier {
 export class MemoryClickHouse {
   tables = new Map<string, Row[]>();
 
-  async exec<T = unknown>(_text: string): Promise<T[]> {
+  async exec<T = unknown>(text: string): Promise<T[]> {
+    // /trust/:agent path — SELECT … FROM trust_series WHERE agent_id = '…'
+    if (/FROM trust_series/i.test(text)) {
+      const m = text.match(/agent_id\s*=\s*'([^']+)'/i);
+      const agent = m?.[1];
+      const rows = (this.tables.get("trust_series") ?? [])
+        .filter((r) => !agent || String(r.agent_id) === agent)
+        .sort((a, b) => Number(b.epoch) - Number(a.epoch))
+        .slice(0, 32)
+        .map((r) => ({
+          agent_id: r.agent_id,
+          epoch: r.epoch,
+          trust_score: r.trust_score,
+          stake: r.stake,
+          success: r.success,
+          settled_count: r.settled_count,
+        }));
+      return rows as T[];
+    }
     return [] as T[];
   }
 

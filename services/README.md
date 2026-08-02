@@ -9,6 +9,7 @@ services/
 ├── gateway/           # B0–B5 edge: JSON-RPC + WS + CENT + batcher + fraud worker
 ├── verifier-daemon/   # pool, election, slashes, accuracy oracle, accrual ledger
 └── indexer/           # B6 receipt graph: Postgres SoR + ClickHouse + proof API
+                       #    + trust_series writer (whitepaper §5 score per epoch)
 ```
 
 ## Event bus (NATS)

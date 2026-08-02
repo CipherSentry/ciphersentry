@@ -21,6 +21,7 @@ import {
   type FraudCaseRow,
   type NormalizedBatch,
 } from "./normalize.ts";
+import { TrustSeriesWriter } from "./trust.ts";
 
 /* ------------------------------- types ------------------------------------ */
 
@@ -76,10 +77,14 @@ export interface ChInserter {
 }
 
 export class LedgerWriter {
+  private trust: TrustSeriesWriter;
+
   constructor(
     private pg: Querier,
     private ch: ChInserter,
-  ) {}
+  ) {
+    this.trust = new TrustSeriesWriter(pg, ch);
+  }
 
   async upsertTask(e: TaskEventRow): Promise<void> {
     await this.pg.exec(
@@ -276,6 +281,18 @@ export class LedgerWriter {
       ]);
     } catch (e) {
       console.warn(`[ch] insert skipped: ${e instanceof Error ? e.message : e}`);
+    }
+
+    // Trust series — whitepaper §5 score per agent per epoch (CH + agents.trust)
+    try {
+      const points = await this.trust.writeForBatch(b.epoch, b.receipts);
+      if (points.length) {
+        console.log(
+          `[trust] epoch=${b.epoch} agents=${points.length} sample=${points[0]!.agent_id}@${points[0]!.trust_score.toFixed(1)}`,
+        );
+      }
+    } catch (e) {
+      console.warn(`[trust] series write skipped: ${e instanceof Error ? e.message : e}`);
     }
 
     return { reconciled, mode, rootLocal, proofsOk, proofsFail };
