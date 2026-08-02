@@ -1,5 +1,5 @@
 /**
- * B3 smoke — elect → settle (accrual) → claim → dishonest slash path.
+ * B4 smoke — elect → settle (accrual + batch leaf) → claim → anchor → slash path.
  *   GATEWAY_URL=http://127.0.0.1:8080 npm run smoke
  */
 
@@ -23,8 +23,13 @@ const health = await fetch(`${base}/health`).then((r) => r.json());
 console.log("health", health);
 
 const info = await rpc("node.info");
-console.log("node.info", { phase: info.phase, accrual: info.accrual, slash: info.slash_executor });
-if (info.phase !== "B3") throw new Error(`expected phase B3, got ${info.phase}`);
+console.log("node.info", {
+  phase: info.phase,
+  accrual: info.accrual,
+  slash: info.slash_executor,
+  batcher: info.batcher,
+});
+if (info.phase !== "B4") throw new Error(`expected phase B4, got ${info.phase}`);
 
 await rpc("stake", { verifier: "vrf:ext-nova", amount: "50000", accuracy_bps: 9900 });
 const nextEpoch = Number(info.epoch) + 1;
@@ -41,8 +46,36 @@ const taskId = String(committed.task_id);
 await rpc("task.report", { task_id: taskId, hash: String(committed.expected_hash) });
 const settled = await rpc("verify", { task_id: taskId });
 console.log("verify accrual", settled.accrual);
+console.log("verify batch leaf", settled.batch);
 if (settled.status !== "SETTLED") throw new Error("expected SETTLED");
 if (!settled.accrual) throw new Error("expected accrual on settle");
+if (!settled.batch || !(settled.batch as { leaf?: string }).leaf) {
+  throw new Error("expected batch leaf on settle");
+}
+
+const pending = await rpc("batch.pending");
+console.log("batch.pending", pending);
+if (Number(pending.count) < 1) throw new Error("expected pending leaf after settle");
+
+// second settle so root has ≥1 leaf still if first auto-flushed
+const c2 = await rpc("task.commit", {
+  spec: "embed.docs.batch",
+  worker: "agent:helix-3",
+  buyer: "agent:orbit-2",
+  escrow: { amount: "12.50", asset: "USDC" },
+});
+await rpc("task.report", { task_id: String(c2.task_id), hash: String(c2.expected_hash) });
+await rpc("verify", { task_id: String(c2.task_id) });
+
+const anchored = await rpc("batch.anchor", {});
+console.log("batch.anchor", anchored);
+if (!anchored.root) throw new Error("expected merkle root from batch.anchor");
+if (!["offline", "submitted", "simulated"].includes(String(anchored.mode))) {
+  throw new Error(`unexpected anchor mode ${anchored.mode}`);
+}
+
+const binfo = await rpc("batch.info");
+console.log("batch.info", binfo);
 
 const member = (elected.members as string[])[0]!;
 const bal = await rpc("accrual.balance", { verifier: member });
@@ -82,4 +115,4 @@ const slashEnc = await rpc("slash.submit", {
 });
 console.log("slash.submit", slashEnc);
 
-console.log("B3 smoke OK");
+console.log("B4 smoke OK");

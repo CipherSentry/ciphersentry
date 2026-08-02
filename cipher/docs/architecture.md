@@ -1,8 +1,8 @@
 # CipherSentry Backend — Architecture Brainstorm
 
-Status: **B3 CENT-ready** — bond registry, epoch election, real slashes,
-**accuracy² fee accrual** (0.35% · 85/15), accuracy oracle, optional on-chain
-SlashExecutor writer (`SLASH_EXECUTOR_ADDRESS`). Reference client:
+Status: **B4 settlement-ready** — B3 CENT path plus **SettlementBatcher writer**:
+settled receipts → Merkle root → 2-of-3 EIP-712 `anchorRoot` via
+`BATCHER_ADDRESS` + `BATCHER_KEY_{1,2,3}` (Alchemy / anvil). Reference client:
 `src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
 
 ---
@@ -82,6 +82,7 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 | B1 — Verifier alpha | **3 foundation verifiers** on gateway `verify`; pure recompute + WASM sandbox; **slash dry-runs** | WASM sandbox hardened |
 | B2 — Verifier network | **External stake** (`stake`), **epoch.elect** (top-3, whale cap), **real registry slashes** on mismatch | audits #1+#2 done |
 | B3 — CENT-ready | **Accrual ledger** (0.35% fee, accuracy² weights, claim), **accuracy oracle**, optional **SlashExecutor** chain write | gate list in DOC-05 |
+| B4 — Settlement batcher | **Merkle fold** of settled leaves, **2-of-3** EIP-712 `anchorRoot`, `batch.anchor` / auto-flush, on-chain `BatchAnchored` via Alchemy/anvil | B3 + batcher signers |
 
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.

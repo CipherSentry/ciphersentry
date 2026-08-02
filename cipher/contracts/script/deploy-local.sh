@@ -43,6 +43,10 @@ BATCHER=$(python3 -c 'import json;print(json.load(open("deployments/local.json")
 USDC=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))["usdc"])')
 DEPLOYER=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))["deployer"])')
 
+# Anvil #0/#1/#2 — match Deploy.s.sol LOCAL batcher signers
+ANVIL_KEY1="${BATCHER_KEY_2:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
+ANVIL_KEY2="${BATCHER_KEY_3:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
+
 cat > deployments/.env.gateway <<EOF
 CHAIN_RPC=$RPC
 CHAIN_ID=31337
@@ -51,6 +55,11 @@ BATCHER_ADDRESS=$BATCHER
 USDC_ADDRESS=$USDC
 PROTOCOL_FROM=$DEPLOYER
 PROTOCOL_KEY=$ANVIL_KEY
+BATCHER_KEY_1=$ANVIL_KEY
+BATCHER_KEY_2=$ANVIL_KEY1
+BATCHER_KEY_3=$ANVIL_KEY2
+BATCH_INTERVAL_MS=0
+BATCH_MAX_PENDING=9
 EOF
 
 echo ""
