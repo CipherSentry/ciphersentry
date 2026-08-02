@@ -42,10 +42,7 @@ const MEMORY = process.env.INDEXER_MEMORY === "1";
 
 /* ----------------------------- trust score --------------------------------- */
 
-export function trustScore(stake: number, success: number, settledCount: number): number {
-  const t = 50 * Math.log2(1 + stake) + 40 * success + 10 * (1 - Math.exp(-settledCount / 500));
-  return Math.min(100, Math.max(0, t));
-}
+export { trustScore } from "./trust.ts";
 
 /* ------------------------------- router ------------------------------------ */
 

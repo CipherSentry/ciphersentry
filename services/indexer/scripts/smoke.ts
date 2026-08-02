@@ -82,11 +82,14 @@ async function main(): Promise<void> {
   const t = trustScore(25000, 0.95, 120);
   if (t < 0 || t > 100) throw new Error(`trust out of range: ${t}`);
 
+  const series = ch.tables.get("trust_series") ?? [];
+  if (series.length < 1) throw new Error("trust_series empty after batch");
+
   console.log("B6 smoke OK");
   console.log(`  batch     batch_smoke  root=${root.slice(0, 18)}…`);
   console.log(`  reconciled ${result.mode} proofs=${result.proofsOk}/2`);
   console.log(`  trust demo ${t.toFixed(2)}`);
-  console.log(`  ch rows    receipts=${ch.tables.get("receipts")?.length ?? 0}`);
+  console.log(`  ch rows    receipts=${ch.tables.get("receipts")?.length ?? 0} trust_series=${series.length}`);
 }
 
 void main().catch((e) => {

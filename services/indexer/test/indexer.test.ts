@@ -16,6 +16,7 @@ import { normalizeTask, normalizeBatch } from "../src/normalize.ts";
 import { LedgerWriter, ChainListener, trustScoreImport } from "./_helpers.ts";
 import { MemoryStore, MemoryClickHouse } from "../src/memory.ts";
 import { trustScore } from "../src/server.ts";
+import { TrustSeriesWriter } from "../src/trust.ts";
 
 void trustScoreImport;
 
@@ -193,6 +194,15 @@ describe("LedgerWriter memory", () => {
     assert.equal(pg.receipts.size, 2);
     assert.ok((ch.tables.get("receipts")?.length ?? 0) >= 2);
 
+    // trust_series populated for buyers/workers
+    const series = ch.tables.get("trust_series") ?? [];
+    assert.ok(series.length >= 2, `expected trust_series rows, got ${series.length}`);
+    assert.ok(series.every((r) => Number(r.trust_score) >= 0 && Number(r.trust_score) <= 100));
+    assert.ok(series.some((r) => r.agent_id === "agent:vector-7" && Number(r.epoch) === 88421));
+    const agent = pg.agents.get("agent:vector-7");
+    assert.ok(agent, "agents.trust updated");
+    assert.ok(Number(agent!.trust) > 0);
+
     const proof = await pg.exec(`SELECT * FROM receipts WHERE receipt_id = $1 LIMIT 1`, ["cent_a"]);
     assert.equal(proof.length, 1);
     const path = (proof[0] as { path: string[] }).path;
@@ -296,6 +306,51 @@ describe("trustScore", () => {
     assert.ok(trustScore(0, 0, 0) >= 0);
     assert.ok(trustScore(1e9, 1, 1e6) <= 100);
     assert.ok(trustScore(100, 0.9, 500) > 50);
+  });
+});
+
+describe("TrustSeriesWriter", () => {
+  it("writes CH series and updates agents after batch", async () => {
+    const pg = new MemoryStore();
+    const ch = new MemoryClickHouse();
+    const writer = new LedgerWriter(pg, ch);
+    const leaf = leafHash("cent_t", "0xok");
+    const { root, paths } = merkleRoot([leaf]);
+    await writer.writeBatch({
+      batch_id: "batch_trust",
+      epoch: 99,
+      root,
+      count: 1,
+      total: "1",
+      receipts: [
+        {
+          receipt_id: "cent_t",
+          task_id: "cent_t",
+          buyer: "agent:buyer",
+          worker: "agent:worker",
+          spec: "s",
+          amount: "1",
+          reported: "0xok",
+          recomputed: "0xok",
+          votes: [],
+          ms: 1,
+          epoch: 99,
+          leaf,
+        },
+      ],
+      _paths: paths,
+    } as never);
+
+    const tw = new TrustSeriesWriter(pg, ch);
+    const stats = await tw.statsOf("agent:worker");
+    assert.equal(stats.settled_count, 1);
+    assert.equal(stats.success, 1);
+
+    const rows = await ch.exec(
+      `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = 'agent:worker' ORDER BY epoch DESC LIMIT 32 FORMAT JSON`,
+    );
+    assert.equal(rows.length, 1);
+    assert.equal((rows[0] as { epoch: number }).epoch, 99);
   });
 });
 
