@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "description": "Verifier daemon alpha — deterministic WASM re-execution for CipherSentry tasks",
-  "main": "dist/daemon.js",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
-    "daemon": "node --experimental-strip-types src/daemon.ts",
+    "daemon": "node --experimental-transform-types src/daemon.ts",
+    "test": "node --experimental-transform-types --test test/*.test.ts",
     "build": "tsc -p ."
   },
   "engines": {

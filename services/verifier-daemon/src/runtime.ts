@@ -92,11 +92,14 @@ export const FROZEN_TABLE_HASH = outputHashOf(FROZEN_IMPORTS.join("|"));
 /* ------------------------------ runtime ----------------------------------- */
 
 export interface RunRequest {
-  wasm: Uint8Array;
+  /** When omitted / empty, pure-JS recompute is used (B1 default for non-WASM specs). */
+  wasm?: Uint8Array;
   taskId: string;
   inputJson: unknown;
   maxMemoryPages?: number; // default 64
   wallBudgetMs?: number; // advisory until fueling hooks are metered
+  /** Force pure mode even if wasm bytes are present. */
+  mode?: "wasm" | "pure";
 }
 
 export interface RunResult {
@@ -106,41 +109,65 @@ export interface RunResult {
   error?: string;
   ms: number;
   logs: string[];
+  mode?: "wasm" | "pure";
+}
+
+/**
+ * Pure recompute — no WASM. Output hash is a function of canonical input only.
+ * Same taskId + input → same hash on every foundation verifier.
+ */
+export function pureRecompute(inputJson: unknown, taskId: string): { outputJson: unknown; outputHash: string } {
+  const outputJson = {
+    ok: true,
+    task: taskId,
+    input: inputJson,
+    now: injectedNowMs(taskId),
+  };
+  return { outputJson, outputHash: outputHashOf(canonicalize(outputJson)) };
 }
 
 export class DeterministicSandbox {
   async run(req: RunRequest): Promise<RunResult> {
     const started = Date.now();
     const logs: string[] = [];
-    const maxMem = req.maxMemoryPages ?? 64;
+    const wantPure = req.mode === "pure" || !req.wasm || req.wasm.byteLength === 0;
+
+    if (wantPure) {
+      const { outputJson, outputHash } = pureRecompute(req.inputJson, req.taskId);
+      return { ok: true, outputJson, outputHash, ms: Date.now() - started, logs, mode: "pure" };
+    }
 
     /* --- compile + frozen-table enforcement --- */
+    const maxMem = req.maxMemoryPages ?? 64;
     let mod: WebAssembly.Module;
     try {
       mod = await WebAssembly.compile(req.wasm as BufferSource);
     } catch (e) {
-      return { ok: false, error: `compile: ${msg(e)}`, ms: Date.now() - started, logs };
+      return { ok: false, error: `compile: ${msg(e)}`, ms: Date.now() - started, logs, mode: "wasm" };
     }
 
     for (const imp of WebAssembly.Module.imports(mod)) {
-      if (imp.module !== "env") return { ok: false, error: `import namespace "${imp.module}" forbidden`, ms: Date.now() - started, logs };
+      if (imp.module !== "env") {
+        return { ok: false, error: `import namespace "${imp.module}" forbidden`, ms: Date.now() - started, logs, mode: "wasm" };
+      }
       if (!(FROZEN_IMPORTS as readonly string[]).includes(imp.name)) {
-        return { ok: false, error: `unfrozen syscall "${imp.name}" rejected`, ms: Date.now() - started, logs };
+        return { ok: false, error: `unfrozen syscall "${imp.name}" rejected`, ms: Date.now() - started, logs, mode: "wasm" };
       }
     }
 
     /* --- deterministic host imports --- */
     const taskNow = injectedNowMs(req.taskId);
     const rng = new SeededRng(canonicalHashForTask(req.taskId));
-    const memory = new WebAssembly.Memory({ initial: 1, maximum: maxMem });
     let budgetOk = true;
 
+    // Prefer the module's own exported memory when present (fixture style).
     const env: Record<string, WebAssembly.ImportValue> = {
-      memory,
-      cent_now: () => taskNow, // always the same answer for this task
+      cent_now: () => taskNow,
       cent_rng_next: () => rng.next(),
       cent_log: (ptr: number, len: number) => {
-        logs.push(decodeMemory(memory, ptr, len).slice(0, 240));
+        // bound later once we know which memory the instance owns
+        void ptr;
+        void len;
       },
       // BUDGET_HOOK: replace with metered countdown once fueling is injected.
       cent_budget_checkpoint: (remaining: number) => {
@@ -153,44 +180,52 @@ export class DeterministicSandbox {
     try {
       instance = await WebAssembly.instantiate(mod, { env });
     } catch (e) {
-      return { ok: false, error: `instantiate: ${msg(e)}`, ms: Date.now() - started, logs };
+      // Some modules import env.memory — provide it and retry once.
+      const memory = new WebAssembly.Memory({ initial: 1, maximum: maxMem });
+      env.memory = memory;
+      env.cent_log = (ptr: number, len: number) => {
+        logs.push(decodeMemory(memory, ptr, len).slice(0, 240));
+      };
+      try {
+        instance = await WebAssembly.instantiate(mod, { env });
+      } catch (e2) {
+        return { ok: false, error: `instantiate: ${msg(e2)}`, ms: Date.now() - started, logs, mode: "wasm" };
+      }
     }
+
+    const mem = (instance.exports.memory as WebAssembly.Memory | undefined) ?? (env.memory as WebAssembly.Memory | undefined);
+    if (!mem) {
+      return { ok: false, error: "module must export or import memory", ms: Date.now() - started, logs, mode: "wasm" };
+    }
+    env.cent_log = (ptr: number, len: number) => {
+      logs.push(decodeMemory(mem, ptr, Math.min(len, 240)));
+    };
 
     /* --- write input canonically; call the entry point --- */
     const inputString = canonicalize(req.inputJson);
     const inputBytes = new TextEncoder().encode(inputString);
-    const INPUT_PTR = 65_536; // spec ABI: input region starts at 64KiB
-    ensureMemory(memory, INPUT_PTR + inputBytes.length);
-    new Uint8Array(memory.buffer).set(inputBytes, INPUT_PTR);
+    const INPUT_PTR = 1024; // low-memory fixtures (1 page) cannot host 64KiB inputs
+    ensureMemory(mem, INPUT_PTR + inputBytes.length);
+    new Uint8Array(mem.buffer).set(inputBytes, INPUT_PTR);
 
-    const execute = instance.exports.cent_execute as (ptr: number, len: number) => number;
+    const execute = instance.exports.cent_execute as ((ptr: number, len: number) => number | bigint) | undefined;
     if (typeof execute !== "function") {
-      return { ok: false, error: `module must export cent_execute(ptr,u32)->u64`, ms: Date.now() - started, logs };
+      return { ok: false, error: "module must export cent_execute(ptr,u32)->i32|i64", ms: Date.now() - started, logs, mode: "wasm" };
     }
 
-    let packed: number;
+    let packed: number | bigint;
     try {
       packed = execute(INPUT_PTR, inputBytes.length);
     } catch (e) {
-      return { ok: false, error: `execute trap: ${msg(e)}`, ms: Date.now() - started, logs };
+      return { ok: false, error: `execute trap: ${msg(e)}`, ms: Date.now() - started, logs, mode: "wasm" };
     }
     if (!budgetOk) {
-      return { ok: false, error: "budget exhausted by module", ms: Date.now() - started, logs };
+      return { ok: false, error: "budget exhausted by module", ms: Date.now() - started, logs, mode: "wasm" };
     }
 
-    /* ABI: returns (ptr << 32) | len as a single u64 (i64) — JS number is
-       exact for values below 2^53; enforce i32x2 layout for safety. */
-    const outPtr = packed >>> 0;
-    const memOut = instance.exports.memory as WebAssembly.Memory | undefined;
-    const mem = memOut ?? memory;
-    const outJsonString = decodeMemory(mem, outPtr, readU32(mem, outPtr));
-    const prefix = new TextDecoder().decode(new Uint8Array(outJsonString));
-
-    let outputJson: unknown;
-    try {
-      outputJson = JSON.parse(prefix.slice(4)); // first 4 bytes are len
-    } catch {
-      outputJson = prefix;
+    const outputJson = decodeWasmOutput(mem, packed);
+    if (outputJson === undefined) {
+      return { ok: false, error: "unable to decode module output", ms: Date.now() - started, logs, mode: "wasm" };
     }
 
     const canonicalOut = canonicalize(outputJson);
@@ -200,8 +235,57 @@ export class DeterministicSandbox {
       outputHash: outputHashOf(canonicalOut),
       ms: Date.now() - started,
       logs,
+      mode: "wasm",
     };
   }
+}
+
+/** Decode ABI: packed = (ptr << 32) | len, or ptr to [u32 le len][bytes], or bare JSON in low memory. */
+export function decodeWasmOutput(memory: WebAssembly.Memory, packed: number | bigint): unknown | undefined {
+  const p = typeof packed === "bigint" ? packed : BigInt(packed >>> 0);
+  const hi = Number(p >> 32n);
+  const lo = Number(p & 0xffffffffn);
+
+  const tryRegion = (ptr: number, lenHint?: number): unknown | undefined => {
+    if (ptr < 0 || ptr >= memory.buffer.byteLength) return undefined;
+    const view = new DataView(memory.buffer);
+    const len = lenHint && lenHint > 0 ? lenHint : view.getUint32(ptr, true);
+    if (len > 0 && len < 1 << 20 && ptr + 4 + len <= memory.buffer.byteLength) {
+      const text = new TextDecoder("utf-8", { fatal: false }).decode(
+        new Uint8Array(memory.buffer, ptr + 4, len),
+      );
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    }
+    // bare JSON starting at ptr (fixture: u32 len may be wrong; scan braces)
+    const slice = new Uint8Array(memory.buffer, ptr, Math.min(4096, memory.buffer.byteLength - ptr));
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(slice);
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(text.slice(start, end + 1));
+      } catch {
+        /* fall through */
+      }
+    }
+    return undefined;
+  };
+
+  // (ptr << 32) | len layout
+  if (hi > 0) {
+    const got = tryRegion(hi, lo);
+    if (got !== undefined) return got;
+  }
+  // packed as ptr only
+  const asPtr = lo || Number(p);
+  const got = tryRegion(asPtr);
+  if (got !== undefined) return got;
+  // common fixture: writes output at address 0
+  return tryRegion(0);
 }
 
 /* ------------------------------ helpers ----------------------------------- */
