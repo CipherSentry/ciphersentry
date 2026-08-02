@@ -5,10 +5,24 @@ Each package has its own `package.json`.
 
 ```
 services/
+├── bus/               # EventBus — memory + NATS (cs.events.{tasks,batches,fraud})
 ├── gateway/           # B0–B5 edge: JSON-RPC + WS + CENT + batcher + fraud worker
 ├── verifier-daemon/   # pool, election, slashes, accuracy oracle, accrual ledger
 └── indexer/           # B6 receipt graph: Postgres SoR + ClickHouse + proof API
 ```
+
+## Event bus (NATS)
+
+Compose already runs NATS (`nats://127.0.0.1:4222`). Gateway **publishes** domain
+events; WS hub + indexer **subscribe**. Indexer no longer depends on gateway WS
+when NATS is healthy.
+
+| Env | Effect |
+| --- | --- |
+| `NATS_URL` | Default `nats://127.0.0.1:4222`. Empty → memory (gateway) / WS (indexer) |
+| `INDEXER_FORCE_WS` | `1` forces indexer onto gateway WS even if NATS is up |
+
+Subjects: `cs.events.tasks` · `cs.events.batches` · `cs.events.fraud`.
 
 ## gateway (B0–B5 fraud-ready)
 
@@ -27,6 +41,7 @@ cd services/gateway && npm install && npm run gateway
 | `PROTOCOL_FROM` | Unlocked EOA for `eth_sendTransaction` (anvil/dev) |
 | `PROTOCOL_KEY` | Present → write-ready (external signer / future raw path) |
 | `GATEWAY_PORT` | Default `8080` |
+| `NATS_URL` | Event bus (default local compose NATS; memory fallback) |
 | `SLASH_EXECUTOR_ADDRESS` | Optional on-chain SlashExecutor for evidence posts |
 | `BATCHER_ADDRESS` | SettlementBatcher for Merkle root anchors |
 | `BATCHER_KEY_1` / `_2` / `_3` | 2-of-3 EIP-712 signers (anvil #0/#1/#2 locally) |

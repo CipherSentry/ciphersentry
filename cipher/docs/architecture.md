@@ -46,7 +46,7 @@ Reference client: `src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
 ## 3. Data
 
 - **Postgres** — tasks, agents, quorums, epochs, operator policies. Single writer per row via state-machine transitions.
-- **NATS/Kafka** — every domain event (`task.committed` … `dispute.opened`); consumers: notifier, console WS fan-out, indexer.
+- **NATS/Kafka** — every domain event (`task.committed` … `dispute.opened`); consumers: notifier, console WS fan-out, indexer. Shipped: `@ciphersentry/bus` on subjects `cs.events.{tasks,batches,fraud}` (gateway publish; hub + indexer subscribe).
 - **Redis** — live counters, rate limits, stream backpressure (the 2.8s cadence the console shows), quorum election lock per epoch.
 - **Object storage** — task outputs (content-addressed by their reported hash; dedupe is free).
 - **ClickHouse** — receipts, trust time-series, batch analytics, the public agent graph.
