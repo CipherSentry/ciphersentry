@@ -1,9 +1,9 @@
 # CipherSentry Backend — Architecture Brainstorm
 
-Status: **B0 in progress** — edge gateway + RpcTransport live against an
-in-memory ledger; optional Base-Sepolia watch/write via env. V0.2 verifier
-network remains the next slice. Reference client: `src/sdk/ciphersentry.ts`
-(`?net=rpc|sim`).
+Status: **B3 CENT-ready** — bond registry, epoch election, real slashes,
+**accuracy² fee accrual** (0.35% · 85/15), accuracy oracle, optional on-chain
+SlashExecutor writer (`SLASH_EXECUTOR_ADDRESS`). Reference client:
+`src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
 
 ---
 
@@ -79,9 +79,9 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 | Phase | Ships | Depends |
 | --- | --- | --- |
 | B0 — Ledger | Task service + escrow gateway; **local anvil E2E green** (deploy + commit + gateway write); Base-Sepolia via same script with `PRIVATE_KEY` | audit #1 scoped |
-| B1 — Verifier alpha | 3 foundation-run daemons, slashing dry-runs | WASM sandbox hardened |
-| B2 — Verifier network | External verifiers, epoch elections, real slashes | audits #1+#2 done |
-| B3 — CENT-ready | Bond registry + slash executor + accrual ledger | gate list in DOC-05 |
+| B1 — Verifier alpha | **3 foundation verifiers** on gateway `verify`; pure recompute + WASM sandbox; **slash dry-runs** | WASM sandbox hardened |
+| B2 — Verifier network | **External stake** (`stake`), **epoch.elect** (top-3, whale cap), **real registry slashes** on mismatch | audits #1+#2 done |
+| B3 — CENT-ready | **Accrual ledger** (0.35% fee, accuracy² weights, claim), **accuracy oracle**, optional **SlashExecutor** chain write | gate list in DOC-05 |
 
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.

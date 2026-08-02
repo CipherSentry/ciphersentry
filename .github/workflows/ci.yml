@@ -54,3 +54,31 @@ jobs:
       - run: npm ci
       - run: npx vitest run --pool=threads tests/rpc-transport.test.ts tests/chain-decoder.test.ts tests/crypto.test.ts tests/epoch.test.ts
       - run: npm run build
+
+  services:
+    name: verifier + gateway
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: services
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/package-lock.json
+      - run: npm ci
+      - name: Verifier daemon unit tests
+        run: npm test
+      - name: Gateway B1 smoke
+        run: |
+          npm run gateway &
+          GATEWAY_PID=$!
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8080/health >/dev/null; then break; fi
+            sleep 0.5
+          done
+          npm run smoke
+          kill $GATEWAY_PID

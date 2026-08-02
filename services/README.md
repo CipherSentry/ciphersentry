@@ -5,12 +5,12 @@ Each package has its own `package.json`.
 
 ```
 services/
-├── gateway/           # B0 edge: JSON-RPC + WS events + optional escrow writer
-├── verifier-daemon/   # V0.2 alpha: WASM sandbox for deterministic re-execution
+├── gateway/           # B0–B3 edge: JSON-RPC + WS + CENT accrual + slash writer
+├── verifier-daemon/   # pool, election, slashes, accuracy oracle, accrual ledger
 └── indexer/           # receipt graph: Postgres state + ClickHouse analytics
 ```
 
-## gateway (B0 Ledger)
+## gateway (B0–B3 CENT-ready)
 
 ```bash
 cd services/gateway && npm install && npm run gateway
@@ -27,6 +27,7 @@ cd services/gateway && npm install && npm run gateway
 | `PROTOCOL_FROM` | Unlocked EOA for `eth_sendTransaction` (anvil/dev) |
 | `PROTOCOL_KEY` | Present → write-ready (external signer / future raw path) |
 | `GATEWAY_PORT` | Default `8080` |
+| `SLASH_EXECUTOR_ADDRESS` | Optional on-chain SlashExecutor for evidence posts |
 
 ### Local chain E2E (anvil)
 
@@ -60,13 +61,28 @@ Repo secrets:
 gh workflow run deploy-base-sepolia.yml -f mode=local -f write_deployment=true
 ```
 
-RPC methods: `registry.query` · `task.commit` · `task.report` · `verify` ·
-`task.settle` · `dispute.open` · `operator.rule` · `stake` · `node.info`.
+RPC methods: `registry.query` · `registry.list` · `task.commit` · `task.report` ·
+`verify` · `task.settle` · `dispute.open` · `operator.rule` · `stake` ·
+`epoch.elect` · `epoch.info` · `accrual.balance` · `accrual.claim` ·
+`accrual.summary` · `accuracy.of` · `accuracy.list` · `slash.submit` · `node.info`.
 
-## verifier-daemon
+**B3 fee path:** on honest `verify`, take **0.35%** of escrow → **85%** to ok
+voters (accuracy²-weighted) + **15%** treasury. Claim via `accrual.claim`.
+Mismatch still slashes bonds; optional `SLASH_EXECUTOR_ADDRESS` posts evidence
+on-chain.
 
-Re-executes task specs inside a deterministic WASM sandbox and votes on the
-output hash. Determinism is enforced the same way at every link of the chain:
+```bash
+cd services && npm test
+npm run gateway &
+npm run smoke       # B3 path
+```
+
+## verifier-daemon (B3)
+
+Re-executes specs, elects quorum, slashes bonds, updates **accuracy EMA**,
+credits **AccrualLedger**. Foundation seats seed cold start; externals via `stake`.
+
+Determinism knobs (WASM path):
 
 | Knob | Mechanism |
 | --- | --- |

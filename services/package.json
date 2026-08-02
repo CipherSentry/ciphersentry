@@ -12,6 +12,8 @@
     "gateway": "npm run gateway -w gateway",
     "indexer": "npm run indexer -w indexer",
     "schema:ch": "npm run schema:ch -w indexer",
-    "daemon": "npm run daemon -w verifier-daemon"
+    "daemon": "npm run daemon -w verifier-daemon",
+    "test": "npm run test -w verifier-daemon",
+    "smoke": "npm run smoke -w gateway"
   }
 }

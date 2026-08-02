@@ -1,22 +1,24 @@
 /**
- * CipherSentry Edge Gateway — B0 Ledger.
+ * CipherSentry Edge Gateway — B0–B3 CENT-ready.
  *
  *   POST /rpc    — JSON-RPC 2.0 over the §5 method map (dispatch in rpc.ts)
  *   GET  /events — WebSocket hub (task.event / batch.event frames)
- *   GET  /health — liveness + escrow mode
+ *   GET  /health — liveness + escrow + elected quorum + accrual
  *
- * Default truth is the in-memory TaskLedger + SimDriver.
- * Set ESCROW_ADDRESS (+ PROTOCOL_FROM) for Base-Sepolia writes;
- * ChainWatcher fans out on-chain logs into the same WS hub.
+ * Default truth is TaskLedger + SimDriver + VerifierPool
+ * (registry, election, accuracy, accrual). Optional chain writers:
+ * ESCROW_ADDRESS, SLASH_EXECUTOR_ADDRESS.
  */
 
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
+import { VerifierPool } from "@ciphersentry/verifier-daemon";
 import { SimDriver } from "./sim.ts";
 import { makeDispatcher, TaskLedger } from "./rpc.ts";
 import { SubscriptionHub, type SocketLike } from "./ws.ts";
 import { ChainWatcher, makeChainConfigFromEnv } from "./chain.ts";
 import { EscrowGateway, makeEscrowConfigFromEnv } from "./escrow.ts";
+import { SlashExecutorGateway, makeSlashConfigFromEnv } from "./slash-executor.ts";
 
 const HOST = process.env.GATEWAY_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
@@ -41,6 +43,9 @@ async function boot(): Promise<void> {
   const sim = new SimDriver({ tickMs: Number(process.env.TICK_MS ?? 2800) });
   const ledger = new TaskLedger();
   const escrow = new EscrowGateway(makeEscrowConfigFromEnv());
+  const slashChain = new SlashExecutorGateway(makeSlashConfigFromEnv());
+  const pool = new VerifierPool({ epoch: EPOCH });
+  pool.ensureElection(EPOCH);
   const hub = new SubscriptionHub();
   hub.attachEvents(sim);
   sim.start();
@@ -51,19 +56,30 @@ async function boot(): Promise<void> {
     sim,
     ledger,
     escrow,
+    pool,
+    slashChain,
     emitTask: (t) => {
       sim.onTask?.(t);
     },
     epoch: EPOCH,
   });
 
-  fastify.get("/health", async () => ({
-    ok: true,
-    service: "ciphersentry-gateway",
-    epoch: EPOCH,
-    escrow: escrow.mode,
-    clients: hub.clientCount,
-  }));
+  fastify.get("/health", async () => {
+    const el = pool.ensureElection();
+    return {
+      ok: true,
+      service: "ciphersentry-gateway",
+      epoch: pool.currentEpoch,
+      escrow: escrow.mode,
+      slash_executor: slashChain.mode,
+      clients: hub.clientCount,
+      phase: "B3",
+      verifiers: el.members,
+      eligible: pool.registry.eligible().length,
+      slash_dry_runs: pool.slash.all().length,
+      accrual: pool.accrual.summary(),
+    };
+  });
 
   fastify.post("/rpc", async (req, reply) => {
     const env = req.body as {
@@ -115,12 +131,15 @@ async function boot(): Promise<void> {
 
   await fastify.listen({ host: HOST, port: PORT });
 
-  console.log("ciphersentry-gateway  [B0]");
+  const el = pool.ensureElection();
+  console.log("ciphersentry-gateway  [B3]");
   console.log(`  rpc      → http://${HOST}:${PORT}/rpc`);
   console.log(`  events   → ws://${HOST}:${PORT}/events`);
   console.log(`  health   → http://${HOST}:${PORT}/health`);
-  console.log(`  epoch    → ${EPOCH}`);
+  console.log(`  epoch    → ${pool.currentEpoch}`);
+  console.log(`  quorum   → ${el.members.join(", ")}`);
   console.log(`  escrow   → ${escrow.mode}`);
+  console.log(`  slash    → ${slashChain.mode}`);
   console.log("");
   console.log(`  console  → ?net=rpc&node=http://${HOST}:${PORT}`);
 }
