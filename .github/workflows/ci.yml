@@ -59,7 +59,7 @@ jobs:
       - run: npm run build
 
   services:
-    name: verifier + gateway
+    name: verifier + gateway + indexer
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -73,7 +73,7 @@ jobs:
           cache: npm
           cache-dependency-path: services/package-lock.json
       - run: npm ci
-      - name: Verifier + gateway unit tests
+      - name: Verifier + gateway + indexer unit tests
         run: npm test
       - name: Gateway B5 smoke
         run: |
@@ -85,3 +85,7 @@ jobs:
           done
           npm run smoke
           kill $GATEWAY_PID
+      - name: Indexer B6 smoke
+        run: npm run smoke:indexer
+      - name: Indexer B6 e2e (gateway WS → proof API)
+        run: npm run e2e:indexer

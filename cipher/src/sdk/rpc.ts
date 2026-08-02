@@ -66,7 +66,6 @@ export function resolveNodeEndpoints(raw: string): { httpBase: string; wsUrl: st
     u = new URL(DEFAULT_NODE);
   }
 
-  const isWs = u.protocol === "ws:" || u.protocol === "wss:";
   const httpProto = u.protocol === "wss:" || u.protocol === "https:" ? "https:" : "http:";
   const wsProto = httpProto === "https:" ? "wss:" : "ws:";
 

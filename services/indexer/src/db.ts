@@ -105,11 +105,18 @@ export const CH_DDL_STATEMENTS: string[] = [
     batch_id String, epoch UInt64, count UInt32, total Decimal(20,6),
     settled_at DateTime64(3)
   ) ENGINE = MergeTree() ORDER BY epoch`,
+  `CREATE TABLE IF NOT EXISTS ciphersentry.fraud_cases (
+    task_id String, status String, reported String, recomputed String,
+    buyer String, worker String, amount Decimal(20,6),
+    ruling String, reason String,
+    open_at DateTime64(3), resolved_at DateTime64(3),
+    chain_mode String
+  ) ENGINE = MergeTree() ORDER BY (status, task_id)`,
 ];
 
 export async function applyChSchema(ch: ClickHouseHttp): Promise<void> {
   for (const stmt of CH_DDL_STATEMENTS) await ch.exec(stmt);
-  console.log("clickhouse schema applied — receipts / trust_series / batch_stats");
+  console.log("clickhouse schema applied — receipts / trust_series / batch_stats / fraud_cases");
 }
 
 // CLI entry: node src/db.ts --apply-ch-schema
@@ -117,8 +124,8 @@ if (process.argv.includes("--apply-ch-schema")) {
   const ch = new ClickHouseHttp(
     process.env.CH_URL ?? "http://127.0.0.1:8123",
     process.env.CH_DB ?? "ciphersentry",
-    process.env.CH_USER ?? "default",
-    process.env.CH_PASSWORD ?? "",
+    process.env.CH_USER ?? "cent",
+    process.env.CH_PASSWORD ?? "cent",
   );
   void applyChSchema(ch);
 }

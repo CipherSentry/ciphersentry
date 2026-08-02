@@ -126,6 +126,7 @@ export class SimDriver {
       const t = this.genTask(now - i * 47_000);
       t.state = i <= 2 ? "RUNNING" : i === 3 ? "VERIFYING" : "SETTLED";
       this.state.tasks.push(t);
+      if (t.state === "SETTLED") this.state.pending.push(t);
     }
     const f81 = {
       id: "cent_f81c2a0",
@@ -188,7 +189,8 @@ export class SimDriver {
   }
 
   private flushBatch(now: number): void {
-    if (this.state.pending.length === 0 && this.batches.length > 0) return;
+    // Never emit empty batches — empty root "genesis" breaks indexer reconcile.
+    if (this.state.pending.length === 0) return;
     const included = this.state.pending.splice(0, 9);
     const receipts = included.map<ReceiptRow>((t) => {
       const honest = sh(`${t.id}:${t.spec}:${t.amount}`);

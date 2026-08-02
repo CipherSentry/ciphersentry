@@ -7,7 +7,7 @@ Each package has its own `package.json`.
 services/
 ├── gateway/           # B0–B5 edge: JSON-RPC + WS + CENT + batcher + fraud worker
 ├── verifier-daemon/   # pool, election, slashes, accuracy oracle, accrual ledger
-└── indexer/           # receipt graph: Postgres state + ClickHouse analytics
+└── indexer/           # B6 receipt graph: Postgres SoR + ClickHouse + proof API
 ```
 
 ## gateway (B0–B5 fraud-ready)
@@ -122,26 +122,63 @@ npm run daemon            # consumes fixture assignments, prints votes/evidence
 npm test                  # if added later — the runtime is headless
 ```
 
-## indexer
+## indexer (B6)
 
 Postgres is the system of record for task state transitions (events, never
 silent mutations). ClickHouse holds the receipt graph — receipts, merkle
 paths, trust time-series, batch stats — everything the public explorer and
 the whitepaper's trust formula query.
 
+**Reconcile rule:** recompute the binary keccak Merkle root (same as B4
+batcher). If it matches the anchored root → ok. If not, try the legacy sim
+FNV fold. Never rewrite the anchored root; flag mismatches.
+
 ```bash
+# infra (from repo root)
+docker compose -f cipher/docker-compose.yml up -d   # pg :5432 · ch :8123
+
 cd services/indexer
-npm install               # pg for Postgres; ClickHouse via HTTP (no dep)
-export PG_DSN=postgres://cent:cent@localhost:5432/ciphersentry
-export CH_URL=http://localhost:8123 CH_DB=ciphersentry
+npm install
+export PG_DSN=postgres://cent:cent@127.0.0.1:5432/ciphersentry
+export CH_URL=http://127.0.0.1:8123 CH_DB=ciphersentry
+export NODE_EVENTS=ws://127.0.0.1:8080/events       # gateway WS
 psql $PG_DSN -f sql/schema.sql
-npm run schema:ch         # apply ClickHouse DDL over HTTP
-npm run indexer           # listener + API on :8081
+npm run schema:ch
+npm run indexer                                     # API :8081
+
+# offline (no DB)
+INDEXER_MEMORY=1 npm run indexer
+npm test && npm run smoke
 ```
 
-Event frames match the dame frame format as `src/sdk/rpc.ts` (WRITE-POINT #1):
+| Env | Effect |
+| --- | --- |
+| `PG_DSN` | Postgres DSN (default `postgres://cent:cent@127.0.0.1:5432/ciphersentry`) |
+| `CH_URL` / `CH_DB` | ClickHouse HTTP (default `http://127.0.0.1:8123` / `ciphersentry`) |
+| `CH_USER` / `CH_PASSWORD` | ClickHouse auth (compose default `cent` / `cent`) |
+| `NODE_EVENTS` | Gateway WS URL (default `ws://127.0.0.1:8080/events`) |
+| `INDEXER_PORT` | Default `8081` |
+| `INDEXER_MEMORY` | `1` = in-process store (tests / offline) |
+
+HTTP: `GET /health` · `/batches` · `/batches/:id` · `/receipts/:id` ·
+`/receipts/:id/proof` · `/fraud` · `/fraud/:taskId` · `/agents/:id` ·
+`/agents/:id/receipts` · `/trust/:id` · `/search?q=` · `/stats`.
+
+Event frames match `src/sdk/rpc.ts` (WRITE-POINT #1):
 
 ```json
 { "jsonrpc": "2.0", "method": "task.event",   "params": { "topic": "tasks",   "data": { } } }
 { "jsonrpc": "2.0", "method": "batch.event",  "params": { "topic": "batches", "data": { } } }
+{ "jsonrpc": "2.0", "method": "fraud.event",  "params": { "topic": "fraud",   "data": { } } }
+```
+
+**B5→B6 fraud path:** gateway emits `fraud.event` on open/resolve/default;
+indexer upserts `fraud_cases` (+ task DISPUTED→FAILED/SETTLED) and serves
+`GET /fraud/:taskId`.
+
+```bash
+cd services && npm test
+npm run smoke:indexer      # B6 offline path
+npm run e2e:indexer        # live gateway WS → memory indexer → /proof
+npm run e2e:indexer:pg     # same path against real Postgres (docker compose)
 ```

@@ -27,13 +27,18 @@ services:
     image: clickhouse/clickhouse-server:24.8
     container_name: ciphersentry-ch
     restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ciphersentry
+      CLICKHOUSE_USER: cent
+      CLICKHOUSE_PASSWORD: cent
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     ports:
       - "8123:8123"   # HTTP — indexer transport
       - "9000:9000"   # native protocol (admin use)
     volumes:
       - chdata:/var/lib/clickhouse
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8123/ping || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:8123/ping' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10

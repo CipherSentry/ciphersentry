@@ -53,6 +53,8 @@ export interface ReceiptLeaf {
   leaf: Hex;
   amount: string;
   worker: string;
+  buyer: string;
+  spec: string;
   reported: string;
   recomputed: string;
   at: number;
@@ -316,7 +318,8 @@ export class SettlementBatcherGateway {
   private history: Array<BuiltBatch & { txHash?: string; mode: string; at: number }> = [];
   private timer?: ReturnType<typeof setInterval>;
   private anchoring = false;
-  private localBatchSeq = 0;
+  /** Offline / read-fail batch ids — time-based so restarts don't reuse batch_0. */
+  private localBatchSeq = Math.floor(Date.now() / 1000) % 1_000_000_000;
   onBatch?: (b: Record<string, unknown>) => void;
 
   constructor(private cfg: BatcherConfig) {}
@@ -363,12 +366,16 @@ export class SettlementBatcherGateway {
     reported?: string;
     amount?: string;
     worker?: string;
+    buyer?: string;
+    spec?: string;
   }): ReceiptLeaf {
     const leaf: ReceiptLeaf = {
       taskId: params.taskId,
       leaf: leafHash(params.taskId, params.recomputed),
       amount: params.amount ?? "0",
       worker: params.worker ?? "",
+      buyer: params.buyer ?? "",
+      spec: params.spec ?? "",
       reported: params.reported ?? params.recomputed,
       recomputed: params.recomputed,
       at: Date.now(),
@@ -501,8 +508,10 @@ export class SettlementBatcherGateway {
   private commitLocal(built: BuiltBatch, mode: string, txHash?: string): void {
     this.pending = [];
     this.history.push({ ...built, mode, txHash, at: Date.now() });
+    const epoch = Number(process.env.EPOCH ?? 88421);
     this.onBatch?.({
       batch_id: `batch_${built.batchId}`,
+      epoch,
       root: built.root,
       count: built.count,
       state: mode === "submitted" ? "SETTLING" : "SETTLED",
@@ -514,6 +523,13 @@ export class SettlementBatcherGateway {
         path: built.paths[i] ?? [],
         reported: l.reported,
         recomputed: l.recomputed,
+        amount: l.amount,
+        worker: l.worker,
+        buyer: l.buyer || "agent:unknown",
+        spec: l.spec || "unknown",
+        votes: [],
+        ms: 0,
+        epoch,
       })),
       _src: "batcher",
       tx: txHash ?? null,

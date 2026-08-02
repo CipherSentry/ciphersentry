@@ -13,8 +13,11 @@
     "indexer": "npm run indexer -w indexer",
     "schema:ch": "npm run schema:ch -w indexer",
     "daemon": "npm run daemon -w verifier-daemon",
-    "test": "npm run test -w verifier-daemon && npm run test -w gateway",
+    "test": "npm run test -w verifier-daemon && npm run test -w gateway && npm run test -w indexer",
     "smoke": "npm run smoke -w gateway",
+    "smoke:indexer": "npm run smoke -w indexer",
+    "e2e:indexer": "bash indexer/scripts/e2e.sh",
+    "e2e:indexer:pg": "bash indexer/scripts/e2e-pg.sh",
     "e2e:batcher": "bash gateway/scripts/e2e-batcher.sh"
   }
 }
