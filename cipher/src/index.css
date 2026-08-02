@@ -117,12 +117,20 @@ input {
   .anim-drop,
   .animate-scan,
   .animate-ping,
-  .animate-dashspin {
+  .animate-dashspin,
+  .animate-shelf-in {
     animation: none !important;
   }
   .animate-pulse {
     animation-duration: 2.6s !important;
   }
+}
+
+/* body holds the void base so transparent page shells show AsciiMotion behind content */
+#root {
+  position: relative;
+  min-height: 100svh;
+  background: var(--color-void);
 }
 
 /* safe horizontal padding utility (notch-aware) */

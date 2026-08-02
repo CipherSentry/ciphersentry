@@ -43,7 +43,7 @@ const GATES: [string, string, string][] = [
 
 export default function Investors() {
   return (
-    <div className="relative isolate min-h-screen bg-void font-display text-mist">
+    <div className="relative z-10 isolate min-h-screen bg-transparent font-display text-mist">
       <Frame />
 
       {/* top bar */}

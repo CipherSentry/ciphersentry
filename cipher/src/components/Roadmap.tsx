@@ -38,9 +38,9 @@ const PHASES = [
 
 export default function Roadmap() {
   return (
-    <section id="roadmap" className="scroll-mt-[68px] border-b border-edge">
+    <section id="roadmap" className="relative scroll-mt-[68px] border-b border-edge bg-void/50">
       <SectionHead
-        index="03"
+        index="04"
         kicker="ROADMAP"
         title={
           <>

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import AsciiMotion from "./AsciiMotion";
 import TaskTrace from "./TaskTrace";
 import { EASE } from "./Reveal";
 
@@ -21,9 +22,16 @@ function Line({ children, i }: { children: React.ReactNode; i: number }) {
 export default function Hero() {
   return (
     <section id="top" className="relative border-b border-edge">
-      <div className="section-x pt-12 sm:pt-14 md:pt-24 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]">
+      {/* section-local density wash — sits under copy, not over it */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.55] sm:opacity-70">
+        <AsciiMotion variant="panel" />
+        <div className="absolute inset-0 bg-gradient-to-r from-void via-void/85 to-void/40 lg:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-void/30 via-transparent to-void/80" />
+      </div>
+
+      <div className="section-x relative pt-12 sm:pt-14 md:pt-24 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]">
         {/* ---- left: the statement ---- */}
-        <div className="pb-12 sm:pb-16 md:pb-24">
+        <div className="relative pb-12 sm:pb-16 md:pb-24">
           <motion.div
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
@@ -101,8 +109,12 @@ export default function Hero() {
         </div>
 
         {/* ---- right: the engineering window ---- */}
-        <div className="border-t border-code-edge bg-code lg:min-h-[calc(100svh-68px)] lg:border-l lg:border-t-0">
-          <div className="h-full flex-col lg:flex animate-shelf-in">
+        <div className="relative border-t border-code-edge bg-code lg:min-h-[calc(100svh-68px)] lg:border-l lg:border-t-0">
+          {/* quiet green-on-black density inside the terminal shelf */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.22] mix-blend-screen">
+            <AsciiMotion variant="panel" dense />
+          </div>
+          <div className="relative h-full flex-col lg:flex animate-shelf-in">
             <div className="flex items-center justify-between border-b border-code-edge px-4 py-3.5 sm:px-7 sm:py-4">
               <span className="flex items-center gap-2.5 font-mono text-[9px] tracking-[0.26em] text-volthot">
                 <span className="h-1.5 w-1.5 bg-volthot" />

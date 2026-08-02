@@ -1,4 +1,5 @@
 import { ArrowUpRight, Compass, LockKeyhole, Plus, ScanSearch, Zap } from "lucide-react";
+import AsciiMotion from "./AsciiMotion";
 import Frame from "./Frame";
 import LogoMark from "./LogoMark";
 import LoopDiagram from "./LoopDiagram";
@@ -139,7 +140,7 @@ const SPEC_POINTS = [
 
 export default function Protocol() {
   return (
-    <div className="relative isolate min-h-screen bg-void font-display text-mist">
+    <div className="relative z-10 isolate min-h-screen bg-transparent font-display text-mist">
       <Frame />
 
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
@@ -178,8 +179,13 @@ export default function Protocol() {
       />
 
       <div className="grid gap-10 px-4 pb-16 sm:gap-14 sm:px-8 sm:pb-24 md:px-16 lg:grid-cols-2 lg:items-center">
-        <Reveal>
-          <LoopDiagram />
+        <Reveal className="relative">
+          <div className="pointer-events-none absolute -inset-4 opacity-40 sm:-inset-6">
+            <AsciiMotion variant="panel" dense />
+          </div>
+          <div className="relative">
+            <LoopDiagram />
+          </div>
         </Reveal>
 
         <div>

@@ -1,4 +1,5 @@
 import { Network, Plus, ScanLine, ShieldCheck } from "lucide-react";
+import AsciiMotion from "./AsciiMotion";
 import Reveal from "./Reveal";
 import SectionHead from "./SectionHead";
 
@@ -28,7 +29,7 @@ const PILLARS = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="scroll-mt-[68px] border-b border-edge">
+    <section id="how-it-works" className="relative scroll-mt-[68px] border-b border-edge bg-void/40">
       <SectionHead
         index="02"
         kicker="HOW IT WORKS"
@@ -43,8 +44,14 @@ export default function HowItWorks() {
       <div className="grid gap-px border-t border-edge bg-edge lg:grid-cols-3">
         {PILLARS.map((p, i) => (
           <Reveal key={p.code} delay={i * 0.1} className="h-full">
-            <div className="group flex h-full flex-col bg-void p-8 transition-colors duration-500 hover:bg-panel md:p-10">
-              <div className="flex items-start justify-between">
+            <div className="group relative flex h-full flex-col overflow-hidden bg-void/90 p-8 transition-colors duration-500 hover:bg-panel md:p-10">
+              {/* corner density — one pillar only so the grid stays calm */}
+              {i === 1 && (
+                <div className="pointer-events-none absolute -right-6 -top-8 h-40 w-48 opacity-50 transition-opacity duration-500 group-hover:opacity-70">
+                  <AsciiMotion variant="panel" dense />
+                </div>
+              )}
+              <div className="relative flex items-start justify-between">
                 <span className="flex h-11 w-11 items-center justify-center border border-edge2 text-mute transition-colors duration-300 group-hover:border-volt/70 group-hover:text-volt">
                   <p.icon size={18} strokeWidth={1.6} />
                 </span>
@@ -53,12 +60,12 @@ export default function HowItWorks() {
                 </span>
               </div>
 
-              <h3 className="mt-8 font-display text-[22px] font-semibold tracking-[-0.02em] text-mist">
+              <h3 className="relative mt-8 font-display text-[22px] font-semibold tracking-[-0.02em] text-mist">
                 {p.title}
               </h3>
-              <p className="mt-3 text-[13px] leading-[1.75] text-mute">{p.body}</p>
+              <p className="relative mt-3 text-[13px] leading-[1.75] text-mute">{p.body}</p>
 
-              <div className="mt-auto pt-9">
+              <div className="relative mt-auto pt-9">
                 <div className="border-t border-edge pt-5">
                   {p.points.map((pt) => (
                     <div

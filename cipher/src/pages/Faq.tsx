@@ -46,7 +46,7 @@ export default function Faq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <div className="relative isolate min-h-screen bg-void font-display text-mist">
+    <div className="relative z-10 isolate min-h-screen bg-transparent font-display text-mist">
       <Frame />
       <script
         type="application/ld+json"

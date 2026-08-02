@@ -29,7 +29,7 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
   const next = doc && idx < DOCS.length - 1 ? DOCS[idx + 1] : undefined;
 
   return (
-    <div className="relative isolate min-h-screen bg-void font-display text-mist">
+    <div className="relative z-10 isolate min-h-screen bg-transparent font-display text-mist">
       <Frame />
 
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
