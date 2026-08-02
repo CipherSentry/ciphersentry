@@ -1,9 +1,9 @@
 # CipherSentry Backend — Architecture Brainstorm
 
-Status: **B4 settlement-ready** — B3 CENT path plus **SettlementBatcher writer**:
-settled receipts → Merkle root → 2-of-3 EIP-712 `anchorRoot` via
-`BATCHER_ADDRESS` + `BATCHER_KEY_{1,2,3}` (Alchemy / anvil). Reference client:
-`src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
+Status: **B5 fraud-ready** — B4 settlement path plus **fraud-proof worker**:
+mismatch → challenge case (64-block window) → fresh quorum recompute →
+Refund/Release/Split ruling → optional `Escrow.rule` via `RULER_KEY`.
+Reference client: `src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
 
 ---
 
@@ -83,6 +83,7 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 | B2 — Verifier network | **External stake** (`stake`), **epoch.elect** (top-3, whale cap), **real registry slashes** on mismatch | audits #1+#2 done |
 | B3 — CENT-ready | **Accrual ledger** (0.35% fee, accuracy² weights, claim), **accuracy oracle**, optional **SlashExecutor** chain write | gate list in DOC-05 |
 | B4 — Settlement batcher | **Merkle fold** of settled leaves, **2-of-3** EIP-712 `anchorRoot`, `batch.anchor` / auto-flush, on-chain `BatchAnchored` via Alchemy/anvil | B3 + batcher signers |
+| B5 — Fraud-proof worker | **Challenge cases** on mismatch, fresh quorum recompute, **ruling** (Refund/Release/Split), `fraud.*` RPC, optional **Escrow.rule** / defaultRefund | B4 + ruler key |
 
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.
