@@ -22,17 +22,31 @@ elif [[ -f "$ROOT/services/scripts/demo-kit.env.example" ]]; then
   echo "  tip: copy demo-kit.env.example → demo-kit.env and set PRIVATE_KEY + CHAIN_RPC"
 fi
 
-: "${CHAIN_RPC:=${BASE_SEPOLIA_RPC:-https://base-sepolia.publicnode.com}}"
-: "${CHAIN_ID:=84532}"
-: "${GATEWAY_PORT:=8080}"
-: "${INDEXER_PORT:=8081}"
+: "${GATEWAY_PORT:=$((18080 + RANDOM % 400))}"
+: "${INDEXER_PORT:=$((18500 + RANDOM % 400))}"
 : "${AUTH_REQUIRED:=0}"
 : "${WITH_COMPOSE:=0}"
 : "${CIPHER_URL:=http://127.0.0.1:5173}"
 : "${WORKER:=agent:vector-7}"
 : "${BUYER:=agent:atlas-01}"
 
-export CHAIN_RPC CHAIN_ID BASE_SEPOLIA_RPC="$CHAIN_RPC"
+# DEMO_LOCAL=1 → anvil rails (no Alchemy key). External Sepolia otherwise.
+if [[ "${DEMO_LOCAL:-0}" == "1" ]]; then
+  echo "== local anvil demo (DEMO_LOCAL=1) =="
+  cd "$ROOT/cipher/contracts"
+  ./script/deploy-local.sh
+  set -a
+  # shellcheck disable=SC1091
+  source deployments/.env.gateway
+  set +a
+  export RULER_KEY="${RULER_KEY:-$PROTOCOL_KEY}"
+  cd "$ROOT"
+else
+  : "${CHAIN_RPC:=${BASE_SEPOLIA_RPC:-https://base-sepolia.publicnode.com}}"
+  : "${CHAIN_ID:=84532}"
+fi
+
+export CHAIN_RPC CHAIN_ID BASE_SEPOLIA_RPC="${BASE_SEPOLIA_RPC:-$CHAIN_RPC}"
 export GATEWAY_HOST=127.0.0.1 GATEWAY_PORT
 export AUTH_REQUIRED
 export BATCH_INTERVAL_MS="${BATCH_INTERVAL_MS:-0}"
@@ -41,7 +55,7 @@ export TICK_MS="${TICK_MS:-60000}"
 export NATS_URL="${NATS_URL:-}"
 export REDIS_URL="${REDIS_URL:-}"
 
-# load mock stack addresses if unset
+# load mock stack addresses if unset (sepolia path)
 DEPLOY_JSON="${DEPLOY_JSON:-$ROOT/cipher/contracts/deployments/base-sepolia-mockusdc.json}"
 if [[ -z "${ESCROW_ADDRESS:-}" && -f "$DEPLOY_JSON" ]]; then
   ESCROW_ADDRESS=$(python3 -c "import json;print(json.load(open('$DEPLOY_JSON'))['escrow'])")
@@ -51,6 +65,7 @@ if [[ -z "${ESCROW_ADDRESS:-}" && -f "$DEPLOY_JSON" ]]; then
   PROTOCOL_FROM=$(python3 -c "import json;print(json.load(open('$DEPLOY_JSON'))['deployer'])")
 fi
 export ESCROW_ADDRESS BATCHER_ADDRESS USDC_ADDRESS SLASH_EXECUTOR_ADDRESS PROTOCOL_FROM
+export CENT_ADDRESS="${CENT_ADDRESS:-}" REGISTRY_ADDRESS="${REGISTRY_ADDRESS:-}"
 
 if [[ -n "${PRIVATE_KEY:-}" ]]; then
   export PROTOCOL_KEY="${PROTOCOL_KEY:-$PRIVATE_KEY}"
@@ -66,6 +81,7 @@ export BATCHER_KEY_1="${BATCHER_KEY_1:-${PROTOCOL_KEY:-}}"
 export BATCHER_KEY_2="${BATCHER_KEY_2:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
 export BATCHER_KEY_3="${BATCHER_KEY_3:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
 export RULER_KEY="${RULER_KEY:-${PROTOCOL_KEY:-}}"
+export PROTOCOL_KEY
 
 GBASE="http://127.0.0.1:${GATEWAY_PORT}"
 IBASE="http://127.0.0.1:${INDEXER_PORT}"
@@ -77,6 +93,10 @@ GPID="" IPID=""
 cleanup() {
   [[ -n "${IPID:-}" ]] && kill "$IPID" 2>/dev/null || true
   [[ -n "${GPID:-}" ]] && kill "$GPID" 2>/dev/null || true
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "${GATEWAY_PORT}/tcp" 2>/dev/null || true
+    fuser -k "${INDEXER_PORT}/tcp" 2>/dev/null || true
+  fi
 }
 trap cleanup EXIT
 
@@ -84,8 +104,9 @@ echo "== Sepolia demo kit =="
 echo "  rpc=$CHAIN_RPC"
 echo "  escrow=${ESCROW_ADDRESS:-unset}"
 echo "  slash=${SLASH_EXECUTOR_ADDRESS:-unset}"
+echo "  protocol_key=${PROTOCOL_KEY:+set}"
 echo "  protocol_from=${PROTOCOL_FROM:-unset}"
-
+echo "  ports gw=$GATEWAY_PORT ix=$INDEXER_PORT"
 if [[ "$WITH_COMPOSE" == "1" ]]; then
   if ! command -v docker >/dev/null; then
     echo "docker required for WITH_COMPOSE=1" >&2
@@ -113,22 +134,44 @@ if [[ "$WITH_COMPOSE" == "1" ]]; then
 fi
 
 cd "$ROOT/services"
+if command -v fuser >/dev/null 2>&1; then
+  fuser -k "${GATEWAY_PORT}/tcp" 2>/dev/null || true
+  fuser -k "${INDEXER_PORT}/tcp" 2>/dev/null || true
+fi
 
 echo "== gateway :${GATEWAY_PORT} =="
-npm run gateway -w gateway >"$GLOG" 2>&1 &
+# explicit env for chain write path
+env \
+  CHAIN_RPC="$CHAIN_RPC" CHAIN_ID="$CHAIN_ID" \
+  ESCROW_ADDRESS="$ESCROW_ADDRESS" BATCHER_ADDRESS="$BATCHER_ADDRESS" \
+  USDC_ADDRESS="${USDC_ADDRESS:-}" SLASH_EXECUTOR_ADDRESS="${SLASH_EXECUTOR_ADDRESS:-}" \
+  PROTOCOL_KEY="${PROTOCOL_KEY:-}" PROTOCOL_FROM="${PROTOCOL_FROM:-}" \
+  RULER_KEY="${RULER_KEY:-}" \
+  BATCHER_KEY_1="${BATCHER_KEY_1:-}" BATCHER_KEY_2="${BATCHER_KEY_2:-}" BATCHER_KEY_3="${BATCHER_KEY_3:-}" \
+  GATEWAY_HOST=127.0.0.1 GATEWAY_PORT="$GATEWAY_PORT" \
+  AUTH_REQUIRED="$AUTH_REQUIRED" BATCH_INTERVAL_MS="$BATCH_INTERVAL_MS" \
+  BATCH_MAX_PENDING="$BATCH_MAX_PENDING" TICK_MS="$TICK_MS" \
+  NATS_URL="${NATS_URL:-}" REDIS_URL="${REDIS_URL:-}" \
+  npm run gateway -w gateway >"$GLOG" 2>&1 &
 GPID=$!
 for _ in $(seq 1 80); do
   curl -sf "$GBASE/health" >/tmp/cs-demo-h.json 2>/dev/null && grep -q '"ok":true' /tmp/cs-demo-h.json && break
   sleep 0.25
 done
 curl -sf "$GBASE/health" >/tmp/cs-demo-h.json || { echo "gateway down"; tail -40 "$GLOG"; exit 1; }
-python3 - <<'PY'
-import json
+python3 - <<PY
+import json, sys
 h=json.load(open("/tmp/cs-demo-h.json"))
 print("  health escrow=%s batcher=%s slash=%s bus=%s" % (
   h.get("escrow"), h.get("batcher"), h.get("slash_executor"), h.get("bus")))
+# local/write demos should be write-ready when PROTOCOL_KEY + addresses set
+if "${DEMO_LOCAL:-0}" == "1":
+    for k in ("escrow", "batcher", "slash_executor"):
+        m = str(h.get(k, "")).lower()
+        if "write" not in m and m not in ("write-ready",):
+            print(f"FATAL: {k}={h.get(k)} on DEMO_LOCAL (want write-ready)", file=sys.stderr)
+            sys.exit(1)
 PY
-
 # indexer: memory if no compose, else pg+ch
 echo "== indexer :${INDEXER_PORT} =="
 export INDEXER_PORT PORT=$INDEXER_PORT
@@ -198,6 +241,10 @@ echo "    $EXPLORER"
 echo "  console:"
 echo "    $CONSOLE"
 echo ""
+if [[ "${DEMO_HOLD:-1}" == "0" ]]; then
+  echo "DEMO_HOLD=0 — exiting (gateway/indexer stopped)."
+  exit 0
+fi
 echo "Press Ctrl+C to stop gateway/indexer (compose left up if WITH_COMPOSE=1)."
 # hold processes for interactive demo
 while kill -0 "$GPID" 2>/dev/null; do sleep 3600; done
