@@ -79,8 +79,13 @@ wait_ready postgres 90 0.5 \
 wait_ready clickhouse 90 0.5 \
   curl -sf http://127.0.0.1:8123/ping
 
-wait_ready nats 40 0.25 \
-  curl -sf http://127.0.0.1:8222/healthz
+# client port first (always on); then HTTP monitor if -m 8222 is set
+wait_ready nats 40 0.25 bash -c 'echo >/dev/tcp/127.0.0.1/4222'
+if curl -sf http://127.0.0.1:8222/healthz >/dev/null 2>&1; then
+  echo "  nats monitor /healthz ok"
+else
+  echo "  nats monitor optional — client :4222 only (compose should set -m 8222)"
+fi
 
 echo "  infra up"
 
