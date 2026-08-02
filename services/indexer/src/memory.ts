@@ -91,11 +91,14 @@ export class MemoryStore implements Querier {
           updated_at: new Date().toISOString(),
         });
       } else if (/ON CONFLICT/i.test(sql)) {
+        const nextStake = Number(stake ?? 0);
+        const prevStake = Number(prev.stake ?? 0);
         this.agents.set(id, {
           ...prev,
           trust: trust ?? prev.trust,
           success: success ?? prev.success,
-          stake: stake ?? prev.stake,
+          // GREATEST(agents.stake, EXCLUDED.stake)
+          stake: Math.max(prevStake, nextStake || prevStake),
           updated_at: new Date().toISOString(),
         });
       }

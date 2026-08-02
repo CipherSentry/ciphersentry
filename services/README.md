@@ -105,7 +105,16 @@ auth.challenge { pubkey: "<32-byte ed25519 hex>" }
 auth.session   { challenge_id, pubkey, signature, agent_id? }
 # subsequent RPC: Authorization: Bearer <token>
 # rate limit = 30 + min(270, floor(stake/40)) RPM; anon = ANON_RPM
+
+# smoke (gateway must be running with AUTH_REQUIRED=1):
+AUTH_REQUIRED=1 npm run gateway &
+npm run smoke:auth
+# SDK: RpcTransport.openSession({ pubkey, sign, agentId })
 ```
+
+WS frames carry `params.{ts,sig,pubkey}` (ed25519 · `cent.event.v1|…`).
+`EVENT_SIGNING_SEED` = 32-byte hex seed (optional; ephemeral key otherwise).
+`/health.event_pubkey` is the verify key. Consoles show **SIGNED AS THEY FIRE**.
 
 **B3 fee path:** on honest `verify`, take **0.35%** of escrow → **85%** to ok
 voters (accuracy²-weighted) + **15%** treasury. Claim via `accrual.claim`.

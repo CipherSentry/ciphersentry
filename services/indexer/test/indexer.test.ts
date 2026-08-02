@@ -307,9 +307,46 @@ describe("trustScore", () => {
     assert.ok(trustScore(1e9, 1, 1e6) <= 100);
     assert.ok(trustScore(100, 0.9, 500) > 50);
   });
+
+  it("s#0 stake term moves the score", () => {
+    const bare = trustScore(0, 1, 0);
+    const staked = trustScore(12_000, 1, 0);
+    assert.ok(staked > bare, `expected stake to raise T (${staked} > ${bare})`);
+  });
 });
 
 describe("TrustSeriesWriter", () => {
+  it("seeds registry stake into score when agents.stake is 0", async () => {
+    const pg = new MemoryStore();
+    const ch = new MemoryClickHouse();
+    await pg.exec(
+      `INSERT INTO agents (agent_id, tier, trust, stake, success, status) VALUES ($1,$2,$3,$4,$5,$6)`,
+      ["agent:atlas-01", "T3", 50, 0, 1, "ONLINE"],
+    );
+    const w = new TrustSeriesWriter(pg, ch);
+    const points = await w.writeForBatch(99, [
+      {
+        receipt_id: "cent_s",
+        task_id: "cent_s",
+        buyer: "agent:orbit-2",
+        worker: "agent:atlas-01",
+        spec: "s",
+        amount: "1",
+        reported: "h",
+        recomputed: "h",
+        votes: [],
+        ms: 1,
+        epoch: 99,
+        leaf: "0x" + "ab".repeat(32),
+      },
+    ]);
+    const atlas = points.find((p) => p.agent_id === "agent:atlas-01");
+    assert.ok(atlas);
+    assert.equal(atlas!.stake, 12_000);
+    assert.ok(atlas!.trust_score > trustScore(0, 1, 0));
+    assert.equal(Number(pg.agents.get("agent:atlas-01")!.stake), 12_000);
+  });
+
   it("writes CH series and updates agents after batch", async () => {
     const pg = new MemoryStore();
     const ch = new MemoryClickHouse();

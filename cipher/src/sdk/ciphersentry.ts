@@ -12,7 +12,7 @@ import { SimTransport } from "./transport";
 import type { BatchCb, TickCb, Transport } from "./transport";
 import type { ExBatch } from "./ledger";
 import type { TaskEvent } from "../app/data";
-import { DEFAULT_NODE, RpcTransport, RpcWireError } from "./rpc";
+import { DEFAULT_NODE, RpcTransport, RpcWireError, type SessionSigner } from "./rpc";
 
 export type NetMode = "sim" | "rpc";
 
@@ -207,6 +207,13 @@ export class CipherSentry {
 
   private get rpc(): RpcTransport | null {
     return this.transport.kind === "rpc" ? (this.transport as RpcTransport) : null;
+  }
+
+  /** AUTH_REQUIRED path — challenge + ed25519 session → Bearer on mutating RPC. */
+  async openSession(signer: SessionSigner) {
+    const rpc = this.rpc;
+    if (!rpc) throw new CenError("CEN_E_SCHEMA", "openSession requires ?net=rpc transport");
+    return rpc.openSession(signer);
   }
 
   private rethrow(e: unknown): never {

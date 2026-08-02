@@ -70,7 +70,7 @@ export default function Observe() {
           right={
             <span className="flex items-center gap-2 font-mono text-[8px] tracking-[0.2em] text-volt/70">
               <span className={d.halted ? "h-1.5 w-1.5 bg-red-400" : "h-1.5 w-1.5 bg-volt"} />
-              {d.halted ? "HALTED" : "LIVE"}
+              {d.halted ? "HALTED" : "SIGNED AS THEY FIRE"}
             </span>
           }
           bodyClass="flex min-h-0 flex-col"

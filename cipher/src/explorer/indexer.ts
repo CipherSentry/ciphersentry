@@ -265,6 +265,33 @@ export class IndexerClient {
       fraud: body.data?.fraud ?? [],
     };
   }
+
+  /** Whitepaper §5 trust series — GET /trust/:agent */
+  async getTrust(agentId: string): Promise<TrustPoint[]> {
+    const res = await fetch(`${this.base}/trust/${encodeURIComponent(agentId)}`);
+    if (!res.ok) return [];
+    const body = (await res.json()) as { data: TrustPoint[] };
+    const rows = body.data ?? [];
+    // API returns newest-first; chart wants chronological
+    return [...rows].sort((a, b) => num(a.epoch) - num(b.epoch));
+  }
+
+  async getAgent(agentId: string): Promise<{ agent_id: string; trust?: number; stake?: number; success?: number } | null> {
+    const res = await fetch(`${this.base}/agents/${encodeURIComponent(agentId)}`);
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const body = (await res.json()) as { data: { agent_id: string; trust?: number; stake?: number; success?: number } };
+    return body.data ?? null;
+  }
+}
+
+export interface TrustPoint {
+  agent_id?: string;
+  epoch: number;
+  trust_score: number;
+  stake?: number;
+  success?: number;
+  settled_count?: number;
 }
 
 /** Probe indexer; returns client if healthy, else null. */

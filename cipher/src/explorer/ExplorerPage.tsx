@@ -12,6 +12,7 @@ import {
   type FraudRow,
   type IndexerClient,
   type ProofResult,
+  type TrustPoint,
 } from "./indexer";
 import { CipherSentry } from "../sdk/ciphersentry";
 
@@ -58,6 +59,47 @@ function Stat({ l, v, tone }: { l: string; v: string; tone?: string }) {
       <div className="font-mono text-[8px] tracking-[0.24em] text-mute">{l}</div>
       <div className={`mt-1.5 font-display text-[24px] font-medium tabular-nums leading-none tracking-[-0.02em] ${tone ?? "text-mist"}`}>
         {v}
+      </div>
+    </div>
+  );
+}
+
+/** Sparkline for /trust/:agent series (product surface). */
+function TrustChart({ series }: { series: TrustPoint[] }) {
+  if (!series.length) {
+    return <div className="mt-3 font-mono text-[10px] text-mute/50">NO TRUST SERIES YET</div>;
+  }
+  const scores = series.map((p) => Number(p.trust_score));
+  const min = Math.min(...scores, 0);
+  const max = Math.max(...scores, 100);
+  const span = Math.max(1e-6, max - min);
+  const w = 320;
+  const h = 64;
+  const pad = 4;
+  const pts = scores
+    .map((s, i) => {
+      const x = pad + (i / Math.max(1, scores.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((s - min) / span) * (h - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const last = scores[scores.length - 1]!;
+  const firstEpoch = series[0]!.epoch;
+  const lastEpoch = series[series.length - 1]!.epoch;
+  return (
+    <div className="mt-4 border border-edge bg-void p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="font-mono text-[8.5px] tracking-[0.24em] text-mute">TRUST SERIES · /trust/:agent</span>
+        <span className="font-mono text-[14px] tabular-nums text-volt">{last.toFixed(1)}</span>
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="mt-2 h-16 w-full" preserveAspectRatio="none" aria-label="Trust over epochs">
+        <polyline fill="none" stroke="currentColor" strokeWidth="1.5" className="text-volt" points={pts} />
+      </svg>
+      <div className="mt-1 flex justify-between font-mono text-[7.5px] tracking-[0.14em] text-mute/50">
+        <span>E{firstEpoch}</span>
+        <span>
+          {series.length} PTS · E{lastEpoch}
+        </span>
       </div>
     </div>
   );
@@ -124,6 +166,8 @@ export default function ExplorerPage() {
   const [indexerUrl, setIndexerUrl] = useState(readIndexerUrl());
   const [client, setClient] = useState<IndexerClient | null>(null);
   const [lastProof, setLastProof] = useState<ProofResult | null>(null);
+  const [trustSeries, setTrustSeries] = useState<TrustPoint[]>([]);
+  const [agentMeta, setAgentMeta] = useState<{ trust?: number; stake?: number; success?: number } | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -219,6 +263,37 @@ export default function ExplorerPage() {
     // only on initial source settle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source]);
+
+  /* load /trust/:agent series when agent panel opens */
+  useEffect(() => {
+    if (!agent) {
+      setTrustSeries([]);
+      setAgentMeta(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      if (!client) {
+        setTrustSeries([]);
+        setAgentMeta(null);
+        return;
+      }
+      try {
+        const [series, meta] = await Promise.all([client.getTrust(agent), client.getAgent(agent)]);
+        if (cancelled) return;
+        setTrustSeries(series);
+        setAgentMeta(meta ? { trust: meta.trust, stake: meta.stake, success: meta.success } : null);
+      } catch {
+        if (!cancelled) {
+          setTrustSeries([]);
+          setAgentMeta(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, client]);
 
   const selBatch = batches.find((b) => b.id === selBatchId) ?? batches[batches.length - 1];
   const selReceipt = selBatch?.receipts.find((r) => r.id === selReceiptId) ?? null;
@@ -530,9 +605,14 @@ export default function ExplorerPage() {
                 </span>
                 <div>
                   <div className="font-display text-[22px] font-semibold tracking-[-0.02em]">{agent}</div>
-                  <div className="font-mono text-[8.5px] tracking-[0.2em] text-mute">RECEIPTS IN LEDGER WINDOW</div>
+                  <div className="font-mono text-[8.5px] tracking-[0.2em] text-mute">
+                    {agentMeta?.trust != null
+                      ? `T=${Number(agentMeta.trust).toFixed(1)} · S=${Number(agentMeta.stake ?? 0).toLocaleString()}`
+                      : "RECEIPTS + TRUST SERIES"}
+                  </div>
                 </div>
               </div>
+              <TrustChart series={trustSeries} />
               <div className="mt-6 border border-edge">
                 {accountRows.length === 0 && (
                   <div className="px-4 py-6 font-mono text-[10px] text-mute/50">NO RECEIPTS IN CURRENT WINDOW</div>

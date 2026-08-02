@@ -82,6 +82,7 @@ async function boot(): Promise<void> {
   hub.setFraudSnapshot(() => fraud.list());
   fraud.onCase = (c) => publish("fraud", publicFraudCase(c));
   sim.start();
+  // hub.eventPubkey exposed on /health for console verify
 
   batcher.onBatch = (b) => publish("batches", b);
   batcher.start();
@@ -120,6 +121,7 @@ async function boot(): Promise<void> {
       kv: kv.mode,
       auth_required: AUTH_REQUIRED,
       clients: hub.clientCount,
+      event_pubkey: hub.eventPubkey,
       phase: "B5",
       verifiers: el.members,
       eligible: pool.registry.eligible().length,
@@ -214,6 +216,7 @@ async function boot(): Promise<void> {
   console.log(`  bus      → ${bus.mode}${bus.mode === "nats" ? ` (${NATS_URL})` : ""}`);
   console.log(`  kv       → ${kv.mode}${kv.mode === "redis" ? ` (${REDIS_URL})` : ""}`);
   console.log(`  auth     → ${AUTH_REQUIRED ? "REQUIRED" : "optional"} (ed25519 · stake rpm base=${rpmForStake(0)} anon=${ANON_RPM})`);
+  console.log(`  eventsig → ${hub.eventPubkey.slice(0, 16)}… (cent.event.v1)`);
   console.log(`  epoch    → ${pool.currentEpoch}`);
   console.log(`  quorum   → ${el.members.join(", ")}`);
   console.log(`  escrow   → ${escrow.mode}`);

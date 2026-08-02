@@ -10,6 +10,7 @@
 import type { Querier } from "./db.ts";
 import type { ChInserter } from "./ledger.ts";
 import type { ReceiptRow } from "./ledger.ts";
+import { seedStake } from "./stakes.ts";
 
 export interface AgentStats {
   agent_id: string;
@@ -112,6 +113,8 @@ export class TrustSeriesWriter {
     } catch {
       /* agent row may not exist yet */
     }
+    // s#0: wire registry/bond stake when SoR row is still zero
+    if (stake <= 0) stake = seedStake(agent_id);
 
     let total = 0;
     let ok = 0;
@@ -145,6 +148,7 @@ export class TrustSeriesWriter {
          ON CONFLICT (agent_id) DO UPDATE
          SET trust = EXCLUDED.trust,
              success = EXCLUDED.success,
+             stake = GREATEST(agents.stake, EXCLUDED.stake),
              updated_at = now()`,
         [
           agent_id,

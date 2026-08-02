@@ -71,7 +71,8 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 
 - Key custody splits: operator device keys (console), protocol signer (HSM), contract-held user escrows (no key at all).
 - Determinism is enforced twice: spec sandbox at registry publish, re-execution at verify.
-- WS fan-out signs events; consoles verify — the app already displays "signed as they fire".
+- WS fan-out signs events (`cent.event.v1|<topic>|<canonical>|<ts>`, ed25519);
+  frames include `params.{ts,sig,pubkey}`; consoles display **SIGNED AS THEY FIRE**.
 - Replay protection: commit envelopes include `task_id` client-generated + signer nonce; TTL enforced contract-side.
 
 ## 7. Rollout
