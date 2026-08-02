@@ -28,7 +28,7 @@ function Run() {
 
 export default function Ticker() {
   return (
-    <div className="relative overflow-hidden border-b border-edge bg-void/70 py-3.5 backdrop-blur-[2px]">
+    <div className="relative overflow-hidden border-b border-edge bg-panel/50 py-3.5">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-y-0 left-0 z-10 w-28 bg-gradient-to-r from-void to-transparent"

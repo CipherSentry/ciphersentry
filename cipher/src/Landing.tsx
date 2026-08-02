@@ -20,7 +20,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="relative z-10 isolate min-h-screen overflow-x-clip bg-transparent font-display text-mist">
+    <div className="relative isolate min-h-screen overflow-x-clip bg-void font-display text-mist">
       <AccessModal open={accessOpen} onClose={() => setAccessOpen(false)} />
       <Frame />
       <Header />

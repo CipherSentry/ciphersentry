@@ -29,7 +29,7 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
   const next = doc && idx < DOCS.length - 1 ? DOCS[idx + 1] : undefined;
 
   return (
-    <div className="relative z-10 isolate min-h-screen bg-transparent font-display text-mist">
+    <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
       <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
@@ -57,14 +57,14 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1240px] gap-x-14 gap-y-8 px-4 py-8 sm:gap-y-10 sm:px-6 sm:py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <nav className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:-mx-6 sm:px-6 lg:hidden" aria-label="Docs index">
+      <div className="mx-auto grid max-w-[1240px] gap-x-10 gap-y-6 px-4 py-6 sm:gap-x-14 sm:gap-y-10 sm:px-6 sm:py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
+        <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+          <nav className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:hidden" aria-label="Docs index">
             {DOCS.map((d, i) => (
               <a
                 key={d.slug}
                 href={`#/docs/${d.slug}`}
-                className={`shrink-0 border px-3 py-2 font-mono text-[9px] tracking-[0.18em] transition-colors ${
+                className={`shrink-0 border px-2.5 py-2 font-mono text-[8.5px] tracking-[0.14em] transition-colors sm:px-3 sm:text-[9px] sm:tracking-[0.18em] ${
                   doc?.slug === d.slug ? "border-volt/70 bg-volt/10 text-volt" : "border-edge2 text-mute"
                 }`}
               >
@@ -141,29 +141,29 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
           <article key={doc.slug} className="min-w-0 max-w-[780px] pb-10">
             {Doc ? <Doc /> : null}
 
-            <div className="mt-16 grid grid-cols-2 gap-3 border-t border-edge pt-6">
+            <div className="mt-12 grid grid-cols-1 gap-2.5 border-t border-edge pt-5 sm:mt-16 sm:grid-cols-2 sm:gap-3 sm:pt-6">
               {prev && (
-                <a href={`#/docs/${prev.slug}`} className="group flex items-center gap-2.5 border border-edge px-4 py-3.5 transition-colors hover:border-volt/60">
-                  <ArrowLeft size={13} className="text-mute transition-colors group-hover:text-volt" />
+                <a href={`#/docs/${prev.slug}`} className="group flex min-h-12 items-center gap-2.5 border border-edge px-3.5 py-3 transition-colors hover:border-volt/60 sm:px-4 sm:py-3.5">
+                  <ArrowLeft size={13} className="shrink-0 text-mute transition-colors group-hover:text-volt" />
                   <span className="min-w-0">
                     <span className="block font-mono text-[7.5px] tracking-[0.22em] text-mute/50">PREV</span>
-                    <span className="truncate font-mono text-[10.5px] text-mist">{prev.title}</span>
+                    <span className="block truncate font-mono text-[10.5px] text-mist">{prev.title}</span>
                   </span>
                 </a>
               )}
               {!prev && (
-                <a href="#/docs" className="group flex items-center gap-2.5 border border-edge px-4 py-3.5 transition-colors hover:border-volt/60">
-                  <ArrowLeft size={13} className="text-mute transition-colors group-hover:text-volt" />
+                <a href="#/docs" className="group flex min-h-12 items-center gap-2.5 border border-edge px-3.5 py-3 transition-colors hover:border-volt/60 sm:px-4 sm:py-3.5">
+                  <ArrowLeft size={13} className="shrink-0 text-mute transition-colors group-hover:text-volt" />
                   <span className="font-mono text-[10.5px] tracking-[0.18em] text-volt">DOCS INDEX</span>
                 </a>
               )}
               {next && (
-                <a href={`#/docs/${next.slug}`} className="group col-start-2 flex items-center justify-end gap-2.5 border border-edge px-4 py-3.5 text-right transition-colors hover:border-volt/60">
+                <a href={`#/docs/${next.slug}`} className="group flex min-h-12 items-center justify-end gap-2.5 border border-edge px-3.5 py-3 text-right transition-colors hover:border-volt/60 sm:col-start-2 sm:px-4 sm:py-3.5">
                   <span className="min-w-0">
                     <span className="block font-mono text-[7.5px] tracking-[0.22em] text-mute/50">NEXT</span>
-                    <span className="truncate font-mono text-[10.5px] text-mist">{next.title}</span>
+                    <span className="block truncate font-mono text-[10.5px] text-mist">{next.title}</span>
                   </span>
-                  <ArrowRight size={13} className="text-mute transition-colors group-hover:text-volt" />
+                  <ArrowRight size={13} className="shrink-0 text-mute transition-colors group-hover:text-volt" />
                 </a>
               )}
             </div>

@@ -1,7 +1,6 @@
 /**
- * Ambient — superseded by AsciiMotion (App.tsx).
- * Full-viewport canvas is the density field from the ASCII reference art.
- * Kept as a no-op so historical imports remain valid.
+ * Ambient — disabled. Full-viewport motion competes with content.
+ * ASCII density lives only in contained sections (AsciiShowcase, CtaBand).
  */
 export default function Ambient() {
   return null;

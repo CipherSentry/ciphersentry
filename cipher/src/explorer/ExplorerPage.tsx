@@ -142,7 +142,7 @@ export default function ExplorerPage() {
   const accountRows = agent ? agentReceipts(agent, batches) : [];
 
   return (
-    <div className="relative z-10 isolate min-h-screen bg-transparent font-display text-mist">
+    <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
       {/* top bar */}
@@ -233,8 +233,8 @@ export default function ExplorerPage() {
               <button
                 key={b.id}
                 onClick={() => { setSelBatchId(b.id); setSelReceiptId(null); setVerifyStep(-1); setVerifiedFor(null); setAgent(null); }}
-                className={`flex w-full items-center gap-3 border-b border-edge px-4 py-3 text-left transition-colors hover:bg-panel/60 ${
-                  sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
+                className={`flex w-full items-center gap-3 border-b border-edge px-4 py-3 text-left transition-colors hover:bg-panel/70 ${
+                  sel ? "bg-volt/[0.08] shadow-[inset_2px_0_0_var(--color-volt)]" : ""
                 }`}
               >
                 <span className={`h-1.5 w-1.5 shrink-0 ${b.state === "SETTLING" ? "animate-pulse bg-amber-300" : "bg-volt"}`} />
@@ -325,11 +325,11 @@ export default function ExplorerPage() {
                       <button
                         key={r.id}
                         onClick={() => { setSelReceiptId(sel ? null : r.id); setVerifyStep(-1); setVerifiedFor(null); }}
-                        className={`grid w-full grid-cols-[100px_minmax(0,1fr)_70px_55px_70px] items-center gap-2 border-b border-edge/60 px-3 py-2.5 text-left font-mono text-[10px] transition-colors last:border-b-0 hover:bg-panel/60 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px] ${
-                          sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
+                        className={`grid w-full grid-cols-[100px_minmax(0,1fr)_70px_55px_70px] items-center gap-2 border-b border-edge/60 px-3 py-2.5 text-left font-mono text-[10px] transition-colors last:border-b-0 hover:bg-panel/70 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px] ${
+                          sel ? "bg-volt/[0.08] shadow-[inset_2px_0_0_var(--color-volt)]" : ""
                         }`}
                       >
-                        <span className={`truncate ${sel ? "text-code-fg" : "text-mist"}`}>{r.id}</span>
+                        <span className={`truncate ${sel ? "text-volt" : "text-mist"}`}>{r.id}</span>
                         <span className="flex min-w-0 items-center gap-1.5 text-[9px] text-mute">
                           <span className="truncate">{r.buyer.replace("agent:", "")}→{r.worker.replace("agent:", "")}</span>
                           <span className="truncate text-mist/80">{r.spec}</span>
@@ -384,7 +384,7 @@ export default function ExplorerPage() {
                     </div>
                     <ProofLadder r={selReceipt} verifyStep={verifyStep} />
                     {verifiedFor === selReceipt.id && (
-                      <div className="mt-3 flex items-center gap-2 border border-volt/50 bg-deepgreen px-3 py-2.5 font-mono text-[9px] tracking-[0.18em] text-volt">
+                      <div className="mt-3 flex items-center gap-2 border border-volt/40 bg-volt/[0.08] px-3 py-2.5 font-mono text-[9px] tracking-[0.18em] text-volt">
                         <Check size={12} strokeWidth={3} />
                         INCLUSION VALID · ROOT MATCHES ON-CHAIN ANCHOR
                       </div>

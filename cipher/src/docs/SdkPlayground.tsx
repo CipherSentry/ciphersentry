@@ -2,17 +2,19 @@ import { Play, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CipherSentry, CenError } from "../sdk/ciphersentry";
 
-type Tone = "mist" | "volt" | "mute" | "red" | "amber";
+type Tone = "mist" | "volt" | "hot" | "peach" | "mute" | "red" | "amber";
 interface Line {
   id: number;
   text: string;
   tone: Tone;
 }
 
-/* tones are on dark code surface — never use body mist (black) here */
+/* palette tones on dark code surface — green / deep green / peach / black */
 const TONE_CLS: Record<Tone, string> = {
   mist: "text-code-fg/90",
   volt: "text-volt",
+  hot: "text-volthot",
+  peach: "text-code-peach",
   mute: "text-code-mute",
   red: "text-red-400",
   amber: "text-amber-300",
@@ -52,9 +54,9 @@ export default function SdkPlayground() {
       log("→ registry.query({ spec: 'render.sequence.4k', minTier: 'T1' })");
       const [worker] = await cent.registry.query({ spec: "render.sequence.4k", minTier: "T1" });
       if (!worker) throw new CenError("CEN_E_NOT_FOUND", "no worker matched the filter");
-      log(`✓ ${worker.id} · trust ${worker.trust} · ${worker.rate.toFixed(2)} USDC/task`, "volt");
+      log(`✓ ${worker.id} · trust ${worker.trust} · ${worker.rate.toFixed(2)} USDC/task`, "hot");
 
-      log("→ task.commit({ frames: 240, seed: 88421 } · escrow 42.80 USDC)");
+      log("→ task.commit({ frames: 240, seed: 88421 } · escrow 42.80 USDC)", "peach");
       const task = await cent.task.commit({
         worker: worker.id,
         spec: "render.sequence.4k",
@@ -65,7 +67,7 @@ export default function SdkPlayground() {
 
       log("… quorum recomputing (3/3)", "amber");
       const r = await cent.verify(task, { quorum: 3 });
-      log(`✓ hashes match  ${r.recomputed}`, "volt");
+      log(`✓ hashes match  ${r.recomputed}`, "hot");
       log(`✓ SETTLED · receipt ${r.taskId} · ${r.ms}ms · tx ${r.tx}`, "volt");
       log("exit 0 — escrow released, receipt anchored", "mute");
     } catch (e) {
@@ -86,20 +88,20 @@ export default function SdkPlayground() {
   };
 
   return (
-    <div className="surface-code relative mt-5 border border-volt/25">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-volt/55 to-transparent" />
-      <div className="flex items-center justify-between border-b border-volt/15 px-4 py-2.5">
-        <span className="flex items-center gap-2 font-mono text-[8px] tracking-[0.24em] text-volt/80">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className={`absolute h-full w-full bg-volt ${running ? "animate-ping opacity-60" : "opacity-40"}`} />
-            <span className="relative h-1.5 w-1.5 bg-volt" />
+    <div className="surface-code relative mt-5 max-w-full border border-volt/20">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-volthot/50 to-transparent" />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-code-edge px-3 py-2.5 sm:px-4">
+        <span className="flex min-w-0 items-center gap-2 font-mono text-[8px] tracking-[0.18em] text-volthot sm:tracking-[0.24em]">
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className={`absolute h-full w-full bg-volthot ${running ? "animate-ping opacity-60" : "opacity-40"}`} />
+            <span className="relative h-1.5 w-1.5 bg-volthot" />
           </span>
-          PLAYGROUND — LIVE CLIENT, SIM NETWORK
+          <span className="truncate">PLAYGROUND — LIVE CLIENT</span>
         </span>
         <button
           onClick={run}
           disabled={running}
-          className={`flex items-center gap-2 border px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] transition-colors ${
+          className={`flex shrink-0 items-center gap-2 border px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] transition-colors ${
             running
               ? "cursor-wait border-amber-300/50 text-amber-300"
               : "border-volt/70 text-volt hover:bg-volt hover:text-void"
@@ -109,16 +111,16 @@ export default function SdkPlayground() {
           {running ? "RUNNING…" : ran ? "RUN AGAIN" : "RUN"}
         </button>
       </div>
-      <div ref={scrollRef} className="no-scrollbar h-[240px] overflow-y-auto p-4 font-mono text-[11px] leading-[1.95]">
+      <div ref={scrollRef} className="no-scrollbar h-[200px] overflow-y-auto p-3 font-mono text-[10.5px] leading-[1.9] sm:h-[240px] sm:p-4 sm:text-[11px] sm:leading-[1.95]">
         {lines.map((l) => (
-          <div key={l.id} className={`whitespace-pre-wrap ${TONE_CLS[l.tone]}`}>
+          <div key={l.id} className={`whitespace-pre-wrap break-all ${TONE_CLS[l.tone]}`}>
             {l.text || "\u00A0"}
           </div>
         ))}
-        {running && <span className="animate-blink inline-block h-3.5 w-[7px] bg-volt align-middle" />}
+        {running && <span className="animate-blink inline-block h-3.5 w-[7px] bg-volthot align-middle" />}
       </div>
-      <div className="border-t border-volt/15 px-4 py-2.5 font-mono text-[8px] tracking-[0.18em] text-code-mute">
-        SAME API AS WIRE PROTOCOL · ~6% INJECTED NONDETERMINISM TO EXERCISE THE DISPUTE PATH
+      <div className="border-t border-code-edge px-3 py-2.5 font-mono text-[7.5px] tracking-[0.14em] text-code-mute sm:px-4 sm:text-[8px] sm:tracking-[0.18em]">
+        SAME API AS WIRE · ~6% NONDETERMINISM EXERCISES DISPUTE PATH
       </div>
     </div>
   );

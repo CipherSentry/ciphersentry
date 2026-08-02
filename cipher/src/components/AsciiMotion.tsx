@@ -241,19 +241,7 @@ export default function AsciiMotion({
           ctx.fillText(ch, x * CELL_W, y * CELL_H);
         }
       }
-
-      // restrained scan beam — print-head energy from the reference
-      if (!reduced && (variant === "figure" || variant === "ambient")) {
-        const speed = variant === "figure" ? 42 : 30;
-        const beamY = ((t * speed) % (h + 100)) - 50;
-        const grad = ctx.createLinearGradient(0, beamY - 28, 0, beamY + 28);
-        const peak = variant === "figure" ? 0.09 : dense ? 0.03 : 0.055;
-        grad.addColorStop(0, "rgba(18, 201, 75, 0)");
-        grad.addColorStop(0.5, `rgba(18, 201, 75, ${peak})`);
-        grad.addColorStop(1, "rgba(18, 201, 75, 0)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, beamY - 28, w, 56);
-      }
+      // no scanline — figure panel uses AsciiFigure (image-driven)
     };
 
     resize();

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import AsciiMotion from "./components/AsciiMotion";
 import DesktopApp from "./desktop/DesktopApp";
 import OperatorApp from "./app/OperatorApp";
 import DemoFlow from "./pages/DemoFlow";
@@ -37,42 +36,33 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [isApp, isDocs, isExplorer, isInvestors, route]);
 
-  let page: React.ReactNode;
-  if (isExplorer) page = <ExplorerPage />;
-  else if (isGates) page = <Gates />;
-  else if (isFaq) page = <Faq />;
-  else if (isInvestors) page = <Investors />;
-  else if (isDemo) page = <DemoFlow />;
-  else if (isProtocol) page = <Protocol />;
-  else if (isDocs) page = <DocsPage slug={route.split("/")[2]} />;
-  else if (!isApp) page = <Landing />;
-  else
-    page = (
-      <>
-        {/* desktop ops console — lg and up */}
-        <div className="hidden h-svh lg:block">
-          <DesktopApp />
-        </div>
-        {/* mobile operator app — below lg, full-bleed */}
-        <div className="h-svh lg:hidden">
-          <OperatorApp />
-        </div>
-        {/* way back to the site on mobile */}
-        <a
-          href="#/"
-          aria-label="Back to ciphersentry.xyz"
-          className="fixed bottom-[max(6.5rem,env(safe-area-inset-bottom,0px)+5.5rem)] right-3 z-[80] border border-edge bg-void/85 px-3 py-2 font-mono text-[8px] tracking-[0.22em] text-mute backdrop-blur transition-colors hover:border-volt/60 hover:text-volt lg:hidden"
-        >
-          ← CIPHERSENTRY.XYZ
-        </a>
-      </>
-    );
+  if (isExplorer) return <ExplorerPage />;
+  if (isGates) return <Gates />;
+  if (isFaq) return <Faq />;
+  if (isInvestors) return <Investors />;
+  if (isDemo) return <DemoFlow />;
+  if (isProtocol) return <Protocol />;
+  if (isDocs) return <DocsPage slug={route.split("/")[2]} />;
+  if (!isApp) return <Landing />;
 
   return (
     <>
-      {/* ambient ASCII density field — docs/screenshots/ascii motion work.jpg */}
-      <AsciiMotion variant="ambient" dense={isApp} />
-      {page}
+      {/* desktop ops console — lg and up */}
+      <div className="hidden h-svh lg:block">
+        <DesktopApp />
+      </div>
+      {/* mobile operator app — below lg, full-bleed */}
+      <div className="h-svh lg:hidden">
+        <OperatorApp />
+      </div>
+      {/* way back to the site on mobile */}
+      <a
+        href="#/"
+        aria-label="Back to ciphersentry.xyz"
+        className="fixed bottom-[max(6.5rem,env(safe-area-inset-bottom,0px)+5.5rem)] right-3 z-[80] border border-edge bg-void/85 px-3 py-2 font-mono text-[8px] tracking-[0.22em] text-mute backdrop-blur transition-colors hover:border-volt/60 hover:text-volt lg:hidden"
+      >
+        ← CIPHERSENTRY.XYZ
+      </a>
     </>
   );
 }

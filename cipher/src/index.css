@@ -21,7 +21,8 @@
   --color-code-fg: #edf1e5; /* primary glyphs on code */
   --color-code-mute: #7a9a7c; /* green-muted comments / chrome on code */
   --color-code-edge: #1a3d28; /* volt-adjacent hairline */
-  --color-code-str: #b8f08a; /* string literals */
+  --color-code-str: #b8f08a; /* string literals — green lime on code */
+  --color-code-peach: #f5e6d3; /* peach type names / accents on code */
 
   --tracking-landing: -0.045em;
 
@@ -126,11 +127,9 @@ input {
   }
 }
 
-/* body holds the void base so transparent page shells show AsciiMotion behind content */
 #root {
   position: relative;
   min-height: 100svh;
-  background: var(--color-void);
 }
 
 /* safe horizontal padding utility (notch-aware) */
