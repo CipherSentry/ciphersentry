@@ -8,6 +8,7 @@ import { SimDriver, randHex, type TaskRow } from "./sim.ts";
 import type { EscrowGateway } from "./escrow.ts";
 import type { SlashExecutorGateway } from "./slash-executor.ts";
 import type { SettlementBatcherGateway } from "./batcher.ts";
+import type { FraudProofWorker } from "./fraud-proof.ts";
 import {
   expectedPureHash,
   type VerifierPool,
@@ -103,12 +104,14 @@ export interface RpcContext {
   slashChain: SlashExecutorGateway;
   /** B4 settlement batcher — Merkle roots + 2-of-3 anchor. */
   batcher: SettlementBatcherGateway;
+  /** B5 fraud-proof worker — challenge window + ruling. */
+  fraud: FraudProofWorker;
   emitTask: (t: TaskRow) => void;
   epoch: number;
 }
 
 export function makeDispatcher(ctx: RpcContext) {
-  const { sim, ledger, escrow, pool, slashChain, batcher } = ctx;
+  const { sim, ledger, escrow, pool, slashChain, batcher, fraud } = ctx;
 
   const addTask = (partial: Partial<LedgerTask> & { buyer?: string }): LedgerTask => {
     const t: LedgerTask = {
@@ -248,15 +251,24 @@ export function makeDispatcher(ctx: RpcContext) {
           t.state = "DISPUTED";
           ledger.put(t);
           ctx.emitTask({ ...t });
-          // B3: attempt on-chain evidence posts (offline when no SLASH_EXECUTOR_ADDRESS)
-          if (outcome.evidence) {
-            for (const s of outcome.slashes) {
-              void slashChain.submit({
-                evidenceHash: outcome.evidence.sig,
-                target: s.target,
-                severity: s.severity,
-              });
-            }
+          // B5: open fraud case (auto-challenge when FRAUD_AUTO≠0); slash posts inside worker
+          const fraudCase = await fraud.open({
+            taskId: t.id,
+            reported,
+            inputJson: input,
+            buyer: t.buyer ?? t.counterparty,
+            worker: t.agent,
+            amount: t.amount,
+            votes: outcome.votes,
+            evidence: outcome.evidence,
+            slashes: outcome.slashes,
+          });
+          // Terminal ledger state when auto-challenge already ruled
+          if (fraudCase.status === "RESOLVED" && fraudCase.ruling) {
+            if (fraudCase.ruling === "Refund") t.state = "FAILED";
+            else t.state = "SETTLED";
+            ledger.put(t);
+            ctx.emitTask({ ...t });
           }
           return err(M.HASH_MISMATCH, "quorum rejected the reported output hash");
         }
@@ -332,18 +344,204 @@ export function makeDispatcher(ctx: RpcContext) {
         t.state = "DISPUTED";
         ledger.put(t);
         ctx.emitTask({ ...t });
-        return ok({ task_id, state: t.state, evidence_received: !!evidence });
+        const fraudCase = await fraud.open({
+          taskId: t.id,
+          reported: String(t.reportedHash ?? t.hash),
+          inputJson: t.input ?? { spec: t.spec, amount: t.amount, worker: t.agent },
+          buyer: t.buyer ?? t.counterparty,
+          worker: t.agent,
+          amount: t.amount,
+          votes: [],
+          evidence: evidence
+            ? {
+                type: "evidence.recompute",
+                taskId: t.id,
+                reported: String(t.reportedHash ?? t.hash),
+                digests: {},
+                votes: [],
+                quorum: "0/0",
+                at: Date.now(),
+                canonical: JSON.stringify(evidence),
+                sig: `0x${randHex(16)}`,
+              }
+            : undefined,
+        });
+        return ok({
+          task_id,
+          state: t.state,
+          evidence_received: !!evidence,
+          fraud: {
+            status: fraudCase.status,
+            ruling: fraudCase.ruling ?? null,
+            reason: fraudCase.reason ?? null,
+          },
+        });
       }
 
       case "operator.rule": {
         const { task_id, ruling, sig } = p as { task_id?: string; ruling?: string; sig?: string };
-        if (!task_id || !ruling || !sig) return err(M.SCHEMA, "operator.rule requires task_id, ruling, sig");
+        if (!task_id || !ruling) return err(M.SCHEMA, "operator.rule requires task_id and ruling");
         const t = findTask(task_id);
         if (!t) return err(M.TIMEOUT, `task ${task_id} unknown`);
-        t.state = ruling === "REFUND BUYER" || ruling === "REFUND" ? "FAILED" : "SETTLED";
+        // open case if missing
+        if (!fraud.of(task_id)) {
+          await fraud.open({
+            taskId: t.id,
+            reported: String(t.reportedHash ?? t.hash),
+            inputJson: t.input ?? { spec: t.spec, amount: t.amount, worker: t.agent },
+            buyer: t.buyer ?? t.counterparty,
+            worker: t.agent,
+            amount: t.amount,
+            votes: [],
+          });
+        }
+        const c = await fraud.manualRule(task_id, String(ruling), sig ? `signed:${sig.slice(0, 12)}` : undefined);
+        const chain = await fraud.submitRule(task_id, c.ruling);
+        t.state = c.ruling === "Refund" ? "FAILED" : "SETTLED";
         ledger.put(t);
         ctx.emitTask({ ...t });
-        return ok({ task_id, state: t.state, ruling });
+        return ok({
+          task_id,
+          state: t.state,
+          ruling: c.ruling,
+          reason: c.reason,
+          chain,
+          fraud: fraud.of(task_id),
+        });
+      }
+
+      case "fraud.list": {
+        const status = (p as { status?: string }).status;
+        const rows = fraud.list(status as never).map((c) => ({
+          task_id: c.taskId,
+          status: c.status,
+          ruling: c.ruling ?? null,
+          recomputed: c.recomputed ?? null,
+          reason: c.reason ?? null,
+          open_at: c.openAt,
+        }));
+        return ok({ count: rows.length, cases: rows });
+      }
+
+      case "fraud.of": {
+        const { task_id } = p as { task_id?: string };
+        if (!task_id) return err(M.SCHEMA, "fraud.of requires task_id");
+        const c = fraud.of(task_id);
+        if (!c) return err(M.TIMEOUT, `no fraud case for ${task_id}`);
+        return ok({
+          task_id: c.taskId,
+          status: c.status,
+          reported: c.reported,
+          recomputed: c.recomputed ?? null,
+          ruling: c.ruling ?? null,
+          reason: c.reason ?? null,
+          original_votes: c.originalVotes,
+          challenge_votes: c.challengeVotes ?? [],
+          slashes: c.slashes,
+          chain: c.chain ?? null,
+          window_blocks: c.windowBlocks,
+          window_ms: c.windowMs,
+          open_at: c.openAt,
+          open_block: c.openBlock,
+          resolved_at: c.resolvedAt ?? null,
+        });
+      }
+
+      case "fraud.challenge": {
+        const { task_id } = p as { task_id?: string };
+        if (!task_id) return err(M.SCHEMA, "fraud.challenge requires task_id");
+        try {
+          if (!fraud.of(task_id)) {
+            const t = findTask(task_id);
+            if (!t) return err(M.TIMEOUT, `task ${task_id} unknown`);
+            await fraud.open({
+              taskId: t.id,
+              reported: String(t.reportedHash ?? t.hash),
+              inputJson: t.input ?? { spec: t.spec, amount: t.amount, worker: t.agent },
+              buyer: t.buyer ?? t.counterparty,
+              worker: t.agent,
+              amount: t.amount,
+              votes: [],
+            });
+            // open may have auto-challenged
+          }
+          // Force re-challenge only if still open
+          const existing = fraud.of(task_id)!;
+          if (existing.status === "OPEN" || existing.status === "CHALLENGING") {
+            const r = await fraud.challenge(task_id);
+            const t = findTask(task_id);
+            if (t) {
+              t.state = r.ruling === "Refund" ? "FAILED" : "SETTLED";
+              ledger.put(t);
+              ctx.emitTask({ ...t });
+            }
+            return ok({
+              task_id,
+              ruling: r.ruling,
+              recomputed: r.recomputed,
+              reason: r.reason,
+              challenge_votes: r.challengeVotes,
+              status: r.case.status,
+            });
+          }
+          return ok({
+            task_id,
+            ruling: existing.ruling,
+            recomputed: existing.recomputed,
+            reason: existing.reason,
+            challenge_votes: existing.challengeVotes ?? [],
+            status: existing.status,
+          });
+        } catch (e) {
+          return err(M.QUORUM_SLOW, (e as Error).message);
+        }
+      }
+
+      case "fraud.rule": {
+        const { task_id, ruling } = p as { task_id?: string; ruling?: string };
+        if (!task_id) return err(M.SCHEMA, "fraud.rule requires task_id");
+        try {
+          if (ruling) await fraud.manualRule(task_id, ruling);
+          const chain = await fraud.submitRule(task_id, ruling ? undefined : undefined);
+          const c = fraud.of(task_id)!;
+          const t = findTask(task_id);
+          if (t && c.ruling) {
+            t.state = c.ruling === "Refund" ? "FAILED" : "SETTLED";
+            ledger.put(t);
+            ctx.emitTask({ ...t });
+          }
+          return ok({ task_id, ruling: c.ruling, reason: c.reason, chain, status: c.status });
+        } catch (e) {
+          return err(M.QUORUM_SLOW, (e as Error).message);
+        }
+      }
+
+      case "fraud.default": {
+        const { task_id } = p as { task_id?: string };
+        if (!task_id) return err(M.SCHEMA, "fraud.default requires task_id");
+        try {
+          const r = await fraud.defaultRefund(task_id);
+          const t = findTask(task_id);
+          if (t) {
+            t.state = "FAILED";
+            ledger.put(t);
+            ctx.emitTask({ ...t });
+          }
+          return ok({ task_id, ...r });
+        } catch (e) {
+          return err(M.QUORUM_SLOW, (e as Error).message);
+        }
+      }
+
+      case "fraud.info": {
+        return ok(fraud.info());
+      }
+
+      case "fraud.tick": {
+        // test helper — advance simulated block height for window expiry
+        const n = Number((p as { blocks?: number }).blocks ?? 1);
+        const height = fraud.tickBlock(n);
+        return ok({ block: height });
       }
 
       case "stake": {
@@ -521,6 +719,7 @@ export function makeDispatcher(ctx: RpcContext) {
           escrow: escrow.mode,
           slash_executor: slashChain.mode,
           batcher: batcher.info(),
+          fraud: fraud.info(),
           ledger_tasks: ledger.all().length,
           verifiers: el.members,
           registry_size: pool.registry.all().length,
@@ -528,7 +727,7 @@ export function makeDispatcher(ctx: RpcContext) {
           slash_dry_runs: pool.slash.all().length,
           accrual: acc,
           election: { seed: el.seed, scores: el.scores, members: el.members },
-          phase: "B4",
+          phase: "B5",
         });
       }
 

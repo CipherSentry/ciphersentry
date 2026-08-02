@@ -5,12 +5,12 @@ Each package has its own `package.json`.
 
 ```
 services/
-├── gateway/           # B0–B4 edge: JSON-RPC + WS + CENT + slash + batcher writer
+├── gateway/           # B0–B5 edge: JSON-RPC + WS + CENT + batcher + fraud worker
 ├── verifier-daemon/   # pool, election, slashes, accuracy oracle, accrual ledger
 └── indexer/           # receipt graph: Postgres state + ClickHouse analytics
 ```
 
-## gateway (B0–B4 settlement-ready)
+## gateway (B0–B5 fraud-ready)
 
 ```bash
 cd services/gateway && npm install && npm run gateway
@@ -32,6 +32,10 @@ cd services/gateway && npm install && npm run gateway
 | `BATCHER_KEY_1` / `_2` / `_3` | 2-of-3 EIP-712 signers (anvil #0/#1/#2 locally) |
 | `BATCH_INTERVAL_MS` | Auto-flush interval (default `30000`; `0` = manual) |
 | `BATCH_MAX_PENDING` | Flush when pending leaves ≥ N (default `9`) |
+| `RULER_KEY` | EIP-712 Escrow.rule signer (falls back to `PROTOCOL_KEY`) |
+| `FRAUD_WINDOW_BLOCKS` | Challenge window (default `64`) |
+| `FRAUD_WINDOW_MS` | Offline wall-clock window (default `120000`) |
+| `FRAUD_AUTO` | Auto-challenge on open (`1` default; `0` = manual) |
 
 ### Local chain E2E (anvil)
 
@@ -69,7 +73,9 @@ RPC methods: `registry.query` · `registry.list` · `task.commit` · `task.repor
 `verify` · `task.settle` · `dispute.open` · `operator.rule` · `stake` ·
 `epoch.elect` · `epoch.info` · `accrual.balance` · `accrual.claim` ·
 `accrual.summary` · `accuracy.of` · `accuracy.list` · `slash.submit` ·
-`batch.pending` · `batch.info` · `batch.anchor` · `batch.markMissed` · `node.info`.
+`batch.pending` · `batch.info` · `batch.anchor` · `batch.markMissed` ·
+`fraud.list` · `fraud.of` · `fraud.challenge` · `fraud.rule` · `fraud.default` ·
+`fraud.info` · `node.info`.
 
 **B3 fee path:** on honest `verify`, take **0.35%** of escrow → **85%** to ok
 voters (accuracy²-weighted) + **15%** treasury. Claim via `accrual.claim`.
@@ -80,10 +86,15 @@ on-chain.
 (or auto-flush) folds a binary Merkle root, EIP-712-signs with 2-of-3 batcher
 keys, and submits `SettlementBatcher.anchorRoot` (`eth_sendRawTransaction`).
 
+**B5 fraud path:** dishonest `verify` opens a challenge case (64-block window),
+re-executes with a fresh quorum, rules **Refund** / **Release** / **Split**,
+and can post `Escrow.rule` with `RULER_KEY`. Window expiry → `fraud.default`
+(`defaultRefund`).
+
 ```bash
 cd services && npm test
 npm run gateway &
-npm run smoke              # B4 offline path
+npm run smoke              # B5 offline path
 npm run e2e:batcher        # anvil: real BatchAnchored
 ```
 
