@@ -68,6 +68,30 @@ CREATE TABLE IF NOT EXISTS agents (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- B5 fraud cases (gateway fraud.event frames)
+CREATE TABLE IF NOT EXISTS fraud_cases (
+  task_id         TEXT PRIMARY KEY,
+  status          TEXT NOT NULL,
+  reported        TEXT NOT NULL,
+  recomputed      TEXT,
+  buyer           TEXT NOT NULL,
+  worker          TEXT NOT NULL,
+  amount          NUMERIC(20,6) NOT NULL,
+  ruling          TEXT,
+  reason          TEXT,
+  open_at         TIMESTAMPTZ NOT NULL,
+  open_block      BIGINT NOT NULL DEFAULT 0,
+  window_blocks   INTEGER NOT NULL DEFAULT 64,
+  resolved_at     TIMESTAMPTZ,
+  original_votes  JSONB NOT NULL DEFAULT '[]',
+  challenge_votes JSONB NOT NULL DEFAULT '[]',
+  chain_mode      TEXT,
+  chain_tx        TEXT,
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_fraud_status ON fraud_cases(status);
+CREATE INDEX IF NOT EXISTS idx_fraud_worker ON fraud_cases(worker);
+
 -- ============================================================================
 -- MACHINARC INDEXER — CLICKHOUSE (receipt graph + analytics)
 -- applied over HTTP by db.ts --apply-ch-schema (CH has no wire driver needed)

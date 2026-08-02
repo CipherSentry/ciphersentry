@@ -21,7 +21,7 @@ import { ChainWatcher, makeChainConfigFromEnv } from "./chain.ts";
 import { EscrowGateway, makeEscrowConfigFromEnv } from "./escrow.ts";
 import { SlashExecutorGateway, makeSlashConfigFromEnv } from "./slash-executor.ts";
 import { SettlementBatcherGateway, makeBatcherConfigFromEnv } from "./batcher.ts";
-import { FraudProofWorker, makeFraudConfigFromEnv } from "./fraud-proof.ts";
+import { FraudProofWorker, makeFraudConfigFromEnv, publicFraudCase } from "./fraud-proof.ts";
 
 const HOST = process.env.GATEWAY_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
@@ -53,6 +53,8 @@ async function boot(): Promise<void> {
   pool.ensureElection(EPOCH);
   const hub = new SubscriptionHub();
   hub.attachEvents(sim);
+  hub.setFraudSnapshot(() => fraud.list());
+  fraud.onCase = (c) => hubBroadcast(hub, "fraud", publicFraudCase(c));
   sim.start();
 
   batcher.onBatch = (b) => hubBroadcast(hub, "batches", b);
@@ -176,10 +178,11 @@ async function registerChainBinding(hub: SubscriptionHub): Promise<void> {
   await watcher.start();
 }
 
-function hubBroadcast(hub: SubscriptionHub, topic: "tasks" | "batches", data: unknown): void {
+function hubBroadcast(hub: SubscriptionHub, topic: "tasks" | "batches" | "fraud", data: unknown): void {
+  const method = topic === "tasks" ? "task.event" : topic === "batches" ? "batch.event" : "fraud.event";
   hub.broadcast(topic, {
     jsonrpc: "2.0",
-    method: `${topic === "tasks" ? "task" : "batch"}.event`,
+    method,
     params: { topic, data },
   });
 }

@@ -287,6 +287,8 @@ export function makeDispatcher(ctx: RpcContext) {
           reported,
           amount: t.amount,
           worker: t.agent,
+          buyer: t.counterparty,
+          spec: t.spec,
         });
 
         return ok({
