@@ -1,17 +1,24 @@
 /**
- * Indexer service main — listener + public read API.
+ * Indexer service main — listener + public read API. (B6)
  *
  *   chain events ──▶ Postgres (state, events are the record)
  *                └─▶ ClickHouse (receipt graph + trust series)
- *   http           ──▶ /batches /receipts /agents /search /proofs /trust
+ *   http           ──▶ /batches /receipts /agents /search /proofs /trust /health
  *
  * Trust score per the whitepaper §5:
  *   T_i = clamp(0, 100, 50·log2(1 + s_i) + 40·q_i + 10·(1 − e^(−n_i/500)))
  */
 
 import { createServer } from "node:http";
-import { ClickHouseHttp, applyChSchema, createPgQuerier, type Querier } from "./db";
-import { ChainListener, LedgerWriter, type BatchRow, type TaskEventRow } from "./ledger";
+import { ClickHouseHttp, applyChSchema, createPgQuerier, type Querier } from "./db.ts";
+import {
+  ChainListener,
+  LedgerWriter,
+  type BatchRow,
+  type FraudCaseRow,
+  type TaskEventRow,
+} from "./ledger.ts";
+import { verifyInclusionEitherOrder } from "./merkle.ts";
 
 /* ------------------------------- config ------------------------------------ */
 
@@ -20,8 +27,12 @@ import { ChainListener, LedgerWriter, type BatchRow, type TaskEventRow } from ".
 const PG_DSN = process.env.PG_DSN ?? "postgres://cent:cent@127.0.0.1:5432/ciphersentry";
 const CH_URL = process.env.CH_URL ?? "http://127.0.0.1:8123";
 const CH_DB = process.env.CH_DB ?? "ciphersentry";
-const NODE_EVENTS = process.env.NODE_EVENTS ?? "wss://node.base-sepolia.ciphersentry.com/events";
-const PORT = Number(process.env.PORT ?? 8081);
+const NODE_EVENTS =
+  process.env.NODE_EVENTS ??
+  process.env.GATEWAY_EVENTS ??
+  "ws://127.0.0.1:8080/events";
+const PORT = Number(process.env.PORT ?? process.env.INDEXER_PORT ?? 8081);
+const MEMORY = process.env.INDEXER_MEMORY === "1";
 
 /* ----------------------------- trust score --------------------------------- */
 
@@ -45,7 +56,18 @@ function json(res: import("node:http").ServerResponse, status: number, body: unk
 async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ status: number; body: unknown }> {
   const p = url.pathname.replace(/\/+$/, "") || "/";
 
-  if (p === "/health") return { status: 200, body: { ok: true, service: "ciphersentry-indexer" } };
+  if (p === "/health") {
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        service: "ciphersentry-indexer",
+        phase: "B6",
+        events: NODE_EVENTS,
+        memory: MEMORY,
+      },
+    };
+  }
 
   if (p === "/batches") {
     const rows = await pg.exec(
@@ -76,9 +98,25 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
   if (mp) {
     const rows = await pg.exec(`SELECT * FROM receipts WHERE receipt_id = $1 LIMIT 1`, [mp[1]]);
     if (!rows.length) return { status: 404, body: { error: "receipt_not_found" } };
-    const r = rows[0] as { leaf: string; path: string[]; batch_id: string };
-    const batch = await pg.exec(`SELECT root, anchored_block, anchored_tx FROM batches WHERE batch_id = $1`, [r.batch_id]);
-    return { status: 200, body: { data: { leaf: r.leaf, path: r.path, anchor: batch[0] ?? null } } };
+    const r = rows[0] as { leaf: string; path: string[] | string; batch_id: string };
+    const path = typeof r.path === "string" ? (JSON.parse(r.path) as string[]) : r.path;
+    const batch = await pg.exec(
+      `SELECT root, anchored_block, anchored_tx FROM batches WHERE batch_id = $1`,
+      [r.batch_id],
+    );
+    const root = batch[0] ? String((batch[0] as { root: string }).root) : "";
+    const valid = root ? verifyInclusionEitherOrder(r.leaf, path ?? [], root) : false;
+    return {
+      status: 200,
+      body: {
+        data: {
+          leaf: r.leaf,
+          path,
+          anchor: batch[0] ?? null,
+          valid,
+        },
+      },
+    };
   }
 
   const ma = p.match(/^\/agents\/([^/]+)$/);
@@ -101,22 +139,50 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
 
   const mt = p.match(/^\/trust\/([^/]+)$/);
   if (mt) {
-    const rows = await ch.exec<{ agent_id: string; epoch: number; trust_score: number }>(
-      `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = '${mt[1].replace(/'/g, "")}' ORDER BY epoch DESC LIMIT 32 FORMAT JSON`,
+    const agent = mt[1]!.replace(/'/g, "");
+    try {
+      const rows = await ch.exec<{ agent_id: string; epoch: number; trust_score: number }>(
+        `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = '${agent}' ORDER BY epoch DESC LIMIT 32 FORMAT JSON`,
+      );
+      return { status: 200, body: { data: rows } };
+    } catch {
+      return { status: 200, body: { data: [] } };
+    }
+  }
+
+  if (p === "/fraud") {
+    const rows = await pg.exec(
+      `SELECT task_id, status, reported, recomputed, buyer, worker, amount, ruling, reason,
+              open_at, open_block, resolved_at, chain_mode, chain_tx, updated_at
+       FROM fraud_cases ORDER BY updated_at DESC LIMIT 50`,
     );
     return { status: 200, body: { data: rows } };
+  }
+
+  const mf = p.match(/^\/fraud\/([^/]+)$/);
+  if (mf) {
+    const rows = await pg.exec(`SELECT * FROM fraud_cases WHERE task_id = $1`, [mf[1]]);
+    if (!rows.length) return { status: 404, body: { error: "fraud_not_found" } };
+    return { status: 200, body: { data: rows[0] } };
   }
 
   if (p === "/search") {
     const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
     if (!q) return { status: 400, body: { error: "missing q" } };
     const like = `%${q}%`;
-    const [receipts, batches, agents] = await Promise.all([
-      pg.exec(`SELECT receipt_id, batch_id FROM receipts WHERE receipt_id ILIKE $1 OR task_id ILIKE $1 OR leaf ILIKE $1 LIMIT 10`, [like]),
+    const [receipts, batches, agents, fraud] = await Promise.all([
+      pg.exec(
+        `SELECT receipt_id, batch_id FROM receipts WHERE receipt_id ILIKE $1 OR task_id ILIKE $1 OR leaf ILIKE $1 LIMIT 10`,
+        [like],
+      ),
       pg.exec(`SELECT batch_id, epoch FROM batches WHERE batch_id ILIKE $1 OR root ILIKE $1 LIMIT 5`, [like]),
       pg.exec(`SELECT agent_id, tier, trust FROM agents WHERE agent_id ILIKE $1 LIMIT 5`, [like]),
+      pg.exec(
+        `SELECT task_id, status, ruling FROM fraud_cases WHERE task_id ILIKE $1 OR worker ILIKE $1 OR buyer ILIKE $1 LIMIT 5`,
+        [like],
+      ).catch(() => [] as unknown[]),
     ]);
-    return { status: 200, body: { data: { receipts, batches, agents } } };
+    return { status: 200, body: { data: { receipts, batches, agents, fraud } } };
   }
 
   return { status: 404, body: { error: "not_found" } };
@@ -125,41 +191,101 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
 /* -------------------------------- boot ------------------------------------- */
 
 export async function boot(): Promise<void> {
-  const pg = await createPgQuerier(PG_DSN);
-  const ch = new ClickHouseHttp(CH_URL, CH_DB, process.env.CH_USER ?? "default", process.env.CH_PASSWORD ?? "");
-  await applyChSchema(ch); // idempotent
+  let pg: Querier;
+  let ch: ClickHouseHttp | import("./memory.ts").MemoryClickHouse;
 
-  const writer = new LedgerWriter(pg, ch);
+  if (MEMORY) {
+    const { MemoryStore, MemoryClickHouse } = await import("./memory.ts");
+    pg = new MemoryStore();
+    ch = new MemoryClickHouse();
+    console.log("  storage  → MEMORY (INDEXER_MEMORY=1)");
+  } else {
+    pg = await createPgQuerier(PG_DSN);
+    ch = new ClickHouseHttp(CH_URL, CH_DB, process.env.CH_USER ?? "cent", process.env.CH_PASSWORD ?? "cent");
+    try {
+      await applyChSchema(ch as ClickHouseHttp);
+    } catch (e) {
+      console.warn(`  clickhouse schema: ${(e as Error).message?.slice(0, 120) ?? e}`);
+    }
+  }
 
-  const onTask = async (e: TaskEventRow) => writer.upsertTask(e);
+  const writer = new LedgerWriter(pg, ch as import("./ledger.ts").ChInserter);
+  let tasksIn = 0;
+  let batchesIn = 0;
+  let fraudIn = 0;
+  let reconcileMiss = 0;
+
+  const onTask = async (e: TaskEventRow) => {
+    await writer.upsertTask(e);
+    tasksIn++;
+  };
   const onBatch = async (b: BatchRow) => {
-    const { reconciled } = await writer.writeBatch(b);
-    if (!reconciled) {
-      console.warn(`[reconcile] batch ${b.batch_id} fold mismatch — flagged, not patched`);
+    try {
+      const { reconciled, mode, rootLocal } = await writer.writeBatch(b);
+      batchesIn++;
+      if (!reconciled) {
+        reconcileMiss++;
+        console.warn(
+          `[reconcile] batch ${b.batch_id} fold mismatch (mode=${mode} local=${rootLocal?.slice(0, 18) ?? "?"} anchored=${String(b.root).slice(0, 18)}) — flagged, not patched`,
+        );
+      } else {
+        console.log(`[batch] ${b.batch_id} root ok mode=${mode} count=${b.count}`);
+      }
+    } catch (e) {
+      console.warn(`[batch] write failed ${b.batch_id}: ${e instanceof Error ? e.message : e}`);
+    }
+  };
+  const onFraud = async (f: FraudCaseRow) => {
+    try {
+      await writer.writeFraud(f);
+      fraudIn++;
+      console.log(`[fraud] ${f.task_id} status=${f.status} ruling=${f.ruling ?? "-"}`);
+    } catch (e) {
+      console.warn(`[fraud] write failed ${f.task_id}: ${e instanceof Error ? e.message : e}`);
     }
   };
 
-  const listener = new ChainListener(NODE_EVENTS, onTask, onBatch);
-  listener.connect();
+  const listener = new ChainListener(NODE_EVENTS, onTask, onBatch, onFraud);
+  try {
+    listener.connect();
+  } catch (e) {
+    console.warn(`  events   → connect deferred: ${(e as Error).message}`);
+  }
 
   const server = createServer(async (req, res) => {
     try {
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "GET,OPTIONS",
+          "access-control-allow-headers": "content-type",
+        });
+        res.end();
+        return;
+      }
       const u = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
-      const { status, body } = await handle(pg, ch, u);
+      if (u.pathname === "/stats") {
+        json(res, 200, { tasksIn, batchesIn, fraudIn, reconcileMiss, phase: "B6" });
+        return;
+      }
+      const { status, body } = await handle(pg, ch as ClickHouseHttp, u);
       json(res, status, body);
     } catch (e) {
       json(res, 500, { error: e instanceof Error ? e.message : "internal" });
     }
   });
 
-  server.listen(PORT, () => {
-    console.log(`ciphersentry-indexer`);
-    console.log(`  api      → http://localhost:${PORT}`);
-    console.log(`  events   → ${NODE_EVENTS.replace(/\/events$/, "")}`);
-    console.log(`  analytics→ ${CH_URL}/${CH_DB}`);
+  server.listen(PORT, "127.0.0.1", () => {
+    console.log(`ciphersentry-indexer  [B6]`);
+    console.log(`  api      → http://127.0.0.1:${PORT}`);
+    console.log(`  events   → ${NODE_EVENTS}`);
+    if (!MEMORY) console.log(`  analytics→ ${CH_URL}/${CH_DB}`);
   });
 }
 
 if (process.argv[1]?.endsWith("server.ts") || process.argv[1]?.endsWith("server.js")) {
-  void boot();
+  void boot().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
 }

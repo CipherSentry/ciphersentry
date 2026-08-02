@@ -315,15 +315,47 @@ export function makeFraudConfigFromEnv(): FraudConfig {
 
 /* ------------------------------ worker ------------------------------------ */
 
+/** Wire-safe fraud case frame (no bulky inputJson). */
+export function publicFraudCase(c: ChallengeCase): Record<string, unknown> {
+  return {
+    task_id: c.taskId,
+    status: c.status,
+    reported: c.reported,
+    recomputed: c.recomputed ?? null,
+    buyer: c.buyer,
+    worker: c.worker,
+    amount: c.amount,
+    ruling: c.ruling ?? null,
+    reason: c.reason ?? null,
+    open_at: c.openAt,
+    open_block: c.openBlock,
+    window_blocks: c.windowBlocks,
+    resolved_at: c.resolvedAt ?? null,
+    original_votes: c.originalVotes.map((v) => ({ v: v.verifier, ok: v.ok })),
+    challenge_votes: (c.challengeVotes ?? []).map((v) => ({ v: v.verifier, ok: v.ok })),
+    chain: c.chain ?? null,
+  };
+}
+
 export class FraudProofWorker {
   private cases = new Map<string, ChallengeCase>();
   private nonces = new Map<string, number>();
   private simulatedBlock = 0;
+  /** Gateway fans out as fraud.event on open / resolve / default. */
+  onCase?: (c: ChallengeCase) => void;
 
   constructor(
     private cfg: FraudConfig,
     private slashChain?: SlashExecutorGateway,
   ) {}
+
+  private emit(c: ChallengeCase): void {
+    try {
+      this.onCase?.(c);
+    } catch {
+      /* never break the fraud path for a bad listener */
+    }
+  }
 
   get mode(): "offline" | "write-ready" | "watch-only" {
     if (!this.cfg.escrowAddress) return "offline";
@@ -414,7 +446,9 @@ export class FraudProofWorker {
     if (this.cfg.autoChallenge) {
       await this.challenge(params.taskId);
     }
-    return this.cases.get(params.taskId)!;
+    const out = this.cases.get(params.taskId)!;
+    this.emit(out);
+    return out;
   }
 
   /**
@@ -450,6 +484,7 @@ export class FraudProofWorker {
     c.status = "RESOLVED";
     c.resolvedAt = Date.now();
     this.nonces.set(taskId, c.rulingNonce);
+    this.emit(c);
 
     return { case: c, ruling, recomputed, challengeVotes: votes, reason };
   }
@@ -471,6 +506,7 @@ export class FraudProofWorker {
     c.status = "RESOLVED";
     c.resolvedAt = Date.now();
     this.nonces.set(taskId, c.rulingNonce);
+    this.emit(c);
     return c;
   }
 
@@ -511,18 +547,21 @@ export class FraudProofWorker {
 
     if (!this.cfg.escrowAddress) {
       c.chain = { mode: "offline" };
+      this.emit(c);
       return { mode: "offline", ruling, nonce: c.rulingNonce, sig };
     }
 
     if (!sig) {
       const data = this.encodeRule(taskBytes, ruling, nonce, "0x");
       c.chain = { mode: "simulated", error: "no RULER_KEY", calldata: data };
+      this.emit(c);
       return { mode: "simulated", error: "no RULER_KEY", calldata: data, ruling, nonce: c.rulingNonce };
     }
 
     const data = this.encodeRule(taskBytes, ruling, nonce, sig);
     const sent = await this.sendTx(data as Hex);
     c.chain = { mode: sent.mode, txHash: sent.txHash, error: sent.error, calldata: data };
+    this.emit(c);
     return { ...sent, ruling, nonce: c.rulingNonce, sig, calldata: data };
   }
 
@@ -542,6 +581,7 @@ export class FraudProofWorker {
 
     if (!this.cfg.escrowAddress) {
       c.chain = { mode: "offline" };
+      this.emit(c);
       return { mode: "offline", ruling: "Refund", nonce: c.rulingNonce, status: c.status };
     }
 
@@ -552,6 +592,7 @@ export class FraudProofWorker {
     });
     const sent = await this.sendTx(data);
     c.chain = { mode: sent.mode, txHash: sent.txHash, error: sent.error, calldata: data };
+    this.emit(c);
     return { ...sent, ruling: "Refund", nonce: c.rulingNonce, status: c.status, calldata: data };
   }
 

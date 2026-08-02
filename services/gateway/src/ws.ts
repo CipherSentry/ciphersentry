@@ -3,9 +3,12 @@
  * `events.subscribe`. Frames match src/sdk/rpc.ts frame routing:
  *   { jsonrpc: "2.0", method: "task.event",  params: { topic: "tasks",   data } }
  *   { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data } }
+ *   { jsonrpc: "2.0", method: "fraud.event", params: { topic: "fraud",   data } }
  */
 
 import type { SimDriver, BatchRowPacket, TaskRow } from "./sim.ts";
+import type { ChallengeCase } from "./fraud-proof.ts";
+import { publicFraudCase } from "./fraud-proof.ts";
 
 export interface SocketLike {
   send(payload: string): void;
@@ -15,16 +18,26 @@ export interface SocketLike {
   readyState?: number;
 }
 
+const ALLOWED = new Set(["tasks", "batches", "fraud"]);
+
 export class SubscriptionHub {
   private clients = new Map<SocketLike, Set<string>>();
+  private fraudSnapshot: () => ChallengeCase[] = () => [];
 
   get clientCount(): number {
     return this.clients.size;
   }
 
+  /** Optional hydrate source for fraud topic. */
+  setFraudSnapshot(fn: () => ChallengeCase[]): void {
+    this.fraudSnapshot = fn;
+  }
+
   attachEvents(sim: SimDriver): void {
-    sim.onTask = (t: TaskRow) => this.broadcast("tasks", { jsonrpc: "2.0", method: "task.event", params: { topic: "tasks", data: t } });
-    sim.onBatch = (b: BatchRowPacket) => this.broadcast("batches", { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data: b } });
+    sim.onTask = (t: TaskRow) =>
+      this.broadcast("tasks", { jsonrpc: "2.0", method: "task.event", params: { topic: "tasks", data: t } });
+    sim.onBatch = (b: BatchRowPacket) =>
+      this.broadcast("batches", { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data: b } });
   }
 
   register(ws: SocketLike, sim: SimDriver): void {
@@ -39,10 +52,14 @@ export class SubscriptionHub {
         return;
       }
       if (env.method !== "events.subscribe" || !env.params?.topics?.length) {
-        this.send(ws, { jsonrpc: "2.0", id: env.id ?? 0, error: { code: "CEN_E_SCHEMA", message: "expected events.subscribe" } });
+        this.send(ws, {
+          jsonrpc: "2.0",
+          id: env.id ?? 0,
+          error: { code: "CEN_E_SCHEMA", message: "expected events.subscribe" },
+        });
         return;
       }
-      const topics = env.params.topics.filter((t) => t === "tasks" || t === "batches");
+      const topics = env.params.topics.filter((t) => ALLOWED.has(t));
       topics.forEach((t) => this.clients.get(ws)?.add(t));
       this.send(ws, { jsonrpc: "2.0", id: env.id, result: { subscribed: topics } });
       this.hydrate(ws, sim, topics);
@@ -63,6 +80,15 @@ export class SubscriptionHub {
         this.send(ws, { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data: b } });
       }
     }
+    if (topics.includes("fraud")) {
+      for (const c of this.fraudSnapshot().slice(-8)) {
+        this.send(ws, {
+          jsonrpc: "2.0",
+          method: "fraud.event",
+          params: { topic: "fraud", data: publicFraudCase(c) },
+        });
+      }
+    }
   }
 
   broadcast(topic: string, payload: unknown): void {
@@ -78,4 +104,8 @@ export class SubscriptionHub {
       this.clients.delete(ws);
     }
   }
+}
+
+function frame(method: string, params: unknown): unknown {
+  return { jsonrpc: "2.0", method, params };
 }

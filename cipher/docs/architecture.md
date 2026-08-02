@@ -1,8 +1,8 @@
 # CipherSentry Backend — Architecture Brainstorm
 
-Status: **B5 fraud-ready** — B4 settlement path plus **fraud-proof worker**:
-mismatch → challenge case (64-block window) → fresh quorum recompute →
-Refund/Release/Split ruling → optional `Escrow.rule` via `RULER_KEY`.
+Status: **B6 indexer** — B5 fraud path plus **receipt graph indexer**:
+gateway WS events → Postgres transitions + ClickHouse analytics, independent
+keccak Merkle reconcile (never silent patch), public proof API on `:8081`.
 Reference client: `src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
 
 ---
@@ -84,6 +84,7 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 | B3 — CENT-ready | **Accrual ledger** (0.35% fee, accuracy² weights, claim), **accuracy oracle**, optional **SlashExecutor** chain write | gate list in DOC-05 |
 | B4 — Settlement batcher | **Merkle fold** of settled leaves, **2-of-3** EIP-712 `anchorRoot`, `batch.anchor` / auto-flush, on-chain `BatchAnchored` via Alchemy/anvil | B3 + batcher signers |
 | B5 — Fraud-proof worker | **Challenge cases** on mismatch, fresh quorum recompute, **ruling** (Refund/Release/Split), `fraud.*` RPC, optional **Escrow.rule** / defaultRefund | B4 + ruler key |
+| B6 — Indexer / receipt graph | **WS listener** on gateway events (tasks/batches/**fraud**), Postgres SoR + ClickHouse analytics, **keccak Merkle reconcile**, `/receipts/:id/proof` + `/fraud/:taskId` | B4/B5 events + compose (pg/ch) |
 
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.
