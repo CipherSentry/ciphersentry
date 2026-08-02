@@ -38,11 +38,15 @@ if [[ -f deployments/base-sepolia.json ]]; then
   ESCROW=$(python3 -c 'import json;print(json.load(open("deployments/base-sepolia.json"))["escrow"])')
   BATCHER=$(python3 -c 'import json;print(json.load(open("deployments/base-sepolia.json"))["batcher"])')
   DEPLOYER=$(python3 -c 'import json;print(json.load(open("deployments/base-sepolia.json"))["deployer"])')
+  SLASH=$(python3 -c 'import json;print(json.load(open("deployments/base-sepolia.json")).get("slashExecutor",""))')
+  USDC=$(python3 -c 'import json;print(json.load(open("deployments/base-sepolia.json")).get("usdc",""))')
   cat > deployments/.env.gateway.sepolia <<EENV
 CHAIN_RPC=$BASE_SEPOLIA_RPC
 CHAIN_ID=84532
 ESCROW_ADDRESS=$ESCROW
 BATCHER_ADDRESS=$BATCHER
+USDC_ADDRESS=$USDC
+SLASH_EXECUTOR_ADDRESS=$SLASH
 PROTOCOL_FROM=$DEPLOYER
 EENV
   echo "wrote deployments/base-sepolia.json + deployments/.env.gateway.sepolia"

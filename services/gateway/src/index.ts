@@ -56,7 +56,12 @@ async function boot(): Promise<void> {
     options: { maxPayload: 1 << 20 },
   });
 
-  const bus = await createEventBus({ url: NATS_URL, name: "gateway" });
+  const REQUIRE_NATS = process.env.NATS_REQUIRE === "1";
+  const bus = await createEventBus({
+    url: NATS_URL,
+    name: "gateway",
+    requireNats: REQUIRE_NATS,
+  });
   const publish = (topic: Topic, data: unknown) => void bus.publish(topic, data);
   const kv = await createKv(REDIS_URL);
 

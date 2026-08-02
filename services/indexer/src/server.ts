@@ -38,9 +38,14 @@ const NODE_EVENTS =
 const NATS_URL = process.env.NATS_URL ?? "nats://127.0.0.1:4222";
 /** Force WS even when NATS is up (debug). */
 const FORCE_WS = process.env.INDEXER_FORCE_WS === "1";
+/** Fail boot if NATS missing — no WS fallback (CI full e2e). */
+const REQUIRE_NATS =
+  process.env.INDEXER_REQUIRE_NATS === "1" || process.env.NATS_REQUIRE === "1";
 const PORT = Number(process.env.PORT ?? process.env.INDEXER_PORT ?? 8081);
 const MEMORY = process.env.INDEXER_MEMORY === "1";
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
+/** Set at boot — exposed on /health + /stats. */
+let activeBusMode: "nats" | "ws" | "memory" | null = null;
 
 /* ----------------------------- trust score --------------------------------- */
 
@@ -70,6 +75,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         phase: "B6",
         events: NODE_EVENTS,
         nats: NATS_URL || null,
+        bus: activeBusMode,
         memory: MEMORY,
         gateway: GATEWAY_URL,
       },
@@ -262,11 +268,22 @@ export async function boot(): Promise<void> {
 
   let bus: EventBus | undefined;
   let eventSource = `ws:${NODE_EVENTS}`;
+  let busMode: "nats" | "ws" | "memory" = "ws";
+
+  if (FORCE_WS && REQUIRE_NATS) {
+    throw new Error("INDEXER_FORCE_WS=1 conflicts with INDEXER_REQUIRE_NATS/NATS_REQUIRE=1");
+  }
 
   if (!FORCE_WS && NATS_URL) {
-    bus = await createEventBus({ url: NATS_URL, name: "indexer", timeoutMs: 1500 });
+    bus = await createEventBus({
+      url: NATS_URL,
+      name: "indexer",
+      timeoutMs: 1500,
+      requireNats: REQUIRE_NATS,
+    });
     if (bus.mode === "nats") {
       eventSource = `nats:${NATS_URL}`;
+      busMode = "nats";
       await bus.subscribe(["tasks", "batches", "fraud"], async (topic, data) => {
         if (topic === "tasks") {
           const t = normalizeTask(data);
@@ -280,10 +297,15 @@ export async function boot(): Promise<void> {
         }
       });
     } else {
-      // NATS unreachable — close memory bus; fall back to gateway WS
+      // NATS unreachable — close memory bus; fall back to gateway WS (unless required)
       await bus.close();
       bus = undefined;
+      if (REQUIRE_NATS) {
+        throw new Error(`NATS required but bus.mode=${busMode} (url=${NATS_URL})`);
+      }
     }
+  } else if (REQUIRE_NATS) {
+    throw new Error("NATS required but NATS_URL empty or INDEXER_FORCE_WS=1");
   }
 
   if (!bus) {
@@ -291,10 +313,13 @@ export async function boot(): Promise<void> {
     try {
       listener.connect();
       eventSource = `ws:${NODE_EVENTS}`;
+      busMode = "ws";
     } catch (e) {
       console.warn(`  events   → connect deferred: ${(e as Error).message}`);
     }
   }
+
+  activeBusMode = busMode;
 
   const server = createServer(async (req, res) => {
     try {
@@ -315,7 +340,7 @@ export async function boot(): Promise<void> {
           fraudIn,
           reconcileMiss,
           phase: "B6",
-          bus: bus?.mode ?? "ws",
+          bus: busMode,
         });
         return;
       }

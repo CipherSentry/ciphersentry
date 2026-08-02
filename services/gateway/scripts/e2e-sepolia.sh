@@ -24,15 +24,17 @@ test -f "$DEPLOY_JSON"
 ESCROW=$(python3 -c "import json;print(json.load(open('$DEPLOY_JSON'))['escrow'])")
 BATCHER=$(python3 -c "import json;print(json.load(open('$DEPLOY_JSON'))['batcher'])")
 USDC=$(python3 -c "import json;print(json.load(open('$DEPLOY_JSON'))['usdc'])")
+SLASH=$(python3 -c "import json;print(json.load(open('$DEPLOY_JSON')).get('slashExecutor',''))")
 FROM=$(cast wallet address --private-key "$PRIVATE_KEY")
 
-echo "deployer=$FROM escrow=$ESCROW"
+echo "deployer=$FROM escrow=$ESCROW slash=$SLASH"
 
 export CHAIN_RPC="$BASE_SEPOLIA_RPC"
 export BASE_SEPOLIA_RPC
 export CHAIN_ID=84532
 export ESCROW_ADDRESS="$ESCROW"
 export BATCHER_ADDRESS="$BATCHER"
+export SLASH_EXECUTOR_ADDRESS="$SLASH"
 export PROTOCOL_FROM="$FROM"
 export PROTOCOL_KEY="$PRIVATE_KEY"
 export PRIVATE_KEY

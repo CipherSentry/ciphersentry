@@ -21,6 +21,8 @@ when NATS is healthy.
 | Env | Effect |
 | --- | --- |
 | `NATS_URL` | Default `nats://127.0.0.1:4222`. Empty → memory (gateway) / WS (indexer) |
+| `NATS_REQUIRE` | `1` = fail if NATS down (gateway + indexer; no memory/WS fallback) |
+| `INDEXER_REQUIRE_NATS` | `1` = indexer fails boot without NATS (alias of NATS_REQUIRE for indexer) |
 | `INDEXER_FORCE_WS` | `1` forces indexer onto gateway WS even if NATS is up |
 
 Subjects: `cs.events.tasks` · `cs.events.batches` · `cs.events.fraud`.
@@ -75,6 +77,15 @@ cd services/gateway && bash scripts/e2e-sepolia.sh
 ```
 
 Writes use **PROTOCOL_KEY / PRIVATE_KEY** via `eth_sendRawTransaction` (Alchemy-compatible).
+
+### External demo kit (not CI)
+
+```bash
+cp services/scripts/demo-kit.env.example services/scripts/demo-kit.env
+# set PRIVATE_KEY + CHAIN_RPC (Alchemy), WITH_COMPOSE=1 for live trust chart
+bash services/scripts/demo-sepolia.sh
+# → settle → prints explorer URL with agent panel open (#/explorer?q=agent:vector-7)
+```
 
 ### GitHub Actions deploy
 

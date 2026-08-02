@@ -42,6 +42,14 @@ export function search(q0: string, batches: ExBatch[], fraud: FraudRow[] = []): 
   }
   const agent = NAMES.find((n) => n.toLowerCase().includes(q) || n.replace("agent:", "").includes(q));
   if (agent) return { kind: "agent", agent, query: q0 };
+  // live deep-link: agent:vector-7 or exact agent-like id (word-digit)
+  const raw = q0.trim();
+  if (q.startsWith("agent:") && raw.length > 7) {
+    return { kind: "agent", agent: raw, query: q0 };
+  }
+  if (/^[a-z][\w]*-\d+$/i.test(raw)) {
+    return { kind: "agent", agent: `agent:${raw}`, query: q0 };
+  }
   return { kind: "none", query: q0 };
 }
 

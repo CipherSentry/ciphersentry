@@ -95,6 +95,10 @@ export CH_DB="${CH_DB:-ciphersentry}"
 export CH_USER="${CH_USER:-cent}"
 export CH_PASSWORD="${CH_PASSWORD:-cent}"
 export NATS_URL="${NATS_URL:-nats://127.0.0.1:4222}"
+# full e2e: bus-nats only — no memory/WS fallback
+export NATS_REQUIRE="${NATS_REQUIRE:-1}"
+export INDEXER_REQUIRE_NATS="${INDEXER_REQUIRE_NATS:-1}"
+export INDEXER_FORCE_WS=0
 
 # apply PG schema
 if command -v psql >/dev/null 2>&1; then
@@ -132,23 +136,34 @@ import json
 h=json.load(open("/tmp/cs-full-health.json"))
 assert h.get("auth_required") is True, h
 assert h.get("event_pubkey"), h
+assert h.get("bus") == "nats", f"gateway must use NATS bus, got {h.get('bus')}: {h}"
 print("  gateway auth_required=1 bus=%s pin=%s…" % (h.get("bus"), h["event_pubkey"][:12]))
 PY
 
-echo "== indexer :${IPORT} pg+ch nats =="
+echo "== indexer :${IPORT} pg+ch nats-only =="
 export INDEXER_PORT=$IPORT PORT=$IPORT
 unset INDEXER_MEMORY
 export GATEWAY_URL="$GBASE"
+# keep WS URL for debug only — REQUIRE_NATS forbids FORCE_WS fallback
 export NODE_EVENTS="ws://127.0.0.1:${GPORT}/events"
-# prefer NATS; allow WS fallback if bus lags
-export INDEXER_FORCE_WS="${INDEXER_FORCE_WS:-0}"
+export INDEXER_FORCE_WS=0
+export INDEXER_REQUIRE_NATS=1
+export NATS_REQUIRE=1
 npm run indexer -w indexer >"$ILOG" 2>&1 &
 IPID=$!
 for _ in $(seq 1 80); do
   curl -sf "$IBASE/health" | grep -q '"ok":true' && break
   sleep 0.25
 done
-curl -sf "$IBASE/health" | grep -q '"ok":true' || { echo "indexer failed"; tail -50 "$ILOG"; exit 1; }
+curl -sf "$IBASE/health" | tee /tmp/cs-full-ix-health.json | grep -q '"ok":true' || {
+  echo "indexer failed"; tail -50 "$ILOG"; exit 1
+}
+python3 - <<'PY'
+import json
+h=json.load(open("/tmp/cs-full-ix-health.json"))
+assert h.get("bus") == "nats", f"indexer must use NATS (no WS fallback), got bus={h.get('bus')}: {h}"
+print("  indexer bus=nats ok")
+PY
 # CH schema applied on boot
 sleep 0.8
 echo "  indexer up"
@@ -233,7 +248,12 @@ assert s == 807.5 or abs(s - 807.5) < 0.01 or s < 850, f"expected slash cut, got
 print(f"  slash ok s_i={s}")
 PY
 
+# re-assert bus stayed on nats after traffic
+STATS=$(curl -sf "$IBASE/stats")
+echo "$STATS" | grep -q '"bus":"nats"' || { echo "FATAL: indexer bus left nats: $STATS"; exit 1; }
+
 echo ""
-echo "FULL e2e OK  compose(pg+ch+nats) → AUTH → settle → CH trust → fraud slash"
+echo "FULL e2e OK  compose(pg+ch+nats) → AUTH → NATS-only → settle → CH trust → fraud slash"
 echo "  task=$TASK fraud=$BAD_ID root=${ROOT:0:18}…"
 echo "  console → ?net=rpc&auth=1&node=$GBASE&indexer=$IBASE"
+echo "  explorer agent panel → #/explorer?q=agent:vector-7&indexer=$IBASE"
