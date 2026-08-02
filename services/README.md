@@ -81,11 +81,18 @@ Writes use **PROTOCOL_KEY / PRIVATE_KEY** via `eth_sendRawTransaction` (Alchemy-
 ### External demo kit (not CI)
 
 ```bash
+# local anvil (no keys) + trust chart via compose:
+DEMO_LOCAL=1 WITH_COMPOSE=1 DEMO_HOLD=0 bash services/scripts/demo-sepolia.sh
+
+# Base Sepolia:
 cp services/scripts/demo-kit.env.example services/scripts/demo-kit.env
 # set PRIVATE_KEY + CHAIN_RPC (Alchemy), WITH_COMPOSE=1 for live trust chart
 bash services/scripts/demo-sepolia.sh
 # → settle → prints explorer URL with agent panel open (#/explorer?q=agent:vector-7)
 ```
+
+**B3 slash chain (anvil):** `deploy-local` approves watcher CENT for SlashExecutor and
+stakes anvil#1; rails smoke asserts `slash.submit` `mode=submitted` + `processNext` bond cut.
 
 ### GitHub Actions deploy
 

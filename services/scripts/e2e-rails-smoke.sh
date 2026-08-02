@@ -24,10 +24,14 @@ export RULER_KEY="${RULER_KEY:-$PROTOCOL_KEY}"
 export PROTOCOL_KEY BATCHER_KEY_1 BATCHER_KEY_2 BATCHER_KEY_3
 export CHAIN_RPC CHAIN_ID ESCROW_ADDRESS BATCHER_ADDRESS USDC_ADDRESS PROTOCOL_FROM
 export SLASH_EXECUTOR_ADDRESS="${SLASH_EXECUTOR_ADDRESS:-}"
+export CENT_ADDRESS="${CENT_ADDRESS:-}"
+export REGISTRY_ADDRESS="${REGISTRY_ADDRESS:-}"
+export SLASH_TARGET="${SLASH_TARGET:-0x70997970C51812dc3A010C7d01b50e0d17dc79C8}"
 
 echo "  escrow=$ESCROW_ADDRESS"
 echo "  batcher=$BATCHER_ADDRESS"
 echo "  slash=$SLASH_EXECUTOR_ADDRESS"
+echo "  slash_target=$SLASH_TARGET"
 echo "  ruler=set"
 
 # health probe: gateway with chain env must be write-ready
@@ -130,21 +134,50 @@ LIST=$(rpc fraud.list '{}')
 echo "$LIST" | grep -q "$BAD_ID" || { echo "fraud case missing: $LIST"; exit 1; }
 echo "  fraud case present (ruling path live; on-chain rule optional)"
 
-echo "== slash.submit (B3 chain encode/post) =="
-# evidence_hash bytes32; target can be agent id (fnv→address) or 0x address
-# on-chain may simulate if CENT bond not pre-funded — mode must not be offline
-SLASH=$(rpc slash.submit '{"evidence_hash":"0x'"$(python3 -c 'print("ab"*32)')"'","target":"agent:forge-11","severity":"FalseVote"}')
+# cast uint256 often prints "123 [1.23e2]" — keep first token only
+u256() { awk '{print $1}'; }
+
+echo "== slash.submit (B3 on-chain write) =="
+# deploy-local funds watcher CENT approve + bonded SLASH_TARGET (anvil #1)
+# require mode=submitted (not simulated/offline)
+EVID=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+BEFORE_BOND=$(cast call "$REGISTRY_ADDRESS" "bondOf(address)(uint256)" "$SLASH_TARGET" --rpc-url "$CHAIN_RPC" | u256)
+BEFORE_Q=$(cast call "$SLASH_EXECUTOR_ADDRESS" "challengeCount()(uint256)" --rpc-url "$CHAIN_RPC" | u256)
+SLASH=$(rpc slash.submit "{\"evidence_hash\":\"0x${EVID}\",\"target\":\"${SLASH_TARGET}\",\"severity\":\"FalseVote\"}")
 echo "$SLASH" | tee /tmp/cs-rails-slash.json
 python3 - <<'PY'
 import json
 r=json.load(open("/tmp/cs-rails-slash.json"))
-assert r.get("slash_mode") in ("write-ready","watch-only"), r
-assert r.get("mode") in ("submitted","simulated","offline"), r
-assert r.get("mode") != "offline" or r.get("slash_mode") == "watch-only", r
-assert r.get("calldata") or r.get("txHash"), r
-print("  slash.submit", r.get("mode"), "slash_mode="+str(r.get("slash_mode")))
+assert r.get("slash_mode") == "write-ready", r
+assert r.get("mode") == "submitted", f"expected on-chain submitted (fund CENT+approve): {r}"
+assert r.get("txHash"), r
+open("/tmp/cs-rails-slash-tx.txt","w").write(r["txHash"])
+print("  slash.submit submitted", r["txHash"][:18])
+PY
+SLASH_TX=$(cat /tmp/cs-rails-slash-tx.txt)
+cast receipt "$SLASH_TX" --rpc-url "$CHAIN_RPC" >/dev/null
+AFTER_Q=$(cast call "$SLASH_EXECUTOR_ADDRESS" "challengeCount()(uint256)" --rpc-url "$CHAIN_RPC" | u256)
+python3 - <<PY
+assert int("$AFTER_Q") == int("$BEFORE_Q") + 1, ("queue", "$BEFORE_Q", "$AFTER_Q")
+print("  challenge queued count=$AFTER_Q")
 PY
 
+echo "== processNext (FIFO slash cut) =="
+# process all queued challenges (fraud path may have enqueued too)
+while true; do
+  Q=$(cast call "$SLASH_EXECUTOR_ADDRESS" "challengeCount()(uint256)" --rpc-url "$CHAIN_RPC" | u256)
+  [[ "$Q" == "0" ]] && break
+  cast send "$SLASH_EXECUTOR_ADDRESS" "processNext()" \
+    --rpc-url "$CHAIN_RPC" --private-key "$PROTOCOL_KEY" >/dev/null
+done
+AFTER_BOND=$(cast call "$REGISTRY_ADDRESS" "bondOf(address)(uint256)" "$SLASH_TARGET" --rpc-url "$CHAIN_RPC" | u256)
+python3 - <<PY
+before=int("$BEFORE_BOND")
+after=int("$AFTER_BOND")
+assert before > 0, "target had no bond — deploy-local stake failed"
+assert after < before, f"bond not cut: {before} → {after}"
+print(f"  bond cut {before} → {after}")
+PY
 echo ""
-echo "RAILS smoke OK  anvil escrow+batcher+ruler+slash"
-echo "  batch tx=$TX task=$TID1 fraud=$BAD_ID"
+echo "RAILS smoke OK  anvil escrow+batcher+ruler+slash-write"
+echo "  batch tx=$TX task=$TID1 fraud=$BAD_ID slash=$SLASH_TX"

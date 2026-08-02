@@ -82,7 +82,7 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 | B0 — Ledger | Task service + escrow gateway; **local anvil E2E green** (deploy + commit + gateway write); Base-Sepolia via same script with `PRIVATE_KEY` | audit #1 scoped |
 | B1 — Verifier alpha | **3 foundation verifiers** on gateway `verify`; pure recompute + WASM sandbox; **slash dry-runs** | WASM sandbox hardened |
 | B2 — Verifier network | **External stake** (`stake`), **epoch.elect** (top-3, whale cap), **real registry slashes** on mismatch | audits #1+#2 done |
-| B3 — CENT-ready | **Accrual ledger** (0.35% fee, accuracy² weights, claim), **accuracy oracle**, optional **SlashExecutor** chain write | gate list in DOC-05 |
+| B3 — CENT-ready | **Accrual ledger** (0.35% fee, accuracy² weights, claim), **accuracy oracle**, **SlashExecutor** chain write (local: CENT approve + bonded target → `submitEvidence` + `processNext`) | gate list in DOC-05 |
 | B4 — Settlement batcher | **Merkle fold** of settled leaves, **2-of-3** EIP-712 `anchorRoot`, `batch.anchor` / auto-flush, on-chain `BatchAnchored` via Alchemy/anvil | B3 + batcher signers |
 | B5 — Fraud-proof worker | **Challenge cases** on mismatch, fresh quorum recompute, **ruling** (Refund/Release/Split), `fraud.*` RPC, optional **Escrow.rule** / defaultRefund | B4 + ruler key |
 | B6 — Indexer / receipt graph | **WS listener** on gateway events (tasks/batches/**fraud**), Postgres SoR + ClickHouse analytics, **keccak Merkle reconcile**, `/receipts/:id/proof` + `/fraud/:taskId` | B4/B5 events + compose (pg/ch) |

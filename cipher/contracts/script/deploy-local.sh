@@ -43,10 +43,35 @@ BATCHER=$(python3 -c 'import json;print(json.load(open("deployments/local.json")
 USDC=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))["usdc"])')
 DEPLOYER=$(python3 -c 'import json;print(json.load(open("deployments/local.json"))["deployer"])')
 SLASH=$(python3 -c 'import json;print(json.load(open("deployments/local.json")).get("slashExecutor",""))')
+CENT=$(python3 -c 'import json;print(json.load(open("deployments/local.json")).get("cent",""))')
+REGISTRY=$(python3 -c 'import json;print(json.load(open("deployments/local.json")).get("registry",""))')
 
 # Anvil #0/#1/#2 — match Deploy.s.sol LOCAL batcher signers
 ANVIL_KEY1="${BATCHER_KEY_2:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
 ANVIL_KEY2="${BATCHER_KEY_3:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
+ANVIL_1=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+
+# B3: watcher (=deployer) must approve SlashExecutor for CHALLENGE_BOND (2500 CENT).
+# Seed a bonded target (anvil #1) so processNext can cut real registry bond.
+if [[ -n "$CENT" && -n "$SLASH" && -n "$REGISTRY" ]]; then
+  echo "== B3 fund slash path (CENT approve + bond target) =="
+  MAX_UINT=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  BOND_FLOOR=25000000000000000000000   # 25_000 ether
+  SEED=30000000000000000000000         # 30_000 ether to anvil#1
+
+  cast send "$CENT" "approve(address,uint256)" "$SLASH" "$MAX_UINT" \
+    --rpc-url "$RPC" --private-key "$ANVIL_KEY" >/dev/null
+  echo "  watcher approved SlashExecutor for CENT"
+
+  cast send "$CENT" "transfer(address,uint256)" "$ANVIL_1" "$SEED" \
+    --rpc-url "$RPC" --private-key "$ANVIL_KEY" >/dev/null
+  cast send "$CENT" "approve(address,uint256)" "$REGISTRY" "$MAX_UINT" \
+    --rpc-url "$RPC" --private-key "$ANVIL_KEY1" >/dev/null
+  cast send "$REGISTRY" "stake(uint256)" "$BOND_FLOOR" \
+    --rpc-url "$RPC" --private-key "$ANVIL_KEY1" >/dev/null
+  BONDED=$(cast call "$REGISTRY" "bondOf(address)(uint256)" "$ANVIL_1" --rpc-url "$RPC")
+  echo "  target $ANVIL_1 bonded=$BONDED"
+fi
 
 cat > deployments/.env.gateway <<EOF
 CHAIN_RPC=$RPC
@@ -54,7 +79,10 @@ CHAIN_ID=31337
 ESCROW_ADDRESS=$ESCROW
 BATCHER_ADDRESS=$BATCHER
 USDC_ADDRESS=$USDC
+CENT_ADDRESS=$CENT
+REGISTRY_ADDRESS=$REGISTRY
 SLASH_EXECUTOR_ADDRESS=$SLASH
+SLASH_TARGET=$ANVIL_1
 PROTOCOL_FROM=$DEPLOYER
 PROTOCOL_KEY=$ANVIL_KEY
 BATCHER_KEY_1=$ANVIL_KEY
@@ -67,6 +95,7 @@ EOF
 echo ""
 echo "deploy OK → deployments/local.json"
 echo "gateway:   set -a && source deployments/.env.gateway && set +a"
+echo "slash:     $SLASH (target=$ANVIL_1, CENT approved)"
 echo "anvil log: /tmp/anvil-ciphersentry.log (if we started it)"
 # leave anvil running when we started it
 if [[ -n "${ANVIL_PID}" ]]; then
