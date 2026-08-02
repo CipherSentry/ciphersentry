@@ -36,32 +36,57 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# wait_ready name attempts sleep_s cmd…  — require 2 consecutive ok (avoids race)
+wait_ready() {
+  local name=$1 attempts=$2 delay=$3
+  shift 3
+  local ok=0 i
+  for i in $(seq 1 "$attempts"); do
+    if "$@"; then
+      ok=$((ok + 1))
+      if [[ $ok -ge 2 ]]; then
+        echo "  $name ready (${i}s checks)"
+        return 0
+      fi
+    else
+      ok=0
+    fi
+    sleep "$delay"
+  done
+  echo "FATAL: $name not ready after ${attempts} attempts" >&2
+  docker compose -f "$COMPOSE" ps >&2 || true
+  docker compose -f "$COMPOSE" logs --tail=40 postgres clickhouse nats >&2 || true
+  return 1
+}
+
 echo "== compose pg + clickhouse + nats =="
 # fresh volumes when FULL_CLEAN=1
 if [[ "${FULL_CLEAN:-0}" == "1" ]]; then
   docker compose -f "$COMPOSE" down -v >/dev/null 2>&1 || true
 fi
-docker compose -f "$COMPOSE" up -d postgres clickhouse nats
-STARTED_COMPOSE=1
+# --wait honors compose healthchecks (pg/ch); nats has none → running is enough
+if docker compose -f "$COMPOSE" up -d --wait --wait-timeout 120 postgres clickhouse nats; then
+  STARTED_COMPOSE=1
+else
+  # older compose without --wait
+  docker compose -f "$COMPOSE" up -d postgres clickhouse nats
+  STARTED_COMPOSE=1
+fi
 
-for i in $(seq 1 60); do
-  if docker compose -f "$COMPOSE" exec -T postgres pg_isready -U cent -d ciphersentry >/dev/null 2>&1; then
-    break
-  fi
-  sleep 0.5
-done
-docker compose -f "$COMPOSE" exec -T postgres pg_isready -U cent -d ciphersentry >/dev/null
+wait_ready postgres 90 0.5 \
+  docker compose -f "$COMPOSE" exec -T postgres pg_isready -U cent -d ciphersentry
 
-for i in $(seq 1 60); do
-  if curl -sf http://127.0.0.1:8123/ping >/dev/null 2>&1; then break; fi
-  sleep 0.5
-done
-curl -sf http://127.0.0.1:8123/ping >/dev/null || { echo "clickhouse not up"; exit 1; }
+wait_ready clickhouse 90 0.5 \
+  curl -sf http://127.0.0.1:8123/ping
 
-for i in $(seq 1 30); do
-  if curl -sf http://127.0.0.1:8222/healthz >/dev/null 2>&1; then break; fi
-  sleep 0.25
-done
+# client port first (always on); then HTTP monitor if -m 8222 is set
+wait_ready nats 40 0.25 bash -c 'echo >/dev/tcp/127.0.0.1/4222'
+if curl -sf http://127.0.0.1:8222/healthz >/dev/null 2>&1; then
+  echo "  nats monitor /healthz ok"
+else
+  echo "  nats monitor optional — client :4222 only (compose should set -m 8222)"
+fi
+
 echo "  infra up"
 
 export PG_DSN="${PG_DSN:-postgres://cent:cent@127.0.0.1:5432/ciphersentry}"
