@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { mapTaskState, resolveNodeEndpoints } from "../src/sdk/rpc";
+import {
+  mapTaskState,
+  resolveNodeEndpoints,
+  canonicalizeEvent,
+  eventMessage,
+  EVENT_PREFIX,
+} from "../src/sdk/rpc";
 
 describe("resolveNodeEndpoints", () => {
   it("accepts http base", () => {
@@ -28,5 +34,12 @@ describe("mapTaskState", () => {
     expect(mapTaskState("VERIFYING")).toBe("VERIFYING");
     expect(mapTaskState("SETTLED")).toBe("SETTLED");
     expect(mapTaskState("DISPUTED")).toBe("DISPUTED");
+  });
+});
+
+describe("event canonicalize (WS sign parity)", () => {
+  it("matches sorted-key form", () => {
+    expect(canonicalizeEvent({ b: 1, a: 2 })).toBe('{"a":2,"b":1}');
+    expect(eventMessage("tasks", { id: 1 }, 9)).toBe(`${EVENT_PREFIX}|tasks|{"id":1}|9`);
   });
 });

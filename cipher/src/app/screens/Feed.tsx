@@ -3,10 +3,21 @@ import { AnimatePresence, motion } from "framer-motion";
 import { timeAgo } from "../data";
 import { useApp } from "../store";
 import { SectionLabel, Stat, StateDot } from "../ui";
+import { CipherSentry } from "../../sdk/ciphersentry";
+import type { RpcTransport } from "../../sdk/rpc";
+
+const cent = CipherSentry.shared();
 
 export default function Feed() {
   const app = useApp();
   const { feed, approvals, now } = app;
+  const streamLabel = (() => {
+    if (cent.transport.kind !== "rpc") return "SYNCED";
+    const signed = (cent.transport as RpcTransport).lastEventSigned;
+    if (signed === true) return "SIGNED AS THEY FIRE";
+    if (signed === false) return "UNSIGNED STREAM";
+    return "SYNCED";
+  })();
 
   return (
     <div className="no-scrollbar h-full overflow-y-auto pb-28">
@@ -19,7 +30,7 @@ export default function Feed() {
         </div>
         <div className="flex items-center gap-2 px-2 py-2 font-mono text-[8.5px] tracking-[0.2em] text-mute">
           <span className="h-1.5 w-1.5 bg-volt" />
-          SYNCED
+          {streamLabel}
         </div>
       </div>
 

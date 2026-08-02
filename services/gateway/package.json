@@ -8,6 +8,7 @@
     "gateway": "node --experimental-transform-types src/index.ts",
     "dev": "GATEWAY_HOST=127.0.0.1 npm run gateway",
     "smoke": "node --experimental-transform-types scripts/smoke.ts",
+    "smoke:auth": "node --experimental-transform-types scripts/smoke-auth.ts",
     "test": "node --experimental-transform-types --test test/*.test.ts",
     "e2e:batcher": "bash scripts/e2e-batcher.sh"
   },

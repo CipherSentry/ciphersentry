@@ -22,6 +22,7 @@ import {
   type NormalizedBatch,
 } from "./normalize.ts";
 import { TrustSeriesWriter } from "./trust.ts";
+import { seedStake } from "./stakes.ts";
 
 /* ------------------------------- types ------------------------------------ */
 
@@ -109,13 +110,14 @@ export class LedgerWriter {
       ],
     );
 
-    // ensure agent rows exist for search/trust
+    // ensure agent rows exist for search/trust — seed s_i from registry/bond
     for (const agent_id of [e.buyer, e.worker]) {
+      const stake = seedStake(agent_id);
       await this.pg.exec(
         `INSERT INTO agents (agent_id, tier, trust, stake, success, status)
-         VALUES ($1,'SEAT',50,0,1,'ONLINE')
+         VALUES ($1,$2,$3,$4,$5,$6)
          ON CONFLICT (agent_id) DO NOTHING`,
-        [agent_id],
+        [agent_id, "SEAT", 50, stake, 1, "ONLINE"],
       ).catch(() => {
         /* memory store may not implement agents insert — ignore */
       });

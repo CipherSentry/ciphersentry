@@ -16,6 +16,7 @@
     "daemon": "npm run daemon -w verifier-daemon",
     "test": "npm run test -w bus && npm run test -w verifier-daemon && npm run test -w gateway && npm run test -w indexer",
     "smoke": "npm run smoke -w gateway",
+    "smoke:auth": "npm run smoke:auth -w gateway",
     "smoke:indexer": "npm run smoke -w indexer",
     "e2e:indexer": "bash indexer/scripts/e2e.sh",
     "e2e:indexer:pg": "bash indexer/scripts/e2e-pg.sh",
