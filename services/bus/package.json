@@ -1,0 +1,19 @@
+{
+  "name": "@ciphersentry/bus",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CipherSentry event bus — memory + NATS (architecture.md §3)",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --experimental-transform-types --test test/*.test.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "nats": "^2.29.3"
+  }
+}

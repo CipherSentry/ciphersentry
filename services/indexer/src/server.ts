@@ -10,6 +10,7 @@
  */
 
 import { createServer } from "node:http";
+import { createEventBus, type EventBus } from "@ciphersentry/bus";
 import { ClickHouseHttp, applyChSchema, createPgQuerier, type Querier } from "./db.ts";
 import {
   ChainListener,
@@ -18,6 +19,7 @@ import {
   type FraudCaseRow,
   type TaskEventRow,
 } from "./ledger.ts";
+import { normalizeTask, normalizeBatch, normalizeFraud } from "./normalize.ts";
 import { verifyInclusionEitherOrder } from "./merkle.ts";
 
 /* ------------------------------- config ------------------------------------ */
@@ -31,6 +33,10 @@ const NODE_EVENTS =
   process.env.NODE_EVENTS ??
   process.env.GATEWAY_EVENTS ??
   "ws://127.0.0.1:8080/events";
+/** Prefer NATS when set (default compose). Empty string disables bus path. */
+const NATS_URL = process.env.NATS_URL ?? "nats://127.0.0.1:4222";
+/** Force WS even when NATS is up (debug). */
+const FORCE_WS = process.env.INDEXER_FORCE_WS === "1";
 const PORT = Number(process.env.PORT ?? process.env.INDEXER_PORT ?? 8081);
 const MEMORY = process.env.INDEXER_MEMORY === "1";
 
@@ -64,6 +70,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         service: "ciphersentry-indexer",
         phase: "B6",
         events: NODE_EVENTS,
+        nats: NATS_URL || null,
         memory: MEMORY,
       },
     };
@@ -245,11 +252,40 @@ export async function boot(): Promise<void> {
     }
   };
 
-  const listener = new ChainListener(NODE_EVENTS, onTask, onBatch, onFraud);
-  try {
-    listener.connect();
-  } catch (e) {
-    console.warn(`  events   → connect deferred: ${(e as Error).message}`);
+  let bus: EventBus | undefined;
+  let eventSource = `ws:${NODE_EVENTS}`;
+
+  if (!FORCE_WS && NATS_URL) {
+    bus = await createEventBus({ url: NATS_URL, name: "indexer", timeoutMs: 1500 });
+    if (bus.mode === "nats") {
+      eventSource = `nats:${NATS_URL}`;
+      await bus.subscribe(["tasks", "batches", "fraud"], async (topic, data) => {
+        if (topic === "tasks") {
+          const t = normalizeTask(data);
+          if (t) await onTask(t);
+        } else if (topic === "batches") {
+          const b = normalizeBatch(data);
+          if (b) await onBatch(b as BatchRow);
+        } else if (topic === "fraud") {
+          const f = normalizeFraud(data);
+          if (f) await onFraud(f);
+        }
+      });
+    } else {
+      // NATS unreachable — close memory bus; fall back to gateway WS
+      await bus.close();
+      bus = undefined;
+    }
+  }
+
+  if (!bus) {
+    const listener = new ChainListener(NODE_EVENTS, onTask, onBatch, onFraud);
+    try {
+      listener.connect();
+      eventSource = `ws:${NODE_EVENTS}`;
+    } catch (e) {
+      console.warn(`  events   → connect deferred: ${(e as Error).message}`);
+    }
   }
 
   const server = createServer(async (req, res) => {
@@ -265,7 +301,14 @@ export async function boot(): Promise<void> {
       }
       const u = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
       if (u.pathname === "/stats") {
-        json(res, 200, { tasksIn, batchesIn, fraudIn, reconcileMiss, phase: "B6" });
+        json(res, 200, {
+          tasksIn,
+          batchesIn,
+          fraudIn,
+          reconcileMiss,
+          phase: "B6",
+          bus: bus?.mode ?? "ws",
+        });
         return;
       }
       const { status, body } = await handle(pg, ch as ClickHouseHttp, u);
@@ -278,7 +321,7 @@ export async function boot(): Promise<void> {
   server.listen(PORT, "127.0.0.1", () => {
     console.log(`ciphersentry-indexer  [B6]`);
     console.log(`  api      → http://127.0.0.1:${PORT}`);
-    console.log(`  events   → ${NODE_EVENTS}`);
+    console.log(`  events   → ${eventSource}`);
     if (!MEMORY) console.log(`  analytics→ ${CH_URL}/${CH_DB}`);
   });
 }

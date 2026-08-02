@@ -4,9 +4,14 @@
  *   { jsonrpc: "2.0", method: "task.event",  params: { topic: "tasks",   data } }
  *   { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data } }
  *   { jsonrpc: "2.0", method: "fraud.event", params: { topic: "fraud",   data } }
+ *
+ * Domain events arrive via the EventBus (NATS/memory). This hub is only the
+ * console fan-out consumer — producers never call broadcast for live traffic.
  */
 
-import type { SimDriver, BatchRowPacket, TaskRow } from "./sim.ts";
+import type { EventBus, Topic } from "@ciphersentry/bus";
+import { toWsFrame } from "@ciphersentry/bus";
+import type { SimDriver } from "./sim.ts";
 import type { ChallengeCase } from "./fraud-proof.ts";
 import { publicFraudCase } from "./fraud-proof.ts";
 
@@ -18,11 +23,12 @@ export interface SocketLike {
   readyState?: number;
 }
 
-const ALLOWED = new Set(["tasks", "batches", "fraud"]);
+const ALLOWED = new Set<string>(["tasks", "batches", "fraud"]);
 
 export class SubscriptionHub {
   private clients = new Map<SocketLike, Set<string>>();
   private fraudSnapshot: () => ChallengeCase[] = () => [];
+  private unsubBus?: () => void;
 
   get clientCount(): number {
     return this.clients.size;
@@ -33,11 +39,29 @@ export class SubscriptionHub {
     this.fraudSnapshot = fn;
   }
 
-  attachEvents(sim: SimDriver): void {
-    sim.onTask = (t: TaskRow) =>
-      this.broadcast("tasks", { jsonrpc: "2.0", method: "task.event", params: { topic: "tasks", data: t } });
-    sim.onBatch = (b: BatchRowPacket) =>
-      this.broadcast("batches", { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data: b } });
+  /**
+   * Subscribe hub to the bus for live fan-out. Call once at boot after bus is ready.
+   * Returns unsubscribe for shutdown.
+   */
+  async attachBus(bus: EventBus): Promise<() => void> {
+    this.unsubBus?.();
+    this.unsubBus = await bus.subscribe(["tasks", "batches", "fraud"], (topic, data) => {
+      this.broadcast(topic, toWsFrame(topic, data));
+    });
+    return this.unsubBus;
+  }
+
+  /**
+   * Wire sim → bus (not hub). Keeps WS a pure bus consumer.
+   * When bus is omitted (tests), falls back to direct broadcast.
+   */
+  attachEvents(sim: SimDriver, bus?: EventBus): void {
+    const emit = (topic: Topic, data: unknown) => {
+      if (bus) void bus.publish(topic, data);
+      else this.broadcast(topic, toWsFrame(topic, data));
+    };
+    sim.onTask = (t) => emit("tasks", t);
+    sim.onBatch = (b) => emit("batches", b);
   }
 
   register(ws: SocketLike, sim: SimDriver): void {

@@ -2,18 +2,18 @@
  * CipherSentry Edge Gateway — B0–B5 CENT-ready + batcher + fraud-proof worker.
  *
  *   POST /rpc    — JSON-RPC 2.0 over the §5 method map (dispatch in rpc.ts)
- *   GET  /events — WebSocket hub (task.event / batch.event frames)
- *   GET  /health — liveness + escrow + batcher + fraud + elected quorum
+ *   GET  /events — WebSocket hub (task.event / batch.event / fraud.event)
+ *   GET  /health — liveness + escrow + batcher + fraud + bus + elected quorum
  *
- * Default truth is TaskLedger + SimDriver + VerifierPool
- * (registry, election, accuracy, accrual). Optional chain writers:
- * ESCROW_ADDRESS, SLASH_EXECUTOR_ADDRESS, BATCHER_ADDRESS + BATCHER_KEY_*,
- * RULER_KEY for Escrow.rule.
+ * Domain events publish on the EventBus (NATS when NATS_URL set). The WS hub
+ * is a bus consumer for console fan-out — indexer and other services subscribe
+ * independently (no longer piggyback on gateway WS alone).
  */
 
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import { VerifierPool } from "@ciphersentry/verifier-daemon";
+import { createEventBus, type EventBus, type Topic } from "@ciphersentry/bus";
 import { SimDriver } from "./sim.ts";
 import { makeDispatcher, TaskLedger } from "./rpc.ts";
 import { SubscriptionHub, type SocketLike } from "./ws.ts";
@@ -26,6 +26,8 @@ import { FraudProofWorker, makeFraudConfigFromEnv, publicFraudCase } from "./fra
 const HOST = process.env.GATEWAY_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
 const EPOCH = Number(process.env.EPOCH ?? 88421);
+/** Default to local compose NATS; falls back to memory if unreachable. */
+const NATS_URL = process.env.NATS_URL ?? "nats://127.0.0.1:4222";
 
 async function boot(): Promise<void> {
   const fastify = Fastify({ logger: false });
@@ -43,6 +45,9 @@ async function boot(): Promise<void> {
     options: { maxPayload: 1 << 20 },
   });
 
+  const bus = await createEventBus({ url: NATS_URL, name: "gateway" });
+  const publish = (topic: Topic, data: unknown) => void bus.publish(topic, data);
+
   const sim = new SimDriver({ tickMs: Number(process.env.TICK_MS ?? 2800) });
   const ledger = new TaskLedger();
   const escrow = new EscrowGateway(makeEscrowConfigFromEnv());
@@ -52,15 +57,16 @@ async function boot(): Promise<void> {
   const pool = new VerifierPool({ epoch: EPOCH });
   pool.ensureElection(EPOCH);
   const hub = new SubscriptionHub();
-  hub.attachEvents(sim);
+  await hub.attachBus(bus);
+  hub.attachEvents(sim, bus);
   hub.setFraudSnapshot(() => fraud.list());
-  fraud.onCase = (c) => hubBroadcast(hub, "fraud", publicFraudCase(c));
+  fraud.onCase = (c) => publish("fraud", publicFraudCase(c));
   sim.start();
 
-  batcher.onBatch = (b) => hubBroadcast(hub, "batches", b);
+  batcher.onBatch = (b) => publish("batches", b);
   batcher.start();
 
-  await registerChainBinding(hub);
+  await registerChainBinding(publish);
 
   const dispatch = makeDispatcher({
     sim,
@@ -89,6 +95,7 @@ async function boot(): Promise<void> {
       batch_pending: batcher.pendingCount,
       fraud: fraud.mode,
       fraud_open: fi.open,
+      bus: bus.mode,
       clients: hub.clientCount,
       phase: "B5",
       verifiers: el.members,
@@ -153,6 +160,7 @@ async function boot(): Promise<void> {
   console.log(`  rpc      → http://${HOST}:${PORT}/rpc`);
   console.log(`  events   → ws://${HOST}:${PORT}/events`);
   console.log(`  health   → http://${HOST}:${PORT}/health`);
+  console.log(`  bus      → ${bus.mode}${bus.mode === "nats" ? ` (${NATS_URL})` : ""}`);
   console.log(`  epoch    → ${pool.currentEpoch}`);
   console.log(`  quorum   → ${el.members.join(", ")}`);
   console.log(`  escrow   → ${escrow.mode}`);
@@ -163,7 +171,7 @@ async function boot(): Promise<void> {
   console.log(`  console  → ?net=rpc&node=http://${HOST}:${PORT}`);
 }
 
-async function registerChainBinding(hub: SubscriptionHub): Promise<void> {
+async function registerChainBinding(publish: (topic: Topic, data: unknown) => void): Promise<void> {
   const cfg = makeChainConfigFromEnv();
   if (!cfg.escrowAddress && !cfg.batcherAddress) {
     console.log("  chain     → OFFLINE (set ESCROW_ADDRESS / BATCHER_ADDRESS)");
@@ -171,21 +179,15 @@ async function registerChainBinding(hub: SubscriptionHub): Promise<void> {
   }
 
   const watcher = new ChainWatcher(cfg, {
-    onTaskFrame: (t) => hubBroadcast(hub, "tasks", t),
-    onBatchFrame: (b) => hubBroadcast(hub, "batches", b),
+    onTaskFrame: (t) => publish("tasks", t),
+    onBatchFrame: (b) => publish("batches", b),
   });
 
   await watcher.start();
 }
 
-function hubBroadcast(hub: SubscriptionHub, topic: "tasks" | "batches" | "fraud", data: unknown): void {
-  const method = topic === "tasks" ? "task.event" : topic === "batches" ? "batch.event" : "fraud.event";
-  hub.broadcast(topic, {
-    jsonrpc: "2.0",
-    method,
-    params: { topic, data },
-  });
-}
+// re-export for tests that may still import hub path
+export type { EventBus };
 
 process.on("SIGINT", () => process.exit(0));
 
