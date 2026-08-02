@@ -5,12 +5,12 @@ Each package has its own `package.json`.
 
 ```
 services/
-├── gateway/           # B0–B3 edge: JSON-RPC + WS + CENT accrual + slash writer
+├── gateway/           # B0–B4 edge: JSON-RPC + WS + CENT + slash + batcher writer
 ├── verifier-daemon/   # pool, election, slashes, accuracy oracle, accrual ledger
 └── indexer/           # receipt graph: Postgres state + ClickHouse analytics
 ```
 
-## gateway (B0–B3 CENT-ready)
+## gateway (B0–B4 settlement-ready)
 
 ```bash
 cd services/gateway && npm install && npm run gateway
@@ -28,6 +28,10 @@ cd services/gateway && npm install && npm run gateway
 | `PROTOCOL_KEY` | Present → write-ready (external signer / future raw path) |
 | `GATEWAY_PORT` | Default `8080` |
 | `SLASH_EXECUTOR_ADDRESS` | Optional on-chain SlashExecutor for evidence posts |
+| `BATCHER_ADDRESS` | SettlementBatcher for Merkle root anchors |
+| `BATCHER_KEY_1` / `_2` / `_3` | 2-of-3 EIP-712 signers (anvil #0/#1/#2 locally) |
+| `BATCH_INTERVAL_MS` | Auto-flush interval (default `30000`; `0` = manual) |
+| `BATCH_MAX_PENDING` | Flush when pending leaves ≥ N (default `9`) |
 
 ### Local chain E2E (anvil)
 
@@ -64,17 +68,23 @@ gh workflow run deploy-base-sepolia.yml -f mode=local -f write_deployment=true
 RPC methods: `registry.query` · `registry.list` · `task.commit` · `task.report` ·
 `verify` · `task.settle` · `dispute.open` · `operator.rule` · `stake` ·
 `epoch.elect` · `epoch.info` · `accrual.balance` · `accrual.claim` ·
-`accrual.summary` · `accuracy.of` · `accuracy.list` · `slash.submit` · `node.info`.
+`accrual.summary` · `accuracy.of` · `accuracy.list` · `slash.submit` ·
+`batch.pending` · `batch.info` · `batch.anchor` · `batch.markMissed` · `node.info`.
 
 **B3 fee path:** on honest `verify`, take **0.35%** of escrow → **85%** to ok
 voters (accuracy²-weighted) + **15%** treasury. Claim via `accrual.claim`.
 Mismatch still slashes bonds; optional `SLASH_EXECUTOR_ADDRESS` posts evidence
 on-chain.
 
+**B4 settle path:** each honest `verify` enqueues a receipt leaf. `batch.anchor`
+(or auto-flush) folds a binary Merkle root, EIP-712-signs with 2-of-3 batcher
+keys, and submits `SettlementBatcher.anchorRoot` (`eth_sendRawTransaction`).
+
 ```bash
 cd services && npm test
 npm run gateway &
-npm run smoke       # B3 path
+npm run smoke              # B4 offline path
+npm run e2e:batcher        # anvil: real BatchAnchored
 ```
 
 ## verifier-daemon (B3)

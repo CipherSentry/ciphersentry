@@ -73,9 +73,9 @@ jobs:
           cache: npm
           cache-dependency-path: services/package-lock.json
       - run: npm ci
-      - name: Verifier daemon unit tests
+      - name: Verifier + batcher unit tests
         run: npm test
-      - name: Gateway B1 smoke
+      - name: Gateway B4 smoke
         run: |
           npm run gateway &
           GATEWAY_PID=$!

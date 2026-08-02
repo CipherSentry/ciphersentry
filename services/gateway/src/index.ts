@@ -1,13 +1,13 @@
 /**
- * CipherSentry Edge Gateway — B0–B3 CENT-ready.
+ * CipherSentry Edge Gateway — B0–B4 CENT-ready + settlement batcher.
  *
  *   POST /rpc    — JSON-RPC 2.0 over the §5 method map (dispatch in rpc.ts)
  *   GET  /events — WebSocket hub (task.event / batch.event frames)
- *   GET  /health — liveness + escrow + elected quorum + accrual
+ *   GET  /health — liveness + escrow + batcher + elected quorum + accrual
  *
  * Default truth is TaskLedger + SimDriver + VerifierPool
  * (registry, election, accuracy, accrual). Optional chain writers:
- * ESCROW_ADDRESS, SLASH_EXECUTOR_ADDRESS.
+ * ESCROW_ADDRESS, SLASH_EXECUTOR_ADDRESS, BATCHER_ADDRESS + BATCHER_KEY_*.
  */
 
 import Fastify from "fastify";
@@ -19,6 +19,7 @@ import { SubscriptionHub, type SocketLike } from "./ws.ts";
 import { ChainWatcher, makeChainConfigFromEnv } from "./chain.ts";
 import { EscrowGateway, makeEscrowConfigFromEnv } from "./escrow.ts";
 import { SlashExecutorGateway, makeSlashConfigFromEnv } from "./slash-executor.ts";
+import { SettlementBatcherGateway, makeBatcherConfigFromEnv } from "./batcher.ts";
 
 const HOST = process.env.GATEWAY_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
@@ -44,11 +45,15 @@ async function boot(): Promise<void> {
   const ledger = new TaskLedger();
   const escrow = new EscrowGateway(makeEscrowConfigFromEnv());
   const slashChain = new SlashExecutorGateway(makeSlashConfigFromEnv());
+  const batcher = new SettlementBatcherGateway(makeBatcherConfigFromEnv());
   const pool = new VerifierPool({ epoch: EPOCH });
   pool.ensureElection(EPOCH);
   const hub = new SubscriptionHub();
   hub.attachEvents(sim);
   sim.start();
+
+  batcher.onBatch = (b) => hubBroadcast(hub, "batches", b);
+  batcher.start();
 
   await registerChainBinding(hub);
 
@@ -58,6 +63,7 @@ async function boot(): Promise<void> {
     escrow,
     pool,
     slashChain,
+    batcher,
     emitTask: (t) => {
       sim.onTask?.(t);
     },
@@ -72,8 +78,10 @@ async function boot(): Promise<void> {
       epoch: pool.currentEpoch,
       escrow: escrow.mode,
       slash_executor: slashChain.mode,
+      batcher: batcher.mode,
+      batch_pending: batcher.pendingCount,
       clients: hub.clientCount,
-      phase: "B3",
+      phase: "B4",
       verifiers: el.members,
       eligible: pool.registry.eligible().length,
       slash_dry_runs: pool.slash.all().length,
@@ -132,7 +140,7 @@ async function boot(): Promise<void> {
   await fastify.listen({ host: HOST, port: PORT });
 
   const el = pool.ensureElection();
-  console.log("ciphersentry-gateway  [B3]");
+  console.log("ciphersentry-gateway  [B4]");
   console.log(`  rpc      → http://${HOST}:${PORT}/rpc`);
   console.log(`  events   → ws://${HOST}:${PORT}/events`);
   console.log(`  health   → http://${HOST}:${PORT}/health`);
@@ -140,6 +148,7 @@ async function boot(): Promise<void> {
   console.log(`  quorum   → ${el.members.join(", ")}`);
   console.log(`  escrow   → ${escrow.mode}`);
   console.log(`  slash    → ${slashChain.mode}`);
+  console.log(`  batcher  → ${batcher.mode} (keys=${makeBatcherConfigFromEnv().signerKeys.length})`);
   console.log("");
   console.log(`  console  → ?net=rpc&node=http://${HOST}:${PORT}`);
 }

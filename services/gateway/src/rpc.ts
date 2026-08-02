@@ -7,6 +7,7 @@
 import { SimDriver, randHex, type TaskRow } from "./sim.ts";
 import type { EscrowGateway } from "./escrow.ts";
 import type { SlashExecutorGateway } from "./slash-executor.ts";
+import type { SettlementBatcherGateway } from "./batcher.ts";
 import {
   expectedPureHash,
   type VerifierPool,
@@ -100,12 +101,14 @@ export interface RpcContext {
   pool: VerifierPool;
   /** Optional on-chain SlashExecutor writer (B3). */
   slashChain: SlashExecutorGateway;
+  /** B4 settlement batcher — Merkle roots + 2-of-3 anchor. */
+  batcher: SettlementBatcherGateway;
   emitTask: (t: TaskRow) => void;
   epoch: number;
 }
 
 export function makeDispatcher(ctx: RpcContext) {
-  const { sim, ledger, escrow, pool, slashChain } = ctx;
+  const { sim, ledger, escrow, pool, slashChain, batcher } = ctx;
 
   const addTask = (partial: Partial<LedgerTask> & { buyer?: string }): LedgerTask => {
     const t: LedgerTask = {
@@ -264,6 +267,16 @@ export function makeDispatcher(ctx: RpcContext) {
         ledger.put(t);
         sim.state.pending.push(t);
         ctx.emitTask({ ...t });
+
+        // B4: enqueue receipt leaf for next Merkle batch
+        const leaf = batcher.enqueue({
+          taskId: t.id,
+          recomputed,
+          reported,
+          amount: t.amount,
+          worker: t.agent,
+        });
+
         return ok({
           task_id,
           status: "SETTLED",
@@ -292,6 +305,11 @@ export function makeDispatcher(ctx: RpcContext) {
             epoch: outcome.epoch,
             members: outcome.election?.members ?? outcome.verifiers,
             scores: outcome.election?.scores ?? [],
+          },
+          batch: {
+            leaf: leaf.leaf,
+            pending: batcher.pendingCount,
+            mode: batcher.mode,
           },
           tx: `0x${randHex(6)}…${randHex(4)}`,
         });
@@ -462,6 +480,34 @@ export function makeDispatcher(ctx: RpcContext) {
         return ok({ ...result, slash_mode: slashChain.mode });
       }
 
+      case "batch.pending": {
+        return ok({
+          count: batcher.pendingCount,
+          leaves: batcher.pendingLeaves.map((l) => ({
+            task_id: l.taskId,
+            leaf: l.leaf,
+            amount: l.amount,
+            worker: l.worker,
+            at: l.at,
+          })),
+        });
+      }
+
+      case "batch.info": {
+        return ok(batcher.info());
+      }
+
+      case "batch.anchor": {
+        const emergency = Boolean((p as { emergency?: boolean }).emergency);
+        const result = await batcher.anchor({ emergency });
+        return ok(result);
+      }
+
+      case "batch.markMissed": {
+        const result = await batcher.markMissed();
+        return ok(result);
+      }
+
       case "events.subscribe": {
         return ok({ subscribed: (p.topics as string[]) ?? [] });
       }
@@ -474,6 +520,7 @@ export function makeDispatcher(ctx: RpcContext) {
           epoch: pool.currentEpoch,
           escrow: escrow.mode,
           slash_executor: slashChain.mode,
+          batcher: batcher.info(),
           ledger_tasks: ledger.all().length,
           verifiers: el.members,
           registry_size: pool.registry.all().length,
@@ -481,7 +528,7 @@ export function makeDispatcher(ctx: RpcContext) {
           slash_dry_runs: pool.slash.all().length,
           accrual: acc,
           election: { seed: el.seed, scores: el.scores, members: el.members },
-          phase: "B3",
+          phase: "B4",
         });
       }
 
