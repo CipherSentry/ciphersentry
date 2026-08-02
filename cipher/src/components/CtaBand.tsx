@@ -5,7 +5,7 @@ import Reveal from "./Reveal";
 export default function CtaBand() {
   return (
     <section id="access" className="relative scroll-mt-[68px] border-t border-edge">
-      <div className="relative mx-auto max-w-4xl px-8 py-24 text-center md:py-32">
+      <div className="relative mx-auto max-w-4xl px-4 py-16 text-center sm:px-8 sm:py-24 md:py-32">
         <Reveal>
           <div className="font-mono text-[9.5px] tracking-[0.28em] text-mute">
             REQUEST ACCESS / BATCHED

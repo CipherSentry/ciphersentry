@@ -1,7 +1,7 @@
 /**
- * Frame — disabled by the minimal doctrine.
- * Viewport hairlines and film grain read as decoration, never information.
- * The component stays as a no-op so imports across pages stay valid.
+ * Frame — page-local chrome hook.
+ * Global ASCII motion is mounted once in App.tsx so every route shares it.
+ * Kept as a no-op import so existing page shells stay valid.
  */
 export default function Frame() {
   return null;

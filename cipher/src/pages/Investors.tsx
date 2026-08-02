@@ -47,15 +47,15 @@ export default function Investors() {
       <Frame />
 
       {/* top bar */}
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ INVESTORS</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
             <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
@@ -68,7 +68,7 @@ export default function Investors() {
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
               <XIcon size={13} />
             </a>
-            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
+            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -77,37 +77,37 @@ export default function Investors() {
       </header>
 
       {/* hero */}
-      <div className="border-b border-edge px-6 py-14 md:px-12 md:py-20">
-        <div className="flex items-center gap-3 font-mono text-[9.5px] tracking-[0.28em] text-volt">
-          <span className="relative flex h-1.5 w-1.5">
+      <div className="border-b border-edge px-4 py-10 sm:px-6 sm:py-14 md:px-12 md:py-20">
+        <div className="flex items-start gap-2.5 font-mono text-[8.5px] tracking-[0.16em] text-volt sm:items-center sm:gap-3 sm:text-[9.5px] sm:tracking-[0.28em]">
+          <span className="relative mt-0.5 flex h-1.5 w-1.5 shrink-0 sm:mt-0">
             <span className="absolute h-full w-full animate-ping bg-volt opacity-60" />
             <span className="relative h-1.5 w-1.5 bg-volt" />
           </span>
-          INVESTOR RELATIONS · ROUND OPEN
+          <span className="min-w-0">INVESTOR RELATIONS · ROUND OPEN</span>
         </div>
-        <h1 className="mt-6 max-w-[16ch] font-display text-[clamp(2.4rem,6vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+        <h1 className="mt-5 max-w-[16ch] font-display text-[clamp(2.15rem,7.5vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em] sm:mt-6">
           Agents need a neutral{" "}
           <em className="font-serif font-normal italic tracking-[-0.01em] text-volt">
             trust layer.
           </em>{" "}
           Own a piece of it.
         </h1>
-        <p className="mt-6 max-w-[560px] text-[15px] leading-[1.8] text-mute">
+        <p className="mt-5 max-w-[560px] text-[14px] leading-[1.75] text-mute sm:mt-6 sm:text-[15px] sm:leading-[1.8]">
           Cipher Sentry sells no feed, no ads, no brokerage. We take 0.35% of every
           settled task between agents — a protocol tax on compute itself,
           routed back to verifiers and treasury. This round funds the two
           audits and the verifier network that make it launch-grade.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           <a
             href="mailto:hello@ciphersentry.xyz?subject=CIPHER%20SENTRY%20SEED%20—%20DATA%20ROOM%20REQUEST"
-            className="bg-volt px-6 py-4 font-mono text-[11px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist"
+            className="flex min-h-12 items-center justify-center bg-volt px-6 py-3.5 font-mono text-[11px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist sm:py-4"
           >
             REQUEST DATA ROOM →
           </a>
           <a
             href="#/docs/whitepaper"
-            className="flex items-center gap-2 border border-edge2 px-6 py-4 font-mono text-[11px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
+            className="flex min-h-12 items-center justify-center gap-2 border border-edge2 px-6 py-3.5 font-mono text-[11px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt sm:py-4"
           >
             <FileText size={13} /> WHITEPAPER
           </a>
@@ -127,7 +127,7 @@ export default function Investors() {
         ))}
       </div>
 
-      <div className="mx-auto max-w-[1240px] px-6 py-14 md:px-12">
+      <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-14 md:px-12">
         <div className="grid gap-10 lg:grid-cols-2">
           {/* the round */}
           <section className="border border-edge bg-panel/40">

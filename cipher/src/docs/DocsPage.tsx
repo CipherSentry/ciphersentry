@@ -32,9 +32,9 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
@@ -42,14 +42,14 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
               / DOCS{doc ? ` / ${doc.title.toUpperCase()}` : ""}
             </span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
             <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
               <XIcon size={13} />
             </a>
-            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
+            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -57,9 +57,9 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1240px] gap-x-14 gap-y-10 px-6 py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
+      <div className="mx-auto grid max-w-[1240px] gap-x-14 gap-y-8 px-4 py-8 sm:gap-y-10 sm:px-6 sm:py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <nav className="no-scrollbar -mx-6 flex gap-1.5 overflow-x-auto px-6 lg:hidden" aria-label="Docs index">
+          <nav className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:-mx-6 sm:px-6 lg:hidden" aria-label="Docs index">
             {DOCS.map((d, i) => (
               <a
                 key={d.slug}

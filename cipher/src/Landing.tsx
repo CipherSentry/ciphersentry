@@ -20,7 +20,7 @@ export default function Landing() {
       <AccessModal open={accessOpen} onClose={() => setAccessOpen(false)} />
       <Frame />
       <Header />
-      <main className="pt-[68px]">
+      <main className="pt-[calc(60px+env(safe-area-inset-top,0px))] sm:pt-[calc(68px+env(safe-area-inset-top,0px))]">
         <Hero />
         <CtaBand />
         <Footer />
