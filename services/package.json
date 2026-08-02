@@ -20,6 +20,10 @@
     "smoke:indexer": "npm run smoke -w indexer",
     "e2e:indexer": "bash indexer/scripts/e2e.sh",
     "e2e:indexer:pg": "bash indexer/scripts/e2e-pg.sh",
-    "e2e:batcher": "bash gateway/scripts/e2e-batcher.sh"
+    "e2e:batcher": "bash gateway/scripts/e2e-batcher.sh",
+    "e2e:compose": "bash scripts/e2e-compose.sh",
+    "e2e:full": "bash scripts/e2e-full.sh",
+    "e2e:rails": "bash scripts/e2e-rails.sh",
+    "e2e:rails:smoke": "bash scripts/e2e-rails-smoke.sh"
   }
 }

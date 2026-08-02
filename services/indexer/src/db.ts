@@ -98,8 +98,8 @@ export const CH_DDL_STATEMENTS: string[] = [
   ) ENGINE = MergeTree() ORDER BY (epoch, batch_id, receipt_id)`,
   `CREATE TABLE IF NOT EXISTS ciphersentry.trust_series (
     agent_id String, epoch UInt64,
-    stake Decimal(20,6), success Decimal(5,2), settled_count UInt32,
-    trust_score Decimal(6,4), computed_at DateTime64(3)
+    stake Decimal(20,6), success Decimal(6,4), settled_count UInt32,
+    trust_score Decimal(7,4), computed_at DateTime64(3)
   ) ENGINE = MergeTree() ORDER BY (agent_id, epoch)`,
   `CREATE TABLE IF NOT EXISTS ciphersentry.batch_stats (
     batch_id String, epoch UInt64, count UInt32, total Decimal(20,6),

@@ -65,6 +65,61 @@ export function eventMessage(topic: string, data: unknown, ts: number): string {
   return `${EVENT_PREFIX}|${topic}|${canonicalizeEvent(data)}|${ts}`;
 }
 
+function strip0x(h: string): string {
+  return h.startsWith("0x") || h.startsWith("0X") ? h.slice(2) : h;
+}
+
+const hex2u8 = (h: string): Uint8Array => {
+  const s = strip0x(h);
+  if (s.length % 2) return new Uint8Array(0);
+  const out = new Uint8Array(s.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16);
+  return out;
+};
+
+/** SPKI DER for raw 32-byte Ed25519 public key (SubjectPublicKeyInfo). */
+function spkiFromRawEd25519(pk32: Uint8Array): Uint8Array {
+  const prefix = new Uint8Array([
+    0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00,
+  ]);
+  const out = new Uint8Array(prefix.length + 32);
+  out.set(prefix, 0);
+  out.set(pk32, prefix.length);
+  return out;
+}
+
+/**
+ * Verify WS event ed25519 signature (architecture §6).
+ * Message: cent.event.v1|<topic>|<canonical(data)>|<ts>
+ * Uses SubtleCrypto Ed25519 when available.
+ */
+export async function verifyEventSig(
+  pubkeyHex: string,
+  topic: string,
+  data: unknown,
+  ts: number,
+  sigHex: string,
+): Promise<boolean> {
+  try {
+    const pk = hex2u8(pubkeyHex);
+    const sig = hex2u8(sigHex);
+    if (pk.length !== 32 || sig.length !== 64) return false;
+    const subtle = globalThis.crypto?.subtle;
+    if (!subtle) return false;
+    const key = await subtle.importKey(
+      "spki",
+      spkiFromRawEd25519(pk) as BufferSource,
+      { name: "Ed25519" } as unknown as AlgorithmIdentifier,
+      false,
+      ["verify"],
+    );
+    const msg = new TextEncoder().encode(eventMessage(topic, data, ts));
+    return subtle.verify({ name: "Ed25519" } as unknown as AlgorithmIdentifier, key, sig as BufferSource, msg);
+  } catch {
+    return false;
+  }
+}
+
 export type RpcMethod = (typeof RPC_METHODS)[keyof typeof RPC_METHODS];
 
 export interface RpcErrorObject {
@@ -195,8 +250,15 @@ export class RpcTransport implements Transport {
   /** Last verified WS event signature (architecture §6). */
   lastEventSigned: boolean | null = null;
   eventPubkey: string | null = null;
+  /** Pinned from GET /health — frames must use this key when set. */
+  pinnedPubkey: string | null = null;
+  authRequired: boolean | null = null;
+  sessionMeta: { agent_id: string; stake: number; rpm: number } | null = null;
+  lastCapBreach: string | null = null;
   private signedCount = 0;
   private unsignedCount = 0;
+  private rejectedCount = 0;
+  private pinMismatchCount = 0;
 
   constructor(cfg: RpcConfig) {
     this.cfg = cfg;
@@ -221,6 +283,29 @@ export class RpcTransport implements Transport {
 
   get eventSignStats(): { signed: number; unsigned: number; last: boolean | null } {
     return { signed: this.signedCount, unsigned: this.unsignedCount, last: this.lastEventSigned };
+  }
+
+  get eventRejectStats(): { rejected: number; pinMismatch: number } {
+    return { rejected: this.rejectedCount, pinMismatch: this.pinMismatchCount };
+  }
+
+  /** Fetch /health and pin event_pubkey (idempotent). */
+  async pinFromHealth(): Promise<{ event_pubkey?: string; auth_required?: boolean } | null> {
+    try {
+      const res = await fetch(`${this.httpBase}/health`);
+      if (!res.ok) return null;
+      const h = (await res.json()) as {
+        event_pubkey?: string;
+        auth_required?: boolean;
+      };
+      if (h.event_pubkey && /^[0-9a-fA-F]{64}$/.test(h.event_pubkey)) {
+        this.pinnedPubkey = h.event_pubkey.toLowerCase();
+      }
+      if (typeof h.auth_required === "boolean") this.authRequired = h.auth_required;
+      return h;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -261,6 +346,12 @@ export class RpcTransport implements Transport {
     this.sessionToken = sess.token;
     this.sessionExpires = Number(sess.expires_at) || Date.now() + 3_600_000;
     this.cfg.apiKey = sess.token;
+    this.sessionMeta = {
+      agent_id: String(sess.agent_id),
+      stake: Number(sess.stake) || 0,
+      rpm: Number(sess.rpm) || 0,
+    };
+    this.lastCapBreach = null;
     return sess;
   }
 
@@ -275,7 +366,7 @@ export class RpcTransport implements Transport {
     this.closed = false;
     this.status = "CONNECTING";
     this.emit(null);
-    this.connect();
+    void this.pinFromHealth().finally(() => this.connect());
   }
 
   stop(): void {
@@ -322,6 +413,8 @@ export class RpcTransport implements Transport {
       this.backoffMs = 500;
       this.status = "LIVE";
       this.emit(null);
+      // refresh pin on reconnect (key may rotate with gateway restart)
+      void this.pinFromHealth();
       const sub = {
         jsonrpc: "2.0" as const,
         id: ++this.seq,
@@ -336,56 +429,7 @@ export class RpcTransport implements Transport {
     };
 
     ws.onmessage = (ev) => {
-      let frame: {
-        jsonrpc?: string;
-        id?: number | string;
-        method?: string;
-        result?: unknown;
-        error?: RpcErrorObject;
-        params?: {
-          topic?: string;
-          data?: Record<string, unknown>;
-          ts?: number;
-          sig?: string;
-          pubkey?: string;
-        };
-      };
-      try {
-        frame = JSON.parse(String(ev.data));
-      } catch {
-        return;
-      }
-
-      if (frame.error) return;
-      if (frame.result && !frame.method) return; // subscribe ack
-
-      const method = frame.method ?? "";
-      const data = frame.params?.data;
-      if (!data || typeof data !== "object") return;
-
-      // architecture §6 — track signed fan-out (verify is optional; presence is product signal)
-      const p = frame.params;
-      if (p?.sig && p.pubkey && p.ts != null && p.topic) {
-        this.eventPubkey = String(p.pubkey);
-        this.lastEventSigned = true;
-        this.signedCount++;
-      } else if (method.endsWith(".event")) {
-        this.lastEventSigned = false;
-        this.unsignedCount++;
-      }
-
-      if (method === "task.event" || frame.params?.topic === "tasks") {
-        const t = asTaskEvent(data as Record<string, unknown>);
-        this.upsertTask(t);
-        this.emit(null);
-        return;
-      }
-
-      if (method === "batch.event" || frame.params?.topic === "batches") {
-        const b = asBatch(data as Record<string, unknown>);
-        this.ledger = [...this.ledger.filter((x) => x.id !== b.id), b].slice(-24);
-        this.batchCbs.forEach((cb) => cb(b));
-      }
+      void this.onWsMessage(String(ev.data));
     };
 
     ws.onerror = () => {
@@ -405,6 +449,75 @@ export class RpcTransport implements Transport {
       this.backoffMs = Math.min(this.backoffMs * 2, 8_000);
       this.reconnectTimer = setTimeout(() => this.connect(), wait);
     };
+  }
+
+  /** Process one WS frame — pin check + ed25519 verify; drop bad frames. */
+  async onWsMessage(raw: string): Promise<"ok" | "reject" | "skip"> {
+    let frame: {
+      jsonrpc?: string;
+      id?: number | string;
+      method?: string;
+      result?: unknown;
+      error?: RpcErrorObject;
+      params?: {
+        topic?: string;
+        data?: Record<string, unknown>;
+        ts?: number;
+        sig?: string;
+        pubkey?: string;
+      };
+    };
+    try {
+      frame = JSON.parse(raw);
+    } catch {
+      return "skip";
+    }
+
+    if (frame.error) return "skip";
+    if (frame.result && !frame.method) return "skip"; // subscribe ack
+
+    const method = frame.method ?? "";
+    const data = frame.params?.data;
+    if (!data || typeof data !== "object") return "skip";
+
+    // architecture §6 — pin + Subtle/ed25519 verify; reject forged frames
+    const p = frame.params;
+    if (p?.sig && p.pubkey && p.ts != null && p.topic) {
+      const pk = strip0x(String(p.pubkey)).toLowerCase();
+      if (this.pinnedPubkey && pk !== this.pinnedPubkey) {
+        this.lastEventSigned = false;
+        this.rejectedCount++;
+        this.pinMismatchCount++;
+        return "reject";
+      }
+      const ok = await verifyEventSig(pk, String(p.topic), data, Number(p.ts), String(p.sig));
+      if (!ok) {
+        this.lastEventSigned = false;
+        this.rejectedCount++;
+        return "reject";
+      }
+      this.eventPubkey = pk;
+      this.lastEventSigned = true;
+      this.signedCount++;
+    } else if (method.endsWith(".event")) {
+      this.lastEventSigned = false;
+      this.unsignedCount++;
+    }
+
+    if (method === "task.event" || frame.params?.topic === "tasks") {
+      const t = asTaskEvent(data as Record<string, unknown>);
+      this.upsertTask(t);
+      this.emit(null);
+      return "ok";
+    }
+
+    if (method === "batch.event" || frame.params?.topic === "batches") {
+      const b = asBatch(data as Record<string, unknown>);
+      this.ledger = [...this.ledger.filter((x) => x.id !== b.id), b].slice(-24);
+      this.batchCbs.forEach((cb) => cb(b));
+      return "ok";
+    }
+    return "skip";
   }
 
   private upsertTask(t: TaskEvent): void {
@@ -459,6 +572,9 @@ export class RpcTransport implements Transport {
     }
 
     if (body.error) {
+      if (body.error.code === "CEN_E_CAP_BREACH") {
+        this.lastCapBreach = body.error.message;
+      }
       // one retry after fresh session when AUTH_REQUIRED rejected us
       if (
         !opts.retried &&

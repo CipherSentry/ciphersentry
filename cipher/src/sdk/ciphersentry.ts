@@ -8,6 +8,7 @@
  */
 
 import { AGENTS, randHex, SPECS } from "../app/data";
+import { ensureSessionSigner, readAuthFlag } from "../crypto/session";
 import { SimTransport } from "./transport";
 import type { BatchCb, TickCb, Transport } from "./transport";
 import type { ExBatch } from "./ledger";
@@ -31,6 +32,11 @@ function readNodeUrl(): string {
   } catch {
     return DEFAULT_NODE;
   }
+}
+
+/** ?auth=1 — auto openSession with device Ed25519 key. */
+export function readAuthMode(): boolean {
+  return readAuthFlag();
 }
 
 /* ---------------- types ---------------- */
@@ -179,8 +185,36 @@ export class CipherSentry {
           ? new RpcTransport({ url: readNodeUrl() })
           : new SimTransport({ cap: 34, tickMs: 2800 });
       SHARED = new CipherSentry(opts ?? { key: "op:demo" }, transport);
+      // ?net=rpc&auth=1 → WebCrypto Ed25519 session on first paint
+      if (mode === "rpc" && readAuthMode() && transport.kind === "rpc") {
+        void SHARED.autoSession();
+      }
     }
     return SHARED;
+  }
+
+  /** Device session for AUTH_REQUIRED gateway. */
+  private sessionReady: Promise<{ token: string; agent_id: string; stake: number } | null> | null =
+    null;
+
+  async autoSession(agentId = "agent:atlas-01"): Promise<{
+    token: string;
+    agent_id: string;
+    stake: number;
+  } | null> {
+    if (this.sessionReady) return this.sessionReady;
+    this.sessionReady = (async () => {
+      try {
+        const signer = await ensureSessionSigner(agentId);
+        const sess = await this.openSession(signer);
+        return { token: sess.token, agent_id: sess.agent_id, stake: sess.stake };
+      } catch (e) {
+        console.warn("[auth] openSession deferred:", e instanceof Error ? e.message : e);
+        this.sessionReady = null;
+        return null;
+      }
+    })();
+    return this.sessionReady;
   }
 
   constructor(opts: CipherSentryOptions, transport?: Transport) {

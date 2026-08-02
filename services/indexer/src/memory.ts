@@ -93,12 +93,30 @@ export class MemoryStore implements Querier {
       } else if (/ON CONFLICT/i.test(sql)) {
         const nextStake = Number(stake ?? 0);
         const prevStake = Number(prev.stake ?? 0);
+        // GREATEST path for normal upsert; plain EXCLUDED.stake for fraud slash
+        const stakeOut = /GREATEST/i.test(sql)
+          ? Math.max(prevStake, nextStake || prevStake)
+          : nextStake;
         this.agents.set(id, {
           ...prev,
           trust: trust ?? prev.trust,
           success: success ?? prev.success,
-          // GREATEST(agents.stake, EXCLUDED.stake)
-          stake: Math.max(prevStake, nextStake || prevStake),
+          stake: stakeOut,
+          updated_at: new Date().toISOString(),
+        });
+      }
+      return [] as T[];
+    }
+
+    // fraud slash: UPDATE agents SET stake = $2, trust = $3
+    if (/UPDATE agents SET stake/i.test(sql)) {
+      const id = String(p[0]);
+      const a = this.agents.get(id);
+      if (a) {
+        this.agents.set(id, {
+          ...a,
+          stake: Number(p[1]) || 0,
+          trust: p[2] ?? a.trust,
           updated_at: new Date().toISOString(),
         });
       }
