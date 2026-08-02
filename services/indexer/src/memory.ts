@@ -192,7 +192,7 @@ export class MemoryStore implements Querier {
     }
 
     // SELECT batches list
-    if (/SELECT batch_id, epoch, root, count, total, state, at FROM batches/i.test(sql)) {
+    if (/SELECT batch_id, epoch, root, count, total, state, at/.test(sql) && /FROM batches/i.test(sql)) {
       return [...this.batches.values()]
         .sort((a, b) => String(b.at).localeCompare(String(a.at)))
         .slice(0, 50) as T[];

@@ -18,11 +18,39 @@ import { CipherSentry } from "../sdk/ciphersentry";
 const cent = CipherSentry.shared();
 
 const SUB_START = Date.now();
+/** Indexer poll interval — raised from 8s; pause when tab hidden. */
+const POLL_MS = 30_000;
 const clamp = (s: string, l: number) => (s.length > l ? `${s.slice(0, l)}…` : s);
 const AGES = (at: number, now: number) => {
   const s = Math.max(1, Math.round((now - at) / 1000));
   return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m`;
 };
+
+/** Read `q` from `#/explorer?q=` or `?q=` (deep-link). */
+export function readExplorerQ(): string {
+  try {
+    const hash = window.location.hash.replace(/^#/, "");
+    const qi = hash.indexOf("?");
+    if (qi >= 0) {
+      const fromHash = new URLSearchParams(hash.slice(qi + 1)).get("q");
+      if (fromHash) return fromHash;
+    }
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Persist search into hash without navigation reload. */
+export function writeExplorerQ(q: string): void {
+  try {
+    const next = q.trim() ? `/explorer?q=${encodeURIComponent(q.trim())}` : "/explorer";
+    const hash = `#${next}`;
+    if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+  } catch {
+    /* ignore */
+  }
+}
 
 function Stat({ l, v, tone }: { l: string; v: string; tone?: string }) {
   return (
@@ -85,8 +113,9 @@ export default function ExplorerPage() {
   const [selBatchId, setSelBatchId] = useState(() => cent.ledger.batches().at(-1)?.id ?? "");
   const [selReceiptId, setSelReceiptId] = useState<string | null>(null);
   const [selFraudId, setSelFraudId] = useState<string | null>(null);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => readExplorerQ());
   const [hint, setHint] = useState<string | null>(null);
+  const deepLinked = useState(() => Boolean(readExplorerQ().trim()))[0];
   const [agent, setAgent] = useState<string | null>(null);
   const [verifyStep, setVerifyStep] = useState(-1);
   const [verifiedFor, setVerifiedFor] = useState<string | null>(null);
@@ -129,6 +158,14 @@ export default function ExplorerPage() {
     let unsub: (() => void) | undefined;
     let poll: ReturnType<typeof setInterval> | undefined;
 
+    const startPoll = (c: IndexerClient) => {
+      if (poll) clearInterval(poll);
+      poll = setInterval(() => {
+        if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+        void hydrateIndexer(c).catch(() => {});
+      }, POLL_MS);
+    };
+
     (async () => {
       const c = await connectIndexer();
       if (cancelled) return;
@@ -139,9 +176,12 @@ export default function ExplorerPage() {
         } catch {
           /* fall through to sim */
         }
-        poll = setInterval(() => {
-          void hydrateIndexer(c).catch(() => {});
-        }, 8_000);
+        startPoll(c);
+        const onVis = () => {
+          if (document.visibilityState === "visible") void hydrateIndexer(c).catch(() => {});
+        };
+        document.addEventListener("visibilitychange", onVis);
+        unsub = () => document.removeEventListener("visibilitychange", onVis);
         return;
       }
       setSource("sim");
@@ -171,6 +211,15 @@ export default function ExplorerPage() {
     };
   }, [hydrateIndexer]);
 
+  /* deep-link: run search once after first ledger hydrate when ?q= present */
+  useEffect(() => {
+    if (!deepLinked || !q.trim()) return;
+    if (source === "connecting") return;
+    void runSearch();
+    // only on initial source settle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source]);
+
   const selBatch = batches.find((b) => b.id === selBatchId) ?? batches[batches.length - 1];
   const selReceipt = selBatch?.receipts.find((r) => r.id === selReceiptId) ?? null;
   const selFraud = fraud.find((f) => f.task_id === selFraudId) ?? null;
@@ -194,6 +243,7 @@ export default function ExplorerPage() {
     setRemoteValid(null);
     setLastProof(null);
     setSelFraudId(null);
+    writeExplorerQ(q);
 
     let res = search(q, batches, fraud);
     if (res.kind === "none" && client) {
@@ -586,15 +636,36 @@ export default function ExplorerPage() {
                 </div>
                 <Tag tone={selBatch.state === "SETTLING" ? "amber" : "volt"}>{selBatch.state}</Tag>
               </div>
-              <div className="mt-4 grid grid-cols-1 gap-px border border-edge bg-edge font-mono text-[9px] sm:grid-cols-3">
+              <div className="mt-4 grid grid-cols-1 gap-px border border-edge bg-edge font-mono text-[9px] sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   ["MERKLE ROOT", clamp(selBatch.root, 18)],
                   ["TOTAL ESCROW", `${selBatch.total} USDC`],
                   ["RECEIPTS", String(selBatch.count)],
+                  [
+                    "ANCHORED TX",
+                    selBatch.anchored_tx
+                      ? clamp(selBatch.anchored_tx, 18)
+                      : selBatch.state === "SETTLING"
+                        ? "PENDING"
+                        : "—",
+                  ],
                 ].map(([k, v]) => (
                   <div key={k} className="bg-void p-3">
                     <div className="text-[7px] tracking-[0.2em] text-mute/50">{k}</div>
-                    <div className="mt-1.5 truncate text-[10px] text-mist">{v}</div>
+                    <div
+                      className={`mt-1.5 truncate text-[10px] ${
+                        k === "ANCHORED TX" && selBatch.anchored_tx ? "text-volt" : "text-mist"
+                      }`}
+                      title={
+                        k === "ANCHORED TX" && selBatch.anchored_tx
+                          ? `${selBatch.anchored_tx}${
+                              selBatch.anchored_block != null ? ` · block ${selBatch.anchored_block}` : ""
+                            }`
+                          : undefined
+                      }
+                    >
+                      {v}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -713,6 +784,11 @@ export default function ExplorerPage() {
                       {lastProof?.root
                         ? `ANCHOR ROOT ${clamp(lastProof.root, 20)} · ${source === "indexer" ? "SERVER-SIDE VERIFY" : "CLIENT DISPLAY"}`
                         : `PATH FROM ${clamp(selReceipt.leaf, 16)} · REPRODUCIBLE`}
+                      {lastProof?.anchored_tx
+                        ? ` · TX ${clamp(lastProof.anchored_tx, 16)}`
+                        : selBatch.anchored_tx
+                          ? ` · TX ${clamp(selBatch.anchored_tx, 16)}`
+                          : ""}
                     </div>
                   </div>
                 </div>

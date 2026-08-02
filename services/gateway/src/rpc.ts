@@ -9,6 +9,8 @@ import type { EscrowGateway } from "./escrow.ts";
 import type { SlashExecutorGateway } from "./slash-executor.ts";
 import type { SettlementBatcherGateway } from "./batcher.ts";
 import type { FraudProofWorker } from "./fraud-proof.ts";
+import type { AuthService, Session } from "./auth.ts";
+import { authMessage } from "./auth.ts";
 import {
   expectedPureHash,
   type VerifierPool,
@@ -51,7 +53,7 @@ export const M = {
 const err = (code: RpcCode, message: string): ErrResult => ({ ok: false, error: { code, message } });
 const ok = (result: unknown): OkResult => ({ ok: true, result });
 
-const REGISTRY = [
+export const REGISTRY = [
   { id: "agent:vector-7", tier: "T2", trust: 96, rate: 4.8, success: 99.2, stake: 2600 },
   { id: "agent:atlas-01", tier: "T3", trust: 99, rate: 6.2, success: 99.9, stake: 12000 },
   { id: "agent:helix-3", tier: "T2", trust: 94, rate: 2.4, success: 99.0, stake: 3100 },
@@ -106,12 +108,18 @@ export interface RpcContext {
   batcher: SettlementBatcherGateway;
   /** B5 fraud-proof worker — challenge window + ruling. */
   fraud: FraudProofWorker;
+  /** B7 auth service (ed25519 sessions). */
+  auth: AuthService;
   emitTask: (t: TaskRow) => void;
   epoch: number;
 }
 
+export interface RpcMeta {
+  session: Session | null;
+}
+
 export function makeDispatcher(ctx: RpcContext) {
-  const { sim, ledger, escrow, pool, slashChain, batcher, fraud } = ctx;
+  const { sim, ledger, escrow, pool, slashChain, batcher, fraud, auth } = ctx;
 
   const addTask = (partial: Partial<LedgerTask> & { buyer?: string }): LedgerTask => {
     const t: LedgerTask = {
@@ -140,10 +148,61 @@ export function makeDispatcher(ctx: RpcContext) {
     return ledger.get(id) ?? sim.settleTask(id);
   };
 
-  return async function dispatch(env: Envelope): Promise<OkResult | ErrResult> {
+  return async function dispatch(env: Envelope, meta: RpcMeta = { session: null }): Promise<OkResult | ErrResult> {
     const p = (env.params ?? {}) as Record<string, unknown>;
 
     switch (env.method) {
+      case "auth.challenge": {
+        const pubkey = String((p as { pubkey?: string }).pubkey ?? "");
+        if (!pubkey) return err(M.SCHEMA, "auth.challenge requires pubkey");
+        const ch = await auth.issueChallenge(pubkey);
+        if ("error" in ch) return err(M.SCHEMA, ch.error);
+        return ok({
+          challenge_id: ch.id,
+          nonce: ch.nonce,
+          expires_at: ch.expiresAt,
+          message: authMessage(ch.id, ch.nonce, ch.pubkey),
+          algo: "ed25519",
+        });
+      }
+
+      case "auth.session": {
+        const params = p as {
+          challenge_id?: string;
+          pubkey?: string;
+          signature?: string;
+          agent_id?: string;
+        };
+        if (!params.challenge_id || !params.pubkey || !params.signature) {
+          return err(M.SCHEMA, "auth.session requires challenge_id, pubkey, signature");
+        }
+        const sess = await auth.openSession({
+          challenge_id: params.challenge_id,
+          pubkey: params.pubkey,
+          signature: params.signature,
+          agent_id: params.agent_id,
+        });
+        if ("error" in sess) return err(M.CAP_BREACH, sess.error);
+        return ok({
+          token: sess.token,
+          agent_id: sess.agentId,
+          stake: sess.stake,
+          rpm: sess.rpm,
+          expires_at: sess.expiresAt,
+        });
+      }
+
+      case "auth.whoami": {
+        if (!meta.session) return err(M.CAP_BREACH, "no session — Authorization: Bearer <token>");
+        return ok({
+          agent_id: meta.session.agentId,
+          stake: meta.session.stake,
+          rpm: meta.session.rpm,
+          pubkey: meta.session.pubkey,
+          expires_at: meta.session.expiresAt,
+        });
+      }
+
       case "registry.query": {
         const filter = (p.filter ?? {}) as {
           spec?: string;
@@ -729,6 +788,10 @@ export function makeDispatcher(ctx: RpcContext) {
           slash_dry_runs: pool.slash.all().length,
           accrual: acc,
           election: { seed: el.seed, scores: el.scores, members: el.members },
+          auth: {
+            required: process.env.AUTH_REQUIRED === "1",
+            kv: process.env.REDIS_URL ? "redis" : "memory",
+          },
           phase: "B5",
         });
       }
