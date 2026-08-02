@@ -61,20 +61,23 @@ function Chrome({ children, right }: { children: React.ReactNode; right?: React.
   return (
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ TRY THE FLOW</span>
           </div>
-          <div className="flex items-center gap-5">
-            <span className="font-mono text-[8.5px] tracking-[0.2em] text-volt">{right ?? "TRIAL MODE — NO REAL FUNDS · REPLAYABLE"}</span>
+          <div className="min-w-0 shrink">
+            <span className="block truncate font-mono text-[7.5px] tracking-[0.14em] text-volt sm:text-[8.5px] sm:tracking-[0.2em]">
+              <span className="sm:hidden">TRIAL · SIM</span>
+              <span className="hidden sm:inline">{right ?? "TRIAL MODE — NO REAL FUNDS · REPLAYABLE"}</span>
+            </span>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-[900px] px-6 py-10 md:px-12 md:py-14">{children}</main>
+      <main className="mx-auto max-w-[900px] px-4 py-8 sm:px-6 sm:py-10 md:px-12 md:py-14">{children}</main>
     </div>
   );
 }
@@ -118,10 +121,10 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
       </p>
       <div className="mt-9 space-y-px border-y border-edge">
         {STAGES.map((stg, i) => (
-          <div key={stg.id} className="grid grid-cols-[52px_1fr_auto] items-baseline gap-4 border-b border-edge py-4 font-mono text-[9px] tracking-[0.2em] last:border-b-0 sm:grid-cols-[60px_1fr_1fr_auto]">
+          <div key={stg.id} className="grid grid-cols-[40px_1fr] items-baseline gap-3 border-b border-edge py-3.5 font-mono text-[9px] tracking-[0.2em] last:border-b-0 sm:grid-cols-[60px_1fr_1fr] sm:gap-4 sm:py-4">
             <span className="text-volt/70">0{i + 1}</span>
-            <span className="font-display text-[15px] font-semibold tracking-[-0.01em] text-mist">{stg.title}</span>
-            <span className="hidden text-[10px] text-mute sm:inline">{stg.desc}</span>
+            <span className="font-display text-[14px] font-semibold tracking-[-0.01em] text-mist sm:text-[15px]">{stg.title}</span>
+            <span className="col-span-2 pl-10 text-[10px] leading-relaxed text-mute sm:col-span-1 sm:pl-0">{stg.desc}</span>
           </div>
         ))}
       </div>

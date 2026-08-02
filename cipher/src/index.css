@@ -46,6 +46,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 /* ---- hidden scrollbars (phone screens) ---- */
@@ -63,6 +65,11 @@ body {
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
+  max-width: 100%;
+  /* notch / home-indicator safe areas */
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
 ::selection {
@@ -110,12 +117,55 @@ input {
   .anim-drop,
   .animate-scan,
   .animate-ping,
-  .animate-dashspin {
+  .animate-dashspin,
+  .ascii-scroll-y,
+  .ascii-scroll-x {
     animation: none !important;
   }
   .animate-pulse {
     animation-duration: 2.6s !important;
   }
+}
+
+/* ---- ASCII motion field ---- */
+@keyframes ascii-scroll-y {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+.ascii-scroll-y {
+  animation: ascii-scroll-y 48s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ascii-scroll-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ascii-scroll-x {
+  display: inline-flex;
+  animation: ascii-scroll-x 36s linear infinite;
+  will-change: transform;
+}
+
+/* soft vignette so rails never fight body copy */
+.ascii-edge-fade {
+  background:
+    linear-gradient(to right, rgba(11, 68, 32, 0.06), transparent 12%, transparent 88%, rgba(11, 68, 32, 0.06)),
+    linear-gradient(to bottom, rgba(11, 68, 32, 0.04), transparent 10%, transparent 90%, rgba(11, 68, 32, 0.05));
+}
+
+/* safe horizontal padding utility (notch-aware) */
+.safe-px {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
 ::-webkit-scrollbar {
@@ -139,13 +189,13 @@ input {
    ============================================================ */
 
 .section-x {
-  padding-inline: clamp(1.5rem, 5vw, 4rem);
+  padding-inline: clamp(1rem, 5vw, 4rem);
 }
 .section-y {
-  padding-block: clamp(4.5rem, 8vw, 7.5rem);
+  padding-block: clamp(3.25rem, 8vw, 7.5rem);
 }
 .section-x-y {
-  padding: clamp(1.5rem, 5vw, 4rem) clamp(1.5rem, 5vw, 4rem);
+  padding: clamp(1rem, 5vw, 4rem) clamp(1rem, 5vw, 4rem);
 }
 .panel-pad {
   padding: clamp(1.25rem, 3vw, 2.25rem);

@@ -146,15 +146,15 @@ export default function ExplorerPage() {
       <Frame />
 
       {/* top bar */}
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ EXPLORER</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
             <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
@@ -167,7 +167,7 @@ export default function ExplorerPage() {
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
               <XIcon size={13} />
             </a>
-            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
+            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -176,19 +176,22 @@ export default function ExplorerPage() {
       </header>
 
       {/* hero */}
-      <div className="border-b border-edge px-6 py-10 md:px-12">
-        <div className="flex items-center gap-3 font-mono text-[9.5px] tracking-[0.28em] text-volt">
-          <span className="relative flex h-1.5 w-1.5">
+      <div className="border-b border-edge px-4 py-8 sm:px-6 sm:py-10 md:px-12">
+        <div className="flex items-start gap-2.5 font-mono text-[8.5px] tracking-[0.16em] text-volt sm:items-center sm:gap-3 sm:text-[9.5px] sm:tracking-[0.28em]">
+          <span className="relative mt-0.5 flex h-1.5 w-1.5 shrink-0 sm:mt-0">
             <span className="absolute h-full w-full animate-ping bg-volt opacity-60" />
             <span className="relative h-1.5 w-1.5 bg-volt" />
           </span>
-          PUBLIC LEDGER — MERKLE-ANCHORED RECEIPTS
+          <span className="min-w-0 leading-relaxed">
+            <span className="sm:hidden">PUBLIC LEDGER · MERKLE RECEIPTS</span>
+            <span className="hidden sm:inline">PUBLIC LEDGER — MERKLE-ANCHORED RECEIPTS</span>
+          </span>
         </div>
-        <div className="mt-5 grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
-          <h1 className="font-display text-[clamp(2.3rem,5vw,4rem)] font-medium leading-none tracking-[-0.04em]">
+        <div className="mt-5 grid gap-6 sm:gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+          <h1 className="font-display text-[clamp(2.1rem,7vw,4rem)] font-medium leading-none tracking-[-0.04em]">
             Task <em className="font-serif font-normal italic text-volt">Explorer.</em>
           </h1>
-          <div className="grid grid-cols-3 gap-4 lg:justify-self-end">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 lg:justify-self-end">
             <Stat l="HEIGHT" v={stats.height.toLocaleString()} />
             <Stat l="TASKS SETTLED" v={`${(stats.settled / 1000).toFixed(1)}K`} />
             <Stat l="VOLUME 24H" v={`$${(stats.volume / 1000).toFixed(0)}K`} tone="text-volt" />
@@ -196,23 +199,23 @@ export default function ExplorerPage() {
         </div>
 
         {/* search */}
-        <div className="mt-8 max-w-[720px]">
-          <div className="flex items-center gap-3 border border-edge2 bg-panel/60 px-4 py-3.5 focus-within:border-volt/60">
+        <div className="mt-6 max-w-[720px] sm:mt-8">
+          <div className="flex items-center gap-2 border border-edge2 bg-panel/60 px-3 py-3 focus-within:border-volt/60 sm:gap-3 sm:px-4 sm:py-3.5">
             <span className="font-mono text-[12px] text-volt">$</span>
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && runSearch()}
-              placeholder="task id / batch_ / agent: / 0xhash…"
+              placeholder="task / batch_ / agent: / 0x…"
               spellCheck={false}
-              className="w-full bg-transparent font-mono text-[12px] text-mist placeholder:text-mute/40 focus:outline-none"
+              className="min-w-0 w-full bg-transparent font-mono text-[12px] text-mist placeholder:text-mute/40 focus:outline-none"
               aria-label="Search the ledger"
             />
-            <button onClick={runSearch} aria-label="Search" className="text-mute transition-colors hover:text-volt">
+            <button onClick={runSearch} aria-label="Search" className="shrink-0 text-mute transition-colors hover:text-volt">
               <Search size={14} />
             </button>
           </div>
-          {hint && <div className="mt-2 font-mono text-[9px] tracking-[0.14em] text-volt/80">{hint}</div>}
+          {hint && <div className="mt-2 break-all font-mono text-[9px] tracking-[0.14em] text-volt/80">{hint}</div>}
         </div>
       </div>
 
@@ -253,7 +256,7 @@ export default function ExplorerPage() {
         </div>
 
         {/* detail */}
-        <div className="bg-void p-5 md:p-7">
+        <div className="bg-void p-4 sm:p-5 md:p-7">
           {agent ? (
             /* ---- agent profile ---- */
             <div>
@@ -297,7 +300,7 @@ export default function ExplorerPage() {
                 </div>
                 <Tag tone={selBatch.state === "SETTLING" ? "amber" : "volt"}>{selBatch.state}</Tag>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-px border border-edge bg-edge font-mono text-[9px]">
+              <div className="mt-4 grid grid-cols-1 gap-px border border-edge bg-edge font-mono text-[9px] sm:grid-cols-3">
                 {[
                   ["MERKLE ROOT", clamp(selBatch.root, 18)],
                   ["TOTAL ESCROW", `${selBatch.total} USDC`],
@@ -310,33 +313,35 @@ export default function ExplorerPage() {
                 ))}
               </div>
 
-              {/* receipts */}
-              <div className="mt-5 border border-edge">
-                <div className="grid grid-cols-[90px_minmax(0,1fr)_80px_70px_60px] gap-2 border-b border-edge px-3 py-2 font-mono text-[7.5px] tracking-[0.18em] text-mute/50 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px]">
-                  <span>RECEIPT</span><span>ROUTE / SPEC</span><span className="hidden sm:inline">HEX</span><span className="text-right">AMOUNT</span><span className="text-right">MS</span><span>STATE</span>
+              {/* receipts — horizontal scroll on narrow viewports */}
+              <div className="mt-5 overflow-x-auto border border-edge">
+                <div className="min-w-[520px]">
+                  <div className="grid grid-cols-[100px_minmax(0,1fr)_70px_55px_70px] gap-2 border-b border-edge px-3 py-2 font-mono text-[7.5px] tracking-[0.18em] text-mute/50 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px]">
+                    <span>RECEIPT</span><span>ROUTE / SPEC</span><span className="hidden sm:inline">HEX</span><span className="text-right">AMOUNT</span><span className="text-right">MS</span><span>STATE</span>
+                  </div>
+                  {selBatch.receipts.map((r) => {
+                    const sel = r.id === selReceipt?.id;
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => { setSelReceiptId(sel ? null : r.id); setVerifyStep(-1); setVerifiedFor(null); }}
+                        className={`grid w-full grid-cols-[100px_minmax(0,1fr)_70px_55px_70px] items-center gap-2 border-b border-edge/60 px-3 py-2.5 text-left font-mono text-[10px] transition-colors last:border-b-0 hover:bg-panel/60 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px] ${
+                          sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
+                        }`}
+                      >
+                        <span className={`truncate ${sel ? "text-code-fg" : "text-mist"}`}>{r.id}</span>
+                        <span className="flex min-w-0 items-center gap-1.5 text-[9px] text-mute">
+                          <span className="truncate">{r.buyer.replace("agent:", "")}→{r.worker.replace("agent:", "")}</span>
+                          <span className="truncate text-mist/80">{r.spec}</span>
+                        </span>
+                        <span className="hidden truncate text-[9px] text-mute/50 sm:inline">{clamp(r.leaf, 14)}</span>
+                        <span className="text-right tabular-nums text-mist">{r.amount}</span>
+                        <span className="text-right tabular-nums text-mute/60">{r.ms}</span>
+                        <span className={r.state === "DISPUTED" ? "text-[8px] text-red-400" : "text-[8px] text-volt/70"}>{r.state}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                {selBatch.receipts.map((r) => {
-                  const sel = r.id === selReceipt?.id;
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() => { setSelReceiptId(sel ? null : r.id); setVerifyStep(-1); setVerifiedFor(null); }}
-                      className={`grid w-full grid-cols-[90px_minmax(0,1fr)_80px_70px_60px] items-center gap-2 border-b border-edge/60 px-3 py-2.5 text-left font-mono text-[10px] transition-colors last:border-b-0 hover:bg-panel/60 sm:grid-cols-[110px_minmax(0,1fr)_120px_90px_80px_70px] ${
-                        sel ? "bg-deepgreen shadow-[inset_2px_0_0_#3dff36]" : ""
-                      }`}
-                    >
-                      <span className={`truncate ${sel ? "text-code-fg" : "text-mist"}`}>{r.id}</span>
-                      <span className="flex min-w-0 items-center gap-1.5 text-[9px] text-mute">
-                        <span className="truncate">{r.buyer.replace("agent:", "")}→{r.worker.replace("agent:", "")}</span>
-                        <span className="truncate text-mist/80">{r.spec}</span>
-                      </span>
-                      <span className="hidden truncate text-[9px] text-mute/50 sm:inline">{clamp(r.leaf, 14)}</span>
-                      <span className="text-right tabular-nums text-mist">{r.amount}</span>
-                      <span className="text-right tabular-nums text-mute/60">{r.ms}</span>
-                      <span className={r.state === "DISPUTED" ? "text-[8px] text-red-400" : "text-[8px] text-volt/70"}>{r.state}</span>
-                    </button>
-                  );
-                })}
               </div>
 
               {/* proof panel */}

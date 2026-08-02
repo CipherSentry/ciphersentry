@@ -64,15 +64,15 @@ export default function Faq() {
         }}
       />
       {/* header */}
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ FAQ</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
             <a
               href="#/"
               className="hidden items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:text-volt sm:flex"
@@ -81,7 +81,7 @@ export default function Faq() {
             </a>
             <a
               href="#/app"
-              className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt"
+              className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
             >
               OPEN APP
               <ArrowUpRight size={11} />
@@ -90,45 +90,45 @@ export default function Faq() {
         </div>
       </header>
 
-      <div className="section-x py-14 md:py-20">
+      <div className="section-x py-10 sm:py-14 md:py-20">
         <div className="mx-auto max-w-[820px]">
-          <div className="flex items-center gap-3 font-mono text-[9.5px] tracking-[0.28em] text-volt">
-            <span className="h-1.5 w-1.5 bg-volt" />
+          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.22em] text-volt sm:text-[9.5px] sm:tracking-[0.28em]">
+            <span className="h-1.5 w-1.5 shrink-0 bg-volt" />
             EIGHT ANSWERS, ZERO HEDGES
           </div>
-          <h1 className="mt-6 max-w-[16ch] font-display text-[clamp(2.3rem,5.2vw,4.4rem)] font-medium leading-[1.02] tracking-[-0.04em]">
+          <h1 className="mt-5 max-w-[16ch] font-display text-[clamp(2.1rem,7vw,4.4rem)] font-medium leading-[1.02] tracking-[-0.04em] sm:mt-6">
             Frequently asked{" "}
             <em className="font-serif font-normal italic tracking-[-0.015em] text-deepgreen">
               questions.
             </em>
           </h1>
 
-          <div className="mt-12 border-t border-edge">
+          <div className="mt-10 border-t border-edge sm:mt-12">
             {QA.map((item, i) => {
               const openItem = open === i;
               return (
                 <div key={i} className="border-b border-edge">
                   <button
                     onClick={() => setOpen(openItem ? null : i)}
-                    className="grid w-full grid-cols-[40px_1fr_auto] items-baseline gap-2 py-6 text-left md:grid-cols-[52px_1fr_auto] md:py-7"
+                    className="grid w-full grid-cols-[32px_1fr_28px] items-start gap-2 py-5 text-left sm:grid-cols-[40px_1fr_auto] sm:items-baseline sm:py-6 md:grid-cols-[52px_1fr_auto] md:py-7"
                     aria-expanded={openItem}
                   >
                     <span className="font-mono text-[10px] text-volt/60">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="font-display text-[17px] font-semibold tracking-[-0.02em] text-mist transition-colors duration-300 hover:text-volt sm:text-[19px]">
+                    <span className="font-display text-[15px] font-semibold tracking-[-0.02em] text-mist transition-colors duration-300 hover:text-volt sm:text-[17px] md:text-[19px]">
                       {item.q}
                     </span>
-                    <span className="font-mono text-[11px] text-mute transition-colors duration-300 group-hover:text-volt">
+                    <span className="flex justify-end font-mono text-[11px] text-mute transition-colors duration-300 group-hover:text-volt">
                       {openItem ? <Minus size={13} /> : <Plus size={13} />}
                     </span>
                   </button>
                   <div
                     className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                      openItem ? "max-h-[300px] opacity-100" : "max-h-0 opacity-0"
+                      openItem ? "max-h-[480px] opacity-100" : "max-h-0 opacity-0"
                     }`}
                   >
-                    <p className="max-w-[680px] pb-7 pl-[40px] text-[13px] leading-[1.85] text-mute md:pl-[52px]">
+                    <p className="max-w-[680px] pb-6 pl-[32px] pr-2 text-[13px] leading-[1.8] text-mute sm:pb-7 sm:pl-[40px] md:pl-[52px]">
                       {item.a}
                     </p>
                   </div>
@@ -137,8 +137,8 @@ export default function Faq() {
             })}
           </div>
 
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border border-edge px-6 py-5">
-            <span className="font-mono text-[9px] tracking-[0.22em] text-mute">
+          <div className="mt-8 flex flex-col gap-3 border border-edge px-4 py-4 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-5">
+            <span className="font-mono text-[8.5px] tracking-[0.16em] text-mute sm:text-[9px] sm:tracking-[0.22em]">
               MORE QUESTIONS — PROOFS FIRST, REPLIES WITHIN 48H
             </span>
             <a

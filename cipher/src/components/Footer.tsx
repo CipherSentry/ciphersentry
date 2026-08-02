@@ -68,7 +68,7 @@ function SmartLink({
 export default function Footer() {
   return (
     <footer>
-      <div className="grid gap-14 px-8 py-20 md:px-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+      <div className="grid gap-10 px-4 py-14 sm:gap-14 sm:px-8 sm:py-20 md:px-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         {/* brand */}
         <div>
           <a href="#top" aria-label="Cipher Sentry — ciphersentry.xyz" className="group flex items-center">
@@ -129,7 +129,7 @@ export default function Footer() {
       </div>
 
       {/* bottom bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-edge px-8 py-6 font-mono text-[9px] tracking-[0.22em] text-mute/60 md:px-16">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-edge px-4 py-5 font-mono text-[8.5px] tracking-[0.16em] text-mute/60 sm:gap-4 sm:px-8 sm:py-6 sm:text-[9px] sm:tracking-[0.22em] md:px-16 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <span>© 2026 CIPHER SENTRY LABS · EST. 2026 — THE YEAR AGENTS SHIP</span>
         <span className="hidden md:block">AGENT SECURITY PROTOCOL / V0.2</span>
         <span className="text-mute/40">NO HUMANS WERE CONSULTED</span>

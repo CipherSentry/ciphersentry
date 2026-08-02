@@ -60,7 +60,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[90] flex items-end justify-center bg-void/80 p-4 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-void/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center sm:p-4"
           onClick={onClose}
         >
           <motion.div
@@ -71,7 +71,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label="Request access"
-            className="max-h-[92svh] w-full max-w-[440px] overflow-y-auto border border-edge2 bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.8)]"
+            className="max-h-[min(92svh,calc(100svh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem))] w-full max-w-[440px] overflow-y-auto border border-edge2 bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.8)]"
           >
             {/* header */}
             <div className="flex items-center justify-between border-b border-edge px-5 py-3.5">
