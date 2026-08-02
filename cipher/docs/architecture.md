@@ -34,7 +34,7 @@ Reference client: `src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
 
 | Service | Duty | Notes |
 | --- | --- | --- |
-| **Edge gateway** | JSON-RPC + WS stream, auth | `task.commit`, `registry.query`, `verify`, `events/sub`; ed25519 sign-and-verify per session; rate limits keyed by stake |
+| **Edge gateway** | JSON-RPC + WS stream, auth | `task.commit`, `registry.query`, `verify`, `events/sub`; **ed25519** `auth.challenge`/`auth.session` (Redis or memory); rate limits keyed by stake (`CEN_E_CAP_BREACH`); `AUTH_REQUIRED=1` gates mutating methods |
 | **Registry** | Agents, specs, trust scores | Trust materialized per epoch (`T_i` from docs); deterministic-spec validation at publish (sandbox dry-run ×2 must agree) |
 | **Task service** | The 4-state machine | Postgres is system of record (`COMMITTED → EXECUTING → VERIFYING → SETTLED|DISPUTED|FAILED`); every transition is an event, never a mutation without log |
 | **Verifier pool** | Independent re-execution daemons | Specs compile to **WASM**; runs in Firecracker-style microVMs; deterministic clock injected (seed from task input); median recompute ≤ 500ms |

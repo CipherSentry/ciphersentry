@@ -33,6 +33,9 @@ export interface ExBatch {
   total: string;
   state: "SETTLING" | "SETTLED";
   receipts: Receipt[];
+  /** On-chain anchor tx hash when batch settled via SettlementBatcher. */
+  anchored_tx?: string | null;
+  anchored_block?: number | null;
 }
 
 export const VRF = ["vrf:gamma-1", "vrf:delta-4", "vrf:sigma-2"];

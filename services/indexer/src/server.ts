@@ -78,7 +78,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
 
   if (p === "/batches") {
     const rows = await pg.exec(
-      `SELECT batch_id, epoch, root, count, total, state, at FROM batches ORDER BY at DESC LIMIT 50`,
+      `SELECT batch_id, epoch, root, count, total, state, at, anchored_tx, anchored_block FROM batches ORDER BY at DESC LIMIT 50`,
     );
     return { status: 200, body: { data: rows } };
   }

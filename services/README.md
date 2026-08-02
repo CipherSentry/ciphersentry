@@ -42,6 +42,9 @@ cd services/gateway && npm install && npm run gateway
 | `PROTOCOL_KEY` | Present → write-ready (external signer / future raw path) |
 | `GATEWAY_PORT` | Default `8080` |
 | `NATS_URL` | Event bus (default local compose NATS; memory fallback) |
+| `REDIS_URL` | Auth sessions + rate limits (default `redis://127.0.0.1:6379`; memory fallback) |
+| `AUTH_REQUIRED` | `1` = mutating RPC needs ed25519 session |
+| `ANON_RPM` | Unauthenticated rate limit (default `20`/min) |
 | `SLASH_EXECUTOR_ADDRESS` | Optional on-chain SlashExecutor for evidence posts |
 | `BATCHER_ADDRESS` | SettlementBatcher for Merkle root anchors |
 | `BATCHER_KEY_1` / `_2` / `_3` | 2-of-3 EIP-712 signers (anvil #0/#1/#2 locally) |
@@ -90,7 +93,18 @@ RPC methods: `registry.query` · `registry.list` · `task.commit` · `task.repor
 `accrual.summary` · `accuracy.of` · `accuracy.list` · `slash.submit` ·
 `batch.pending` · `batch.info` · `batch.anchor` · `batch.markMissed` ·
 `fraud.list` · `fraud.of` · `fraud.challenge` · `fraud.rule` · `fraud.default` ·
-`fraud.info` · `node.info`.
+`fraud.info` · `auth.challenge` · `auth.session` · `auth.whoami` · `node.info`.
+
+### Auth (ed25519 + stake RPM)
+
+```bash
+# optional: AUTH_REQUIRED=1 forces session on mutating methods
+auth.challenge { pubkey: "<32-byte ed25519 hex>" }
+# sign result.message with private key → signature hex
+auth.session   { challenge_id, pubkey, signature, agent_id? }
+# subsequent RPC: Authorization: Bearer <token>
+# rate limit = 30 + min(270, floor(stake/40)) RPM; anon = ANON_RPM
+```
 
 **B3 fee path:** on honest `verify`, take **0.35%** of escrow → **85%** to ok
 voters (accuracy²-weighted) + **15%** treasury. Claim via `accrual.claim`.

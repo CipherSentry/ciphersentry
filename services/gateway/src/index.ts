@@ -15,19 +15,30 @@ import websocket from "@fastify/websocket";
 import { VerifierPool } from "@ciphersentry/verifier-daemon";
 import { createEventBus, type EventBus, type Topic } from "@ciphersentry/bus";
 import { SimDriver } from "./sim.ts";
-import { makeDispatcher, TaskLedger } from "./rpc.ts";
+import { makeDispatcher, TaskLedger, REGISTRY } from "./rpc.ts";
 import { SubscriptionHub, type SocketLike } from "./ws.ts";
 import { ChainWatcher, makeChainConfigFromEnv } from "./chain.ts";
 import { EscrowGateway, makeEscrowConfigFromEnv } from "./escrow.ts";
 import { SlashExecutorGateway, makeSlashConfigFromEnv } from "./slash-executor.ts";
 import { SettlementBatcherGateway, makeBatcherConfigFromEnv } from "./batcher.ts";
 import { FraudProofWorker, makeFraudConfigFromEnv, publicFraudCase } from "./fraud-proof.ts";
+import { createKv } from "./kv.ts";
+import {
+  AuthService,
+  RateLimiter,
+  isPublicMethod,
+  makeStakeLookup,
+  rpmForStake,
+} from "./auth.ts";
 
 const HOST = process.env.GATEWAY_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
 const EPOCH = Number(process.env.EPOCH ?? 88421);
 /** Default to local compose NATS; falls back to memory if unreachable. */
 const NATS_URL = process.env.NATS_URL ?? "nats://127.0.0.1:4222";
+const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
+const AUTH_REQUIRED = process.env.AUTH_REQUIRED === "1";
+const ANON_RPM = Number(process.env.ANON_RPM ?? 20);
 
 async function boot(): Promise<void> {
   const fastify = Fastify({ logger: false });
@@ -47,6 +58,7 @@ async function boot(): Promise<void> {
 
   const bus = await createEventBus({ url: NATS_URL, name: "gateway" });
   const publish = (topic: Topic, data: unknown) => void bus.publish(topic, data);
+  const kv = await createKv(REDIS_URL);
 
   const sim = new SimDriver({ tickMs: Number(process.env.TICK_MS ?? 2800) });
   const ledger = new TaskLedger();
@@ -56,6 +68,14 @@ async function boot(): Promise<void> {
   const fraud = new FraudProofWorker(makeFraudConfigFromEnv(), slashChain);
   const pool = new VerifierPool({ epoch: EPOCH });
   pool.ensureElection(EPOCH);
+
+  const stakeOf = makeStakeLookup(REGISTRY, (id) => {
+    const seat = pool.registry.all().find((s) => s.id === id);
+    return seat?.bond;
+  });
+  const auth = new AuthService(kv, stakeOf);
+  const rateLimit = new RateLimiter(kv);
+
   const hub = new SubscriptionHub();
   await hub.attachBus(bus);
   hub.attachEvents(sim, bus);
@@ -76,6 +96,7 @@ async function boot(): Promise<void> {
     slashChain,
     batcher,
     fraud,
+    auth,
     emitTask: (t) => {
       sim.onTask?.(t);
     },
@@ -96,6 +117,8 @@ async function boot(): Promise<void> {
       fraud: fraud.mode,
       fraud_open: fi.open,
       bus: bus.mode,
+      kv: kv.mode,
+      auth_required: AUTH_REQUIRED,
       clients: hub.clientCount,
       phase: "B5",
       verifiers: el.members,
@@ -120,12 +143,40 @@ async function boot(): Promise<void> {
         error: { code: "CEN_E_SCHEMA", message: "not a JSON-RPC 2.0 envelope" },
       };
     }
-    const out = await dispatch({
-      jsonrpc: "2.0",
-      id: env.id ?? 0,
-      method: env.method,
-      params: env.params ?? {},
-    });
+
+    const authHeader = typeof req.headers.authorization === "string" ? req.headers.authorization : null;
+    const session = await auth.sessionOf(authHeader);
+    const ip = req.ip || (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || "unknown";
+    const rlKey = session ? `sess:${session.token}` : `ip:${ip}`;
+    const rpm = session ? session.rpm : ANON_RPM;
+    const limited = await rateLimit.check({ key: rlKey, rpm });
+    if (limited) {
+      reply.code(429);
+      return {
+        jsonrpc: "2.0",
+        id: env.id ?? 0,
+        error: { code: "CEN_E_CAP_BREACH", message: limited },
+      };
+    }
+
+    if (AUTH_REQUIRED && !isPublicMethod(env.method) && !session) {
+      reply.code(401);
+      return {
+        jsonrpc: "2.0",
+        id: env.id ?? 0,
+        error: { code: "CEN_E_CAP_BREACH", message: "auth required — call auth.challenge + auth.session" },
+      };
+    }
+
+    const out = await dispatch(
+      {
+        jsonrpc: "2.0",
+        id: env.id ?? 0,
+        method: env.method,
+        params: env.params ?? {},
+      },
+      { session },
+    );
     if (!out.ok) return { jsonrpc: "2.0", id: env.id, error: out.error };
     return { jsonrpc: "2.0", id: env.id, result: out.result };
   });
@@ -161,6 +212,8 @@ async function boot(): Promise<void> {
   console.log(`  events   → ws://${HOST}:${PORT}/events`);
   console.log(`  health   → http://${HOST}:${PORT}/health`);
   console.log(`  bus      → ${bus.mode}${bus.mode === "nats" ? ` (${NATS_URL})` : ""}`);
+  console.log(`  kv       → ${kv.mode}${kv.mode === "redis" ? ` (${REDIS_URL})` : ""}`);
+  console.log(`  auth     → ${AUTH_REQUIRED ? "REQUIRED" : "optional"} (ed25519 · stake rpm base=${rpmForStake(0)} anon=${ANON_RPM})`);
   console.log(`  epoch    → ${pool.currentEpoch}`);
   console.log(`  quorum   → ${el.members.join(", ")}`);
   console.log(`  escrow   → ${escrow.mode}`);

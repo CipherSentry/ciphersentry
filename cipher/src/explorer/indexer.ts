@@ -156,6 +156,8 @@ export function toBatch(
       : Number(total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     state: b.state === "SETTLING" ? "SETTLING" : "SETTLED",
     receipts: rs,
+    anchored_tx: b.anchored_tx ?? null,
+    anchored_block: b.anchored_block != null ? num(b.anchored_block) : null,
   };
 }
 
