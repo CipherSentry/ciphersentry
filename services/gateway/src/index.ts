@@ -103,7 +103,8 @@ async function boot(): Promise<void> {
   const escrow = new EscrowGateway(makeEscrowConfigFromEnv());
   const slashChain = new SlashExecutorGateway(makeSlashConfigFromEnv());
   const batcher = new SettlementBatcherGateway(makeBatcherConfigFromEnv());
-  const fraud = new FraudProofWorker(makeFraudConfigFromEnv(), slashChain);
+  const fraud = new FraudProofWorker(makeFraudConfigFromEnv(), slashChain, kv);
+  await fraud.hydrate();
   const pool = new VerifierPool({ epoch: EPOCH });
   pool.ensureElection(EPOCH);
 
@@ -158,6 +159,9 @@ async function boot(): Promise<void> {
       batch_pending: batcher.pendingCount,
       fraud: fraud.mode,
       fraud_open: fi.open,
+      fraud_durable: fi.durable,
+      fraud_store: fi.store,
+      fraud_total: fi.total,
       bus: bus.mode,
       kv: kv.mode,
       auth_required: AUTH_REQUIRED,
@@ -199,6 +203,19 @@ async function boot(): Promise<void> {
       queue: row.queue,
       kind: row.kind,
       at: row.at,
+    };
+  });
+
+  /** Public waitlist headcount — no PII (gates board). */
+  fastify.get("/access-requests/stats", async () => {
+    const total = await accessStore.count();
+    const items = await accessStore.list(500);
+    const waitlist = items.filter((r) => r.kind === "verifier_waitlist").length;
+    return {
+      ok: true,
+      count: total,
+      waitlist: waitlist || total,
+      access: items.filter((r) => r.kind === "access").length,
     };
   });
 

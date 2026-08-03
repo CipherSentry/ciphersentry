@@ -54,6 +54,15 @@ REGISTRY=$(python3 -c 'import json;print(json.load(open("deployments/local.json"
 ANVIL_KEY1="${BATCHER_KEY_2:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
 ANVIL_KEY2="${BATCHER_KEY_3:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
 ANVIL_1=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+ANVIL_2=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+
+# B5: seed verifiers so Escrow.vote can open Disputed (ruler already verifier #0)
+echo "== B5 seed escrow verifiers (anvil #1 + #2) =="
+cast send "$ESCROW" "setVerifier(address,bool)" "$ANVIL_1" true \
+  --rpc-url "$RPC" --private-key "$ANVIL_KEY" >/dev/null
+cast send "$ESCROW" "setVerifier(address,bool)" "$ANVIL_2" true \
+  --rpc-url "$RPC" --private-key "$ANVIL_KEY" >/dev/null
+echo "  verifiers: ruler + $ANVIL_1 + $ANVIL_2"
 
 # B3: watcher (=deployer) must approve SlashExecutor for CHALLENGE_BOND (2500 CENT).
 # Seed a bonded target (anvil #1) so processNext can cut real registry bond.
@@ -89,11 +98,16 @@ SLASH_EXECUTOR_ADDRESS=$SLASH
 SLASH_TARGET=$ANVIL_1
 PROTOCOL_FROM=$DEPLOYER
 PROTOCOL_KEY=$ANVIL_KEY
+RULER_KEY=$ANVIL_KEY
+ESCROW_WORKER_KEY=$ANVIL_KEY2
+ESCROW_VERIFIER_KEY_1=$ANVIL_KEY1
+ESCROW_VERIFIER_KEY_2=$ANVIL_KEY
 BATCHER_KEY_1=$ANVIL_KEY
 BATCHER_KEY_2=$ANVIL_KEY1
 BATCHER_KEY_3=$ANVIL_KEY2
 BATCH_INTERVAL_MS=0
 BATCH_MAX_PENDING=9
+FRAUD_AUTO_RULE=1
 EOF
 
 echo ""

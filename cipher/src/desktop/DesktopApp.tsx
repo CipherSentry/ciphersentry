@@ -9,9 +9,18 @@ import {
 } from "../app/data";
 import { CipherSentry } from "../sdk/ciphersentry";
 import { describeTransport } from "../sdk/livePath";
+import {
+  batchesFromLedger,
+  batchesFromPending,
+  epochFromRpc,
+  mergeEpochVerifiers,
+  mergeRegistryAgents,
+  stakeFromRegistry,
+  walletFromFeed,
+} from "../sdk/liveHydrate";
 
 const cent = CipherSentry.shared();
-import type { Agent, Approval, TaskEvent } from "../app/data";
+import type { Agent, Approval, Batch, TaskEvent } from "../app/data";
 import { DesktopCtx } from "./store";
 import type { DesktopValue, DToast, DLimits, ResolvedItem, View } from "./store";
 import Guardrails from "./Guardrails";
@@ -58,7 +67,7 @@ export default function DesktopApp() {
     { id: "rs_1", ref: "cent_3c1e9aa", ruling: "RELEASE TO WORKER", at: SIM_START - 3 * 3_600_000, tx: randHash() },
     { id: "rs_2", ref: "cent_77f10d2", ruling: "REFUND BUYER", at: SIM_START - 26 * 3_600_000, tx: randHash() },
   ]);
-  const [batches] = useState(() => seedBatches(SIM_START));
+  const [batches, setBatches] = useState<Batch[]>(() => seedBatches(SIM_START));
   const [toasts, setToasts] = useState<DToast[]>([]);
   const [halted, setHalted] = useState(false);
   const [inspector, setInspector] = useState<string | null>(null);
@@ -80,6 +89,7 @@ export default function DesktopApp() {
   const queueRef = useRef(unbondQueue);
   queueRef.current = unbondQueue;
   const [wallet, setWallet] = useState({ avail: 2481.1, escrow: 512.3, earned: 388.2, spent: 142.55, stake: 4050 });
+  const isRpc = cent.transport.kind === "rpc";
   const [limits, setLimits] = useState<DLimits>({
     global: 1000,
     perAgent: { "vector-7": 400, "probe-9": 250, "forge-11": 300 },
@@ -95,11 +105,12 @@ export default function DesktopApp() {
   haltedRef.current = halted;
   const toastId = useRef(0);
 
-  /* clocks + epoch engine */
+  /* clocks + epoch engine (sim only — rpc polls epoch.info) */
   useEffect(() => {
     const id = setInterval(() => {
       const ts = Date.now();
       setNow(ts);
+      if (isRpc) return;
       const e = epochRef.current;
       if (ts >= e.startedAt + e.durMs) {
         const r = rollEpoch(poolRef.current, e, ts);
@@ -111,12 +122,10 @@ export default function DesktopApp() {
         if (r.slashes.length) {
           setSlashLog((s) => [...r.slashes, ...s].slice(0, 12));
         }
-        // unbond queue — 3 sim-epochs standing in for the 7-day unbonding period
         const due = queueRef.current.filter((x) => x.completesIn <= 1);
         if (due.length) {
           due.forEach((x) => {
             setMarcBal((m) => m + x.amount);
-            value.toast(`UNBOND COMPLETE — ${x.amount.toLocaleString()} CENT RETURNED`);
           });
           setUnbondQueue(queueRef.current.filter((x) => x.completesIn > 1));
           poolRef.current = poolRef.current.filter((v) => !due.some((x) => v.id === x.verifier));
@@ -127,18 +136,43 @@ export default function DesktopApp() {
       }
     }, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [isRpc]);
   useEffect(() => {
+    if (isRpc) return;
     const id = setInterval(() => setBlk((b) => b + 1), 2100);
     return () => clearInterval(id);
-  }, []);
+  }, [isRpc]);
 
   /* live task stream — after operator connects */
   useEffect(() => {
     if (!connected) return;
     return cent.stream.onTick((events, delta) => {
       setFeed([...events]);
-      if (delta && (delta.earned || delta.spent || delta.escrowDelta)) {
+      setApprovals((prev) => {
+        const have = new Set(prev.map((a) => a.ref));
+        const add: Approval[] = [];
+        for (const e of events) {
+          if (e.state !== "DISPUTED" || have.has(e.id)) continue;
+          have.add(e.id);
+          add.push({
+            id: `ap_${e.id}`,
+            type: "DISPUTE",
+            ref: e.id,
+            agent: e.agent,
+            counterparty: e.counterparty,
+            amount: e.amount,
+            summary: "QUORUM MISMATCH — HOLD TO RULE",
+            at: e.at,
+            expected: e.hash,
+            reported: e.hash,
+          });
+        }
+        return add.length ? [...add, ...prev].slice(0, 24) : prev;
+      });
+      if (isRpc) {
+        setWallet((w) => ({ ...walletFromFeed(events, w.stake) }));
+        setFleetPoints(events.filter((e) => e.state === "SETTLED").length);
+      } else if (delta && (delta.earned || delta.spent || delta.escrowDelta)) {
         setWallet((w) => ({
           ...w,
           earned: w.earned + delta.earned,
@@ -149,7 +183,92 @@ export default function DesktopApp() {
         setFleetPoints((p) => p + delta.earned + delta.spent);
       }
     });
+  }, [connected, isRpc]);
+
+  useEffect(() => {
+    if (!connected) return;
+    return cent.ledger.onBatch((b) => {
+      setBatches((prev) => {
+        const row = {
+          id: b.id,
+          count: b.count,
+          total: b.total,
+          at: b.at,
+          state: b.state === "SETTLED" ? ("SETTLED" as const) : ("SETTLING" as const),
+        };
+        return [row, ...prev.filter((x) => x.id !== row.id)].slice(0, 12);
+      });
+    });
   }, [connected]);
+
+  /* RPC hydration: registry + epoch + batches + node block */
+  useEffect(() => {
+    if (!connected || !isRpc) return;
+    let cancelled = false;
+    const hydrate = async () => {
+      try {
+        const rows = await cent.registry.query({ limit: 32 });
+        if (cancelled) return;
+        if (rows.length) {
+          setAgents((prev) => mergeRegistryAgents(prev, rows));
+          const stake = stakeFromRegistry(rows);
+          if (stake > 0) setWallet((w) => ({ ...w, stake }));
+        }
+      } catch {
+        /* seed */
+      }
+      try {
+        const info = (await cent.epochInfo()) as {
+          epoch?: number;
+          members?: string[];
+          seed?: string;
+          eligible?: number;
+        };
+        if (cancelled || info.epoch == null) return;
+        const next = epochFromRpc(
+          { epoch: Number(info.epoch), members: (info.members ?? []).map(String), seed: info.seed },
+          Date.now(),
+          epochRef.current,
+        );
+        epochRef.current = next;
+        setEpoch(next);
+        if (info.members?.length) {
+          const merged = mergeEpochVerifiers(poolRef.current, info.members.map(String));
+          poolRef.current = merged;
+          setVerifierList([...merged]);
+        }
+      } catch {
+        /* keep sim epoch */
+      }
+      try {
+        const [pending, binfo, ledger, node] = await Promise.all([
+          cent.batchPending(),
+          cent.batchInfo(),
+          Promise.resolve(cent.ledger.batches()),
+          cent.nodeInfo(),
+        ]);
+        if (cancelled) return;
+        if (ledger.length) setBatches(batchesFromLedger(ledger));
+        else {
+          const pb = batchesFromPending(
+            pending as { count?: number; leaves?: Array<{ task_id?: string; amount?: string; at?: number }> },
+            binfo as { last_batch_id?: number | string; pending?: number },
+          );
+          if (pb.length) setBatches(pb);
+        }
+        const epochN = Number((node as { epoch?: number }).epoch);
+        if (Number.isFinite(epochN) && epochN > 0) setBlk(12_000_000 + epochN);
+      } catch {
+        /* seed */
+      }
+    };
+    void hydrate();
+    const poll = setInterval(() => void hydrate(), 20_000);
+    return () => {
+      cancelled = true;
+      clearInterval(poll);
+    };
+  }, [connected, isRpc]);
 
   /* kill switch pauses the whole network locally */
   useEffect(() => {

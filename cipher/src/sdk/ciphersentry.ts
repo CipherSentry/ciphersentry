@@ -201,8 +201,8 @@ export class CipherSentry {
           ? new RpcTransport({ url: readNodeUrl() })
           : new SimTransport({ cap: 34, tickMs: 2800 });
       SHARED = new CipherSentry(opts ?? { key: "op:demo" }, transport);
-      // rpc → open Ed25519 session (required when node AUTH_REQUIRED=1; harmless when optional)
-      if (mode === "rpc" && transport.kind === "rpc") {
+      // rpc + ?auth=1 (or always when auth flag set) → Ed25519 session
+      if (mode === "rpc" && transport.kind === "rpc" && readAuthMode()) {
         void SHARED.autoSession();
       }
     }
@@ -270,6 +270,58 @@ export class CipherSentry {
     if (e instanceof CenError) throw e;
     if (e instanceof RpcWireError) throw new CenError(e.code, e.message);
     throw e;
+  }
+
+  /* ---- live ops (epoch / batch / node) ---- */
+
+  async epochInfo(epoch?: number): Promise<Record<string, unknown>> {
+    const rpc = this.rpc;
+    if (!rpc) return { epoch: 88421, members: [] };
+    try {
+      return await rpc.rpcEpochInfo(epoch);
+    } catch (e) {
+      this.rethrow(e);
+    }
+  }
+
+  async batchPending(): Promise<Record<string, unknown>> {
+    const rpc = this.rpc;
+    if (!rpc) return { count: 0, leaves: [] };
+    try {
+      return await rpc.rpcBatchPending();
+    } catch (e) {
+      this.rethrow(e);
+    }
+  }
+
+  async batchInfo(): Promise<Record<string, unknown>> {
+    const rpc = this.rpc;
+    if (!rpc) return {};
+    try {
+      return await rpc.rpcBatchInfo();
+    } catch (e) {
+      this.rethrow(e);
+    }
+  }
+
+  async nodeInfo(): Promise<Record<string, unknown>> {
+    const rpc = this.rpc;
+    if (!rpc) return {};
+    try {
+      return await rpc.rpcNodeInfo();
+    } catch (e) {
+      this.rethrow(e);
+    }
+  }
+
+  async accrualSummary(): Promise<Record<string, unknown>> {
+    const rpc = this.rpc;
+    if (!rpc) return {};
+    try {
+      return await rpc.rpcAccrualSummary();
+    } catch (e) {
+      this.rethrow(e);
+    }
   }
 
   /* ---- registry ---- */
@@ -448,6 +500,12 @@ export class CipherSentry {
         }
         const start = Date.now();
         const res = await rpc.rpcVerify(task.id, q);
+        // B4 settle enqueue is gateway-side; still call task.settle for terminal ack
+        try {
+          await rpc.rpcTaskSettle(task.id);
+        } catch {
+          /* settle optional if verify already terminal */
+        }
         const receipt: Receipt = {
           taskId: task.id,
           status: "SETTLED",

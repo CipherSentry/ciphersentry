@@ -77,12 +77,17 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
   const p = url.pathname.replace(/\/+$/, "") || "/";
 
   if (p === "/health") {
+    const prodOps =
+      process.env.CS_ENV === "production" ||
+      process.env.B7 === "1" ||
+      REQUIRE_NATS;
     return {
       status: 200,
       body: {
         ok: true,
         service: "ciphersentry-indexer",
-        phase: "B6",
+        phase: prodOps ? "B7" : "B6",
+        b7: prodOps,
         events: NODE_EVENTS,
         nats: NATS_URL || null,
         bus: activeBusMode,
@@ -122,10 +127,21 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
 
   const mp = p.match(/^\/receipts\/([^/]+)\/proof$/);
   if (mp) {
-    const rows = await pg.exec(`SELECT * FROM receipts WHERE receipt_id = $1 LIMIT 1`, [mp[1]]);
+    // Accept receipt_id OR task_id (batcher often sets receipt_id === task_id)
+    const rows = await pg.exec(
+      `SELECT * FROM receipts WHERE receipt_id = $1 OR task_id = $1 LIMIT 1`,
+      [mp[1]],
+    );
     if (!rows.length) return { status: 404, body: { error: "receipt_not_found" } };
-    const r = rows[0] as { leaf: string; path: string[] | string; batch_id: string };
+    const r = rows[0] as {
+      leaf: string;
+      path: string[] | string;
+      batch_id: string;
+      receipt_id: string;
+      task_id: string;
+    };
     const path = typeof r.path === "string" ? (JSON.parse(r.path) as string[]) : r.path;
+    // Column list must stay MemoryStore-compatible (see memory.ts SELECT root…)
     const batch = await pg.exec(
       `SELECT root, anchored_block, anchored_tx FROM batches WHERE batch_id = $1`,
       [r.batch_id],
@@ -138,8 +154,69 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         data: {
           leaf: r.leaf,
           path,
+          receipt_id: r.receipt_id,
+          task_id: r.task_id,
+          batch_id: r.batch_id,
           anchor: batch[0] ?? null,
           valid,
+          reconciled: valid,
+        },
+      },
+    };
+  }
+
+  // Batch-level proof summary: all receipts + root validity
+  const mbp = p.match(/^\/batches\/([^/]+)\/proofs$/);
+  if (mbp) {
+    const batchId = mbp[1]!;
+    const batch = await pg.exec(
+      `SELECT batch_id, root, count, state, anchored_block, anchored_tx FROM batches WHERE batch_id = $1`,
+      [batchId],
+    );
+    if (!batch.length) return { status: 404, body: { error: "batch_not_found" } };
+    const b = batch[0] as {
+      batch_id: string;
+      root: string;
+      count: number;
+      state: string;
+      anchored_block?: number | null;
+      anchored_tx?: string | null;
+    };
+    const receipts = await pg.exec<{
+      receipt_id: string;
+      task_id: string;
+      leaf: string;
+      path: string[] | string;
+    }>(
+      `SELECT receipt_id, task_id, leaf, path FROM receipts WHERE batch_id = $1 ORDER BY settled_at`,
+      [batchId],
+    );
+    const root = String(b.root);
+    const proofs = receipts.map((r) => {
+      const path = typeof r.path === "string" ? (JSON.parse(r.path) as string[]) : r.path ?? [];
+      const valid = root ? verifyInclusionEitherOrder(r.leaf, path, root) : false;
+      return {
+        receipt_id: r.receipt_id,
+        task_id: r.task_id,
+        leaf: r.leaf,
+        path,
+        valid,
+      };
+    });
+    const validCount = proofs.filter((x) => x.valid).length;
+    return {
+      status: 200,
+      body: {
+        data: {
+          batch_id: b.batch_id,
+          root,
+          count: Number(b.count),
+          state: b.state,
+          anchored_block: b.anchored_block ?? null,
+          anchored_tx: b.anchored_tx ?? null,
+          proofs,
+          valid_count: validCount,
+          all_valid: proofs.length > 0 && validCount === proofs.length,
         },
       },
     };
@@ -165,12 +242,28 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
 
   const mt = p.match(/^\/trust\/([^/]+)$/);
   if (mt) {
-    const agent = mt[1]!.replace(/'/g, "");
+    // Strict agent id — no raw SQL injection into CH
+    const agent = decodeURIComponent(mt[1]!).slice(0, 128);
+    if (!/^[\w.:@\-]+$/.test(agent)) {
+      return { status: 400, body: { error: "invalid agent_id" } };
+    }
+    const limitRaw = Number(url.searchParams.get("limit") ?? 64);
+    const limit = Math.min(256, Math.max(1, Number.isFinite(limitRaw) ? limitRaw : 64));
+    const since = Number(url.searchParams.get("since_epoch") ?? 0);
     // Prefer durable Postgres series (survives CH-memory restarts on Fly)
     try {
-      const pgRows = await pg.exec<{ agent_id: string; epoch: number | string; trust_score: number | string }>(
-        `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = $1 ORDER BY epoch DESC LIMIT 32`,
-        [agent],
+      const pgRows = await pg.exec<{
+        agent_id: string;
+        epoch: number | string;
+        trust_score: number | string;
+        stake?: number | string;
+        success?: number | string;
+        settled_count?: number | string;
+      }>(
+        `SELECT agent_id, epoch, trust_score, stake, success, settled_count
+         FROM trust_series WHERE agent_id = $1 AND epoch >= $2
+         ORDER BY epoch DESC LIMIT $3`,
+        [agent, Number.isFinite(since) ? since : 0, limit],
       );
       if (pgRows.length) {
         return {
@@ -180,6 +273,9 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
               agent_id: r.agent_id,
               epoch: Number(r.epoch),
               trust_score: Number(r.trust_score),
+              stake: r.stake != null ? Number(r.stake) : undefined,
+              success: r.success != null ? Number(r.success) : undefined,
+              settled_count: r.settled_count != null ? Number(r.settled_count) : undefined,
             })),
           },
         };
@@ -188,8 +284,18 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
       /* fall through to CH */
     }
     try {
-      const rows = await ch.exec<{ agent_id: string; epoch: number; trust_score: number }>(
-        `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = '${agent}' ORDER BY epoch DESC LIMIT 32 FORMAT JSON`,
+      // agent already regex-validated; still escape single quotes
+      const safe = agent.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      const rows = await ch.exec<{
+        agent_id: string;
+        epoch: number;
+        trust_score: number;
+        stake?: number;
+        success?: number;
+      }>(
+        `SELECT agent_id, epoch, trust_score, stake, success FROM trust_series
+         WHERE agent_id = '${safe}' AND epoch >= ${Number.isFinite(since) ? since : 0}
+         ORDER BY epoch DESC LIMIT ${limit} FORMAT JSON`,
       );
       return { status: 200, body: { data: rows } };
     } catch {

@@ -44,7 +44,7 @@ load_env() {
 
 require_secrets() {
   local f
-  for f in protocol_key batcher_1 batcher_2 batcher_3; do
+  for f in protocol_key batcher_1 batcher_2 batcher_3 ruler_key; do
     [[ -s "$SECRETS/$f" ]] || {
       echo "FATAL: missing/empty $SECRETS/$f (run: $0 init)" >&2
       exit 1

@@ -34,6 +34,8 @@ import {
 } from "@ciphersentry/verifier-daemon";
 import type { SlashExecutorGateway } from "./slash-executor.ts";
 import { resolveSecret } from "./keys.ts";
+import { FraudStore } from "./fraud-store.ts";
+import type { Kv } from "./kv.ts";
 
 /* -------------------------------- types ----------------------------------- */
 
@@ -58,10 +60,14 @@ export interface FraudConfig {
   fraudWindowMs: number;
   /** Auto-run challenge on open. Default true. */
   autoChallenge: boolean;
+  /** After auto-challenge RESOLVED, post Escrow.rule when write-ready. Default true. */
+  autoRule: boolean;
 }
 
 export interface OpenChallengeParams {
   taskId: string;
+  /** Real Escrow.tasks key (Committed event). Required for on-chain rule. */
+  chainTaskId?: string;
   reported: string;
   inputJson: unknown;
   buyer: string;
@@ -77,6 +83,8 @@ export interface OpenChallengeParams {
 
 export interface ChallengeCase {
   taskId: string;
+  /** On-chain bytes32 — used by submitRule when set */
+  chainTaskId?: string;
   status: ChallengeStatus;
   reported: string;
   inputJson: unknown;
@@ -316,6 +324,8 @@ export function makeFraudConfigFromEnv(): FraudConfig {
     fraudWindowBlocks: Number(process.env.FRAUD_WINDOW_BLOCKS ?? 64),
     fraudWindowMs: Number(process.env.FRAUD_WINDOW_MS ?? 120_000),
     autoChallenge: (process.env.FRAUD_AUTO ?? "1") !== "0",
+    // FRAUD_AUTO_RULE=0 disables; default on when write path configured
+    autoRule: (process.env.FRAUD_AUTO_RULE ?? "1") !== "0",
   };
 }
 
@@ -325,6 +335,7 @@ export function makeFraudConfigFromEnv(): FraudConfig {
 export function publicFraudCase(c: ChallengeCase): Record<string, unknown> {
   return {
     task_id: c.taskId,
+    chain_task_id: c.chainTaskId ?? null,
     status: c.status,
     reported: c.reported,
     recomputed: c.recomputed ?? null,
@@ -347,13 +358,34 @@ export class FraudProofWorker {
   private cases = new Map<string, ChallengeCase>();
   private nonces = new Map<string, number>();
   private simulatedBlock = 0;
+  private store: FraudStore;
+  private hydrated = false;
   /** Gateway fans out as fraud.event on open / resolve / default. */
   onCase?: (c: ChallengeCase) => void;
 
   constructor(
     private cfg: FraudConfig,
     private slashChain?: SlashExecutorGateway,
-  ) {}
+    kv: Kv | null = null,
+  ) {
+    this.store = new FraudStore(kv);
+  }
+
+  /** Load durable cases/nonces from Redis (or no-op for memory). Call once at boot. */
+  async hydrate(): Promise<void> {
+    if (this.hydrated) return;
+    this.hydrated = true;
+    try {
+      const snap = await this.store.load();
+      for (const c of snap.cases) this.cases.set(c.taskId, c);
+      for (const [id, n] of Object.entries(snap.nonces)) this.nonces.set(id, n);
+      if (snap.simBlock > 0) this.simulatedBlock = Math.max(this.simulatedBlock, snap.simBlock);
+    } catch (e) {
+      console.warn(
+        `[fraud] hydrate failed: ${e instanceof Error ? e.message : e} — continuing cold`,
+      );
+    }
+  }
 
   private emit(c: ChallengeCase): void {
     try {
@@ -361,6 +393,13 @@ export class FraudProofWorker {
     } catch {
       /* never break the fraud path for a bad listener */
     }
+    // best-effort durable write (never throw into fraud path)
+    void this.store.saveCase(c).catch(() => {});
+  }
+
+  private persistNonce(taskId: string, n: number): void {
+    this.nonces.set(taskId, n);
+    void this.store.saveNonce(taskId, n).catch(() => {});
   }
 
   get mode(): "offline" | "write-ready" | "watch-only" {
@@ -376,6 +415,7 @@ export class FraudProofWorker {
   /** Advance simulated block (tests / offline expiry). */
   tickBlock(n = 1): number {
     this.simulatedBlock += n;
+    void this.store.saveSimBlock(this.simulatedBlock).catch(() => {});
     return this.simulatedBlock;
   }
 
@@ -395,9 +435,33 @@ export class FraudProofWorker {
       fraud_window_blocks: this.cfg.fraudWindowBlocks,
       fraud_window_ms: this.cfg.fraudWindowMs,
       auto_challenge: this.cfg.autoChallenge,
+      auto_rule: this.cfg.autoRule,
       escrow: this.cfg.escrowAddress,
       simulated_block: this.simulatedBlock,
+      durable: this.store.durable,
+      store: this.store.backend,
+      hydrated: this.hydrated,
     };
+  }
+
+  /** Best-effort chain head — used as openBlock when write-ready. */
+  private async fetchChainBlock(): Promise<number | null> {
+    if (!this.cfg.escrowAddress || !this.cfg.rpcUrl) return null;
+    try {
+      const client = createPublicClient({
+        chain: pickChain(this.cfg.chainId),
+        transport: http(this.cfg.rpcUrl),
+      });
+      const n = await client.getBlockNumber();
+      const h = Number(n);
+      if (Number.isFinite(h) && h > 0) {
+        this.simulatedBlock = Math.max(this.simulatedBlock, h);
+        return h;
+      }
+    } catch {
+      /* offline RPC */
+    }
+    return null;
   }
 
   list(status?: ChallengeStatus): ChallengeCase[] {
@@ -412,15 +476,26 @@ export class FraudProofWorker {
 
   /**
    * Open a fraud case for a DISPUTED task. Optionally auto-challenges.
+   * When write-ready + autoRule, posts Escrow.rule after resolve.
    */
   async open(params: OpenChallengeParams): Promise<ChallengeCase> {
     const existing = this.cases.get(params.taskId);
     if (existing && existing.status !== "EXPIRED" && existing.status !== "DEFAULTED") {
+      if (params.chainTaskId && !existing.chainTaskId) {
+        existing.chainTaskId = params.chainTaskId;
+      }
       return existing;
+    }
+
+    let openBlock = params.openBlock;
+    if (openBlock == null) {
+      const chainBlock = await this.fetchChainBlock();
+      openBlock = chainBlock ?? this.simulatedBlock;
     }
 
     const c: ChallengeCase = {
       taskId: params.taskId,
+      chainTaskId: params.chainTaskId,
       status: "OPEN",
       reported: params.reported,
       inputJson: params.inputJson,
@@ -428,7 +503,7 @@ export class FraudProofWorker {
       worker: params.worker,
       amount: params.amount,
       openAt: Date.now(),
-      openBlock: params.openBlock ?? this.simulatedBlock,
+      openBlock,
       windowBlocks: this.cfg.fraudWindowBlocks,
       windowMs: this.cfg.fraudWindowMs,
       originalVotes: params.votes,
@@ -451,6 +526,20 @@ export class FraudProofWorker {
 
     if (this.cfg.autoChallenge) {
       await this.challenge(params.taskId);
+      // capital path: post Escrow.rule when write-ready (FRAUD_AUTO_RULE≠0)
+      const resolved = this.cases.get(params.taskId);
+      if (
+        resolved?.status === "RESOLVED" &&
+        this.cfg.autoRule &&
+        this.mode === "write-ready" &&
+        this.cfg.escrowAddress
+      ) {
+        try {
+          await this.submitRule(params.taskId);
+        } catch {
+          /* rule failure still leaves off-chain RESOLVED */
+        }
+      }
     }
     const out = this.cases.get(params.taskId)!;
     this.emit(out);
@@ -489,7 +578,7 @@ export class FraudProofWorker {
     c.reason = reason;
     c.status = "RESOLVED";
     c.resolvedAt = Date.now();
-    this.nonces.set(taskId, c.rulingNonce);
+    this.persistNonce(taskId, c.rulingNonce);
     this.emit(c);
 
     return { case: c, ruling, recomputed, challengeVotes: votes, reason };
@@ -511,7 +600,7 @@ export class FraudProofWorker {
     c.recomputed = c.recomputed ?? expectedPureHash(taskId, c.inputJson);
     c.status = "RESOLVED";
     c.resolvedAt = Date.now();
-    this.nonces.set(taskId, c.rulingNonce);
+    this.persistNonce(taskId, c.rulingNonce);
     this.emit(c);
     return c;
   }
@@ -528,6 +617,15 @@ export class FraudProofWorker {
     }
     const ruling = override ?? c.ruling;
     if (!ruling) throw new Error("no ruling to submit");
+    // Idempotent: auto-rule may already have posted
+    if (c.chain?.mode === "submitted") {
+      return {
+        mode: "submitted",
+        txHash: c.chain.txHash,
+        ruling,
+        nonce: c.rulingNonce,
+      };
+    }
     if (this.isWindowClosed(c) && this.cfg.escrowAddress) {
       // on-chain path would revert WindowClosed — surface clearly
       return {
@@ -538,11 +636,31 @@ export class FraudProofWorker {
       };
     }
 
-    const taskBytes = taskIdToBytes32(taskId);
+    // Prefer real on-chain id; ledger cent_* hashes to UnknownTask
+    const taskBytes = c.chainTaskId
+      ? normalizeBytes32(c.chainTaskId)
+      : taskIdToBytes32(taskId);
     const nonce = BigInt(c.rulingNonce);
-    const domain = this.cfg.escrowAddress
+    let domain = this.cfg.escrowAddress
       ? domainSeparatorEscrow(this.cfg.chainId, this.cfg.escrowAddress as Address)
       : domainSeparatorEscrow(this.cfg.chainId, "0x0000000000000000000000000000000000000001");
+    // Prefer on-chain domainSeparator() when available (avoids chainId/address drift)
+    if (this.cfg.escrowAddress) {
+      try {
+        const client = createPublicClient({
+          chain: pickChain(this.cfg.chainId),
+          transport: http(this.cfg.rpcUrl),
+        });
+        const onChain = (await client.readContract({
+          address: this.cfg.escrowAddress as Address,
+          abi: ESCROW_ABI,
+          functionName: "domainSeparator",
+        })) as Hex;
+        if (onChain) domain = onChain;
+      } catch {
+        /* keep client-computed */
+      }
+    }
     const digest = rulingDigest(domain, taskBytes, ruling, nonce);
 
     let sig: Hex | undefined;
@@ -591,10 +709,13 @@ export class FraudProofWorker {
       return { mode: "offline", ruling: "Refund", nonce: c.rulingNonce, status: c.status };
     }
 
+    const refundId = c.chainTaskId
+      ? normalizeBytes32(c.chainTaskId)
+      : taskIdToBytes32(taskId);
     const data = encodeFunctionData({
       abi: ESCROW_ABI,
       functionName: "defaultRefund",
-      args: [taskIdToBytes32(taskId)],
+      args: [refundId],
     });
     const sent = await this.sendTx(data);
     c.chain = { mode: sent.mode, txHash: sent.txHash, error: sent.error, calldata: data };
@@ -605,10 +726,10 @@ export class FraudProofWorker {
   isWindowClosed(c: ChallengeCase): boolean {
     const byBlock = this.simulatedBlock > c.openBlock + c.windowBlocks;
     const byTime = Date.now() > c.openAt + c.windowMs;
-    // Offline: wall clock; write path tests can force block via tickBlock
-    if (this.cfg.escrowAddress && this.simulatedBlock > 0) return byBlock;
+    // Offline: wall clock only
     if (!this.cfg.escrowAddress) return byTime;
-    // write-ready without simulated blocks: use wall clock as soft gate
+    // Write path: prefer real/sim block height when known; else wall clock soft gate
+    if (this.simulatedBlock > 0) return byBlock;
     return byTime;
   }
 
@@ -661,7 +782,11 @@ export class FraudProofWorker {
     return { mode: "simulated", error: "no RULER_KEY or PROTOCOL_FROM" };
   }
 
-  static forTest(opts: Partial<FraudConfig> = {}, slash?: SlashExecutorGateway): FraudProofWorker {
+  static forTest(
+    opts: Partial<FraudConfig> = {},
+    slash?: SlashExecutorGateway,
+    kv: Kv | null = null,
+  ): FraudProofWorker {
     return new FraudProofWorker(
       {
         rpcUrl: opts.rpcUrl ?? "http://127.0.0.1:8545",
@@ -672,11 +797,10 @@ export class FraudProofWorker {
         fraudWindowBlocks: opts.fraudWindowBlocks ?? 64,
         fraudWindowMs: opts.fraudWindowMs ?? 60_000,
         autoChallenge: opts.autoChallenge ?? true,
+        autoRule: opts.autoRule ?? false, // tests offline by default
       },
       slash,
+      kv,
     );
   }
 }
-
-// silence unused import if pureRecompute path always used
-void createPublicClient;

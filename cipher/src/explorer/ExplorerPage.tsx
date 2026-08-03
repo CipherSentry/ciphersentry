@@ -15,6 +15,8 @@ import {
   type TrustPoint,
 } from "./indexer";
 import { CipherSentry } from "../sdk/ciphersentry";
+import { liveConsoleHref } from "../sdk/livePath";
+import { verifyInclusionEitherOrder } from "../sdk/merkle";
 
 const cent = CipherSentry.shared();
 
@@ -42,12 +44,17 @@ export function readExplorerQ(): string {
   }
 }
 
-/** Persist search into hash without navigation reload. */
+/** Persist search into hash; keep node/indexer (and other) query params. */
 export function writeExplorerQ(q: string): void {
   try {
-    const next = q.trim() ? `/explorer?q=${encodeURIComponent(q.trim())}` : "/explorer";
-    const hash = `#${next}`;
-    if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+    const hash = window.location.hash.replace(/^#/, "");
+    const qi = hash.indexOf("?");
+    const params = new URLSearchParams(qi >= 0 ? hash.slice(qi + 1) : "");
+    if (q.trim()) params.set("q", q.trim());
+    else params.delete("q");
+    const qs = params.toString();
+    const next = `#/explorer${qs ? `?${qs}` : ""}`;
+    if (window.location.hash !== next) window.history.replaceState(null, "", next);
   } catch {
     /* ignore */
   }
@@ -86,6 +93,9 @@ function TrustChart({ series }: { series: TrustPoint[] }) {
   const last = scores[scores.length - 1]!;
   const firstEpoch = series[0]!.epoch;
   const lastEpoch = series[series.length - 1]!.epoch;
+  const lastPt = series[series.length - 1]!;
+  const stake = lastPt.stake != null ? Number(lastPt.stake) : null;
+  const success = lastPt.success != null ? Number(lastPt.success) : null;
   return (
     <div className="mt-4 border border-edge bg-void p-3">
       <div className="flex items-baseline justify-between gap-2">
@@ -95,11 +105,18 @@ function TrustChart({ series }: { series: TrustPoint[] }) {
       <svg viewBox={`0 0 ${w} ${h}`} className="mt-2 h-16 w-full" preserveAspectRatio="none" aria-label="Trust over epochs">
         <polyline fill="none" stroke="currentColor" strokeWidth="1.5" className="text-volt" points={pts} />
       </svg>
-      <div className="mt-1 flex justify-between font-mono text-[7.5px] tracking-[0.14em] text-mute/50">
+      <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-[7.5px] tracking-[0.14em] text-mute/50">
         <span>E{firstEpoch}</span>
         <span>
           {series.length} PTS · E{lastEpoch}
         </span>
+        {(stake != null || success != null) && (
+          <span className="w-full text-mute/70">
+            {stake != null ? `STAKE ${stake.toLocaleString()}` : ""}
+            {stake != null && success != null ? " · " : ""}
+            {success != null ? `Q ${(success <= 1 ? success * 100 : success).toFixed(1)}%` : ""}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -279,7 +296,10 @@ export default function ExplorerPage() {
         return;
       }
       try {
-        const [series, meta] = await Promise.all([client.getTrust(agent), client.getAgent(agent)]);
+        const [series, meta] = await Promise.all([
+          client.getTrust(agent, { limit: 64 }),
+          client.getAgent(agent),
+        ]);
         if (cancelled) return;
         setTrustSeries(series);
         setAgentMeta(meta ? { trust: meta.trust, stake: meta.stake, success: meta.success } : null);
@@ -437,12 +457,28 @@ export default function ExplorerPage() {
         const p = await client.proof(selReceipt.id);
         if (p) {
           setLastProof(p);
-          setRemoteValid(p.valid);
-          if (p.valid) setVerifiedFor(selReceipt.id);
+          // Client fold — do not trust indexer `valid` alone
+          const root = p.root || selReceipt.path?.[selReceipt.path.length - 1] || "";
+          const localOk =
+            Boolean(p.leaf && root) &&
+            verifyInclusionEitherOrder(p.leaf, Array.isArray(p.path) ? p.path : [], root);
+          const ok = localOk && (p.valid !== false);
+          setRemoteValid(ok);
+          if (ok) setVerifiedFor(selReceipt.id);
         } else {
-          // no indexer row — accept local path length as display-only
-          setVerifiedFor(selReceipt.id);
-          setRemoteValid(null);
+          // no indexer row — fold receipt path if sim-shaped path ends with root
+          const path = selReceipt.path ?? [];
+          if (path.length >= 2) {
+            const leaf = path[0] ?? selReceipt.leaf;
+            const root = path[path.length - 1]!;
+            const sibs = path.slice(1, -1);
+            const ok = verifyInclusionEitherOrder(leaf, sibs, root);
+            setRemoteValid(ok);
+            if (ok) setVerifiedFor(selReceipt.id);
+          } else {
+            setVerifiedFor(selReceipt.id);
+            setRemoteValid(null);
+          }
         }
       } catch {
         setVerifiedFor(selReceipt.id);
@@ -487,7 +523,7 @@ export default function ExplorerPage() {
               <XIcon size={13} />
             </a>
             <a
-              href="#/app"
+              href={liveConsoleHref({ indexer: indexerUrl || readIndexerUrl() || undefined })}
               className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
             >
               OPEN APP

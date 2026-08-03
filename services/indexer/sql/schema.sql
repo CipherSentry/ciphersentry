@@ -92,6 +92,19 @@ CREATE TABLE IF NOT EXISTS fraud_cases (
 CREATE INDEX IF NOT EXISTS idx_fraud_status ON fraud_cases(status);
 CREATE INDEX IF NOT EXISTS idx_fraud_worker ON fraud_cases(worker);
 
+-- Durable trust series (CH may be memory/ephemeral on Fly)
+CREATE TABLE IF NOT EXISTS trust_series (
+  agent_id       TEXT NOT NULL,
+  epoch          BIGINT NOT NULL,
+  stake          NUMERIC(20,6) NOT NULL DEFAULT 0,
+  success        NUMERIC(6,4) NOT NULL DEFAULT 1,
+  settled_count  INTEGER NOT NULL DEFAULT 0,
+  trust_score    NUMERIC(7,4) NOT NULL,
+  computed_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (agent_id, epoch)
+);
+CREATE INDEX IF NOT EXISTS idx_trust_series_agent_epoch ON trust_series(agent_id, epoch DESC);
+
 -- ============================================================================
 -- CIPHER SENTRY INDEXER — CLICKHOUSE (receipt graph + analytics)
 -- applied over HTTP by db.ts --apply-ch-schema (CH has no wire driver needed)
