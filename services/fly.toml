@@ -1,6 +1,7 @@
 # Deploy from services/:
 #   fly deploy -a ciphersentry --remote-only
 #
+# Public B7 single-machine: embedded Redis + NATS + gateway + memory indexer.
 # Dockerfile path is relative to this file's directory (services/).
 
 app = "ciphersentry"
@@ -14,12 +15,19 @@ primary_region = "iad"
   GATEWAY_PORT = "8080"
   PORT = "8080"
   AUTH_REQUIRED = "1"
+  B7 = "1"
+  CS_ENV = "production"
   TICK_MS = "60000"
   BATCH_INTERVAL_MS = "0"
   BATCH_MAX_PENDING = "99"
-  # memory bus/kv on single-machine Fly demo (no NATS/Redis sidecars)
-  NATS_REQUIRE = "0"
-  REDIS_REQUIRE = "0"
+  REDIS_URL = "redis://127.0.0.1:6379"
+  REDIS_REQUIRE = "1"
+  NATS_URL = "nats://127.0.0.1:4222"
+  NATS_REQUIRE = "1"
+  INDEXER_MEMORY = "1"
+  INDEXER_FORCE_WS = "0"
+  INDEXER_REQUIRE_NATS = "1"
+  INDEXER_UPSTREAM = "http://127.0.0.1:8081"
 
 [http_service]
   internal_port = 8080
@@ -30,12 +38,12 @@ primary_region = "iad"
 
   [[http_service.checks]]
     interval = "15s"
-    timeout = "5s"
-    grace_period = "45s"
+    timeout = "8s"
+    grace_period = "90s"
     method = "GET"
     path = "/health"
 
 [[vm]]
-  memory = "512mb"
+  memory = "1024mb"
   cpu_kind = "shared"
   cpus = 1

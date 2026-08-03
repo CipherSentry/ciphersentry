@@ -44,7 +44,14 @@ export function resolveSecret(...names: string[]): string | null {
 
 /** CS_ENV=production | prod | B7 → strict ops (redis + nats + auth). */
 export function isProdOps(): boolean {
-  const env = (process.env.CS_ENV ?? process.env.NODE_ENV ?? "").toLowerCase();
+  const env = (process.env.CS_ENV ?? process.env.NODE_ENV ?? "").toLowerCase().trim();
   if (env === "production" || env === "prod") return true;
-  return process.env.B7 === "1" || process.env.B7_PROD === "1";
+  const b7 = (process.env.B7 ?? process.env.B7_PROD ?? "").toLowerCase().trim();
+  // accept 1/true/yes — Fly secrets and shell can leave trailing whitespace
+  if (b7 === "1" || b7 === "true" || b7 === "yes") return true;
+  // public single-machine B7: redis+nats required together implies ops mode
+  const redisReq = (process.env.REDIS_REQUIRE ?? "").trim() === "1";
+  const natsReq = (process.env.NATS_REQUIRE ?? "").trim() === "1";
+  if (redisReq && natsReq) return true;
+  return false;
 }
