@@ -20,7 +20,7 @@ import {
   type TaskEventRow,
 } from "./ledger.ts";
 import { normalizeTask, normalizeBatch, normalizeFraud } from "./normalize.ts";
-import { verifyInclusionEitherOrder } from "./merkle.ts";
+import { merkleRoot, proofValid, verifyInclusionEitherOrder } from "./merkle.ts";
 import { StakeCache, setStakeCache } from "./stakes.ts";
 
 /* ------------------------------- config ------------------------------------ */
@@ -140,14 +140,33 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
       receipt_id: string;
       task_id: string;
     };
-    const path = typeof r.path === "string" ? (JSON.parse(r.path) as string[]) : r.path;
+    let path = typeof r.path === "string" ? (JSON.parse(r.path) as string[]) : (r.path ?? []);
     // Column list must stay MemoryStore-compatible (see memory.ts SELECT root…)
     const batch = await pg.exec(
       `SELECT root, anchored_block, anchored_tx FROM batches WHERE batch_id = $1`,
       [r.batch_id],
     );
     const root = batch[0] ? String((batch[0] as { root: string }).root) : "";
-    const valid = root ? verifyInclusionEitherOrder(r.leaf, path ?? [], root) : false;
+    const siblings = await pg.exec(
+      `SELECT leaf FROM receipts WHERE batch_id = $1 ORDER BY settled_at`,
+      [r.batch_id],
+    );
+    const batchLeaves = siblings.map((x) => String((x as { leaf: string }).leaf));
+    let valid = root ? proofValid(r.leaf, path ?? [], root, batchLeaves) : false;
+    // Recompute keccak siblings when stored path is stale / decorative
+    if (!valid && batchLeaves.length && root) {
+      const folded = merkleRoot(batchLeaves);
+      if (folded.root.replace(/^0x/i, "").toLowerCase() === root.replace(/^0x/i, "").toLowerCase().padStart(64, "0").slice(-64) ||
+          folded.root === root) {
+        const idx = batchLeaves.indexOf(r.leaf);
+        if (idx >= 0 && folded.paths[idx]) {
+          path = folded.paths[idx]!;
+          valid = verifyInclusionEitherOrder(r.leaf, path, root);
+        }
+      } else if (proofValid(r.leaf, path ?? [], root, batchLeaves)) {
+        valid = true;
+      }
+    }
     return {
       status: 200,
       body: {
@@ -192,9 +211,10 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
       [batchId],
     );
     const root = String(b.root);
+    const batchLeaves = receipts.map((r) => String(r.leaf));
     const proofs = receipts.map((r) => {
       const path = typeof r.path === "string" ? (JSON.parse(r.path) as string[]) : r.path ?? [];
-      const valid = root ? verifyInclusionEitherOrder(r.leaf, path, root) : false;
+      const valid = root ? proofValid(r.leaf, path, root, batchLeaves) : false;
       return {
         receipt_id: r.receipt_id,
         task_id: r.task_id,

@@ -230,12 +230,35 @@ export class LedgerWriter {
       );
     }
 
+    // Drop stale receipts for this batch (restarts / re-emits must not accumulate)
+    const keepIds = b.receipts.map((r) => r.receipt_id);
+    if (keepIds.length) {
+      await this.pg.exec(
+        `DELETE FROM receipts WHERE batch_id = $1 AND receipt_id <> ALL($2::text[])`,
+        [b.batch_id, keepIds],
+      ).catch(() => {
+        /* memory store may not implement DELETE — ignore */
+      });
+    } else {
+      await this.pg.exec(`DELETE FROM receipts WHERE batch_id = $1`, [b.batch_id]).catch(() => {});
+    }
+
     for (let i = 0; i < b.receipts.length; i++) {
       const r = b.receipts[i]!;
       const path = paths[i] ?? [];
       await this.pg.exec(
         `INSERT INTO receipts (receipt_id, task_id, reported, recomputed, votes, ms, epoch, batch_id, leaf, path)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (receipt_id) DO NOTHING`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         ON CONFLICT (receipt_id) DO UPDATE
+         SET task_id = EXCLUDED.task_id,
+             reported = EXCLUDED.reported,
+             recomputed = EXCLUDED.recomputed,
+             votes = EXCLUDED.votes,
+             ms = EXCLUDED.ms,
+             epoch = EXCLUDED.epoch,
+             batch_id = EXCLUDED.batch_id,
+             leaf = EXCLUDED.leaf,
+             path = EXCLUDED.path`,
         [
           r.receipt_id,
           r.task_id,

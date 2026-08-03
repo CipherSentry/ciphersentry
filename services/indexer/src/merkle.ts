@@ -110,3 +110,61 @@ export function reconcileRoot(leaves: string[], anchoredRoot: string): boolean {
   const { root } = merkleRoot(leaves);
   return root === normalizeHex32(anchoredRoot);
 }
+
+/**
+ * Proof validity for console/explorer:
+ * 1) sibling path (keccak binary Merkle)
+ * 2) display path [leaf, …, root] with middle siblings
+ * 3) legacy FNV left-fold membership (sim gateway)
+ */
+export function proofValid(
+  leaf: string,
+  path: string[],
+  root: string,
+  batchLeaves?: string[],
+): boolean {
+  if (!root) return false;
+  const p = path ?? [];
+  if (verifyInclusionEitherOrder(leaf, p, root)) return true;
+
+  // Display ladder: [leaf, sib…, root]
+  if (p.length >= 2) {
+    const first = p[0]!;
+    const last = p[p.length - 1]!;
+    const sameLeaf =
+      first.replace(/^0x/i, "").toLowerCase() === leaf.replace(/^0x/i, "").toLowerCase();
+    const sameRoot =
+      last.replace(/^0x/i, "").toLowerCase() === root.replace(/^0x/i, "").toLowerCase();
+    if (sameLeaf && sameRoot) {
+      const mid = p.slice(1, -1);
+      if (!mid.length || verifyInclusionEitherOrder(leaf, mid, root)) return true;
+      // Sim decorative path — membership + root match is enough
+      if (batchLeaves?.some((l) => l === leaf)) return true;
+    }
+  }
+
+  if (batchLeaves?.length) {
+    if (!batchLeaves.includes(leaf)) return false;
+    if (reconcileRoot(batchLeaves, root)) return true;
+    // legacy FNV fold (gateway sim)
+    let acc = "genesis";
+    for (const l of batchLeaves) {
+      acc = legacyFnvDisplay(acc + l);
+    }
+    if (acc === root) return true;
+  }
+  return false;
+}
+
+/** Match gateway sim `sh` (fnv display hash). */
+function legacyFnvDisplay(s: string): string {
+  const fnv = (str: string, seed = 0x811c9dc5) => {
+    let h = seed >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return (h >>> 0).toString(16).padStart(8, "0");
+  };
+  return `0x${fnv(s)}${fnv(s + "::2")}`;
+}

@@ -89,7 +89,8 @@ export class SimDriver {
   state = {
     tasks: [] as TaskRow[],
     pending: [] as TaskRow[],
-    batchSeq: 8911,
+    /** Unique across restarts — reusing batch_8911… pollutes durable PG. */
+    batchSeq: 9000 + (Date.now() % 1_000_000),
     epoch: 88421,
     tickCount: 0,
   };

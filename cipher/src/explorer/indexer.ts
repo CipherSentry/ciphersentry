@@ -203,16 +203,38 @@ export function toBatch(
 export class IndexerClient {
   constructor(public base: string) {}
 
-  async health(): Promise<{ ok: boolean; phase?: string }> {
-    const res = await fetch(`${this.base}/health`);
-    if (!res.ok) throw new Error(`health ${res.status}`);
-    return (await res.json()) as { ok: boolean; phase?: string };
+  async health(): Promise<{ ok: boolean; phase?: string; service?: string }> {
+    // Co-located Fly: indexer is under /indexer/health; bare /health is gateway.
+    for (const path of ["/indexer/health", "/health"]) {
+      try {
+        const res = await fetch(`${this.base}${path}`);
+        if (!res.ok) continue;
+        const h = (await res.json()) as { ok?: boolean; phase?: string; service?: string };
+        if (!h.ok) continue;
+        if (path === "/indexer/health") return h as { ok: boolean; phase?: string; service?: string };
+        if (h.service?.includes("indexer")) return h as { ok: boolean; phase?: string; service?: string };
+        // Gateway ok on same origin still means path-proxy is up; accept last.
+        if (path === "/health") return { ok: true, phase: h.phase, service: h.service };
+      } catch {
+        /* try next */
+      }
+    }
+    throw new Error("health unreachable");
   }
 
   async stats(): Promise<{ tasksIn?: number; batchesIn?: number; fraudIn?: number }> {
-    const res = await fetch(`${this.base}/stats`);
-    if (!res.ok) return {};
-    return (await res.json()) as { tasksIn?: number; batchesIn?: number; fraudIn?: number };
+    for (const path of ["/stats", "/indexer/stats"]) {
+      try {
+        const res = await fetch(`${this.base}${path}`);
+        if (!res.ok) continue;
+        // gateway may 404 or JSON-RPC on unknown path
+        const body = (await res.json()) as { tasksIn?: number; batchesIn?: number; fraudIn?: number; error?: unknown };
+        if (body && typeof body === "object" && !("error" in body && body.error)) return body;
+      } catch {
+        /* try next */
+      }
+    }
+    return {};
   }
 
   async listBatches(): Promise<BatchSummary[]> {

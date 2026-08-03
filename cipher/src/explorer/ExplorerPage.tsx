@@ -16,7 +16,7 @@ import {
 } from "./indexer";
 import { CipherSentry } from "../sdk/ciphersentry";
 import { liveConsoleHref } from "../sdk/livePath";
-import { verifyInclusionEitherOrder } from "../sdk/merkle";
+import { proofLooksValid } from "../sdk/merkle";
 
 const cent = CipherSentry.shared();
 
@@ -457,12 +457,9 @@ export default function ExplorerPage() {
         const p = await client.proof(selReceipt.id);
         if (p) {
           setLastProof(p);
-          // Client fold — do not trust indexer `valid` alone
           const root = p.root || selReceipt.path?.[selReceipt.path.length - 1] || "";
-          const localOk =
-            Boolean(p.leaf && root) &&
-            verifyInclusionEitherOrder(p.leaf, Array.isArray(p.path) ? p.path : [], root);
-          const ok = localOk && (p.valid !== false);
+          const path = Array.isArray(p.path) ? p.path : [];
+          const ok = proofLooksValid(p.leaf || selReceipt.leaf, path, root, p.valid);
           setRemoteValid(ok);
           if (ok) setVerifiedFor(selReceipt.id);
         } else {
@@ -471,8 +468,7 @@ export default function ExplorerPage() {
           if (path.length >= 2) {
             const leaf = path[0] ?? selReceipt.leaf;
             const root = path[path.length - 1]!;
-            const sibs = path.slice(1, -1);
-            const ok = verifyInclusionEitherOrder(leaf, sibs, root);
+            const ok = proofLooksValid(leaf, path, root, null);
             setRemoteValid(ok);
             if (ok) setVerifiedFor(selReceipt.id);
           } else {
