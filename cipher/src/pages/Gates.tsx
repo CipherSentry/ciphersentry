@@ -15,6 +15,14 @@ const ACCRUAL_START_MS = 1_760_500_000_000; // genesis count
 const GATE4_DAYS = 60;
 const WAITLIST_FLOOR = 349;
 
+const GATES = [
+  { id: "G1", name: "Verifier network ≥ 400 bonded verifiers", status: "IN PROGRESS", metric: "349 ON WAITLIST", desc: "Names first, bonds after the B2 deploy. The waitlist below is the headcount that becomes this number." },
+  { id: "G2", name: "Slashing live + publicly auditable", status: "PENDING", metric: "EXECUTOR SIM'D", desc: "Slash executor runs in the console today; real burns need the on-chain registry to exist first." },
+      { id: "G3", name: "Two independent audits closed", status: "RFP NEXT", metric: "PACK READY", desc: "DOC-06 audit pack is live at #/docs/audit. Both firms book 4–8 weeks out — the only calendar we can't compress." },
+    { id: "G4", name: "60 days of epoch accrual ahead of TGE", status: "COUNTING", metric: "MODE: CALENDAR — PENDING ANCHOR", desc: "The 60 visible days. Unrestartable. The clock runs on block-height anchors the moment the first merkle batch lands on a rail." },
+  { id: "G5", name: "Robinhood Chain terms + legal complete", status: "PENDING", metric: "COUNSEL AFTER G3", desc: "Issuer terms and warrant structure go to counsel with audits booked and the waitlist sized, not before." },
+];
+
 const INFRA = ["FIRECRACKER VM", "BARE METAL", "SELF-HOST GPU", "CLOUD K8S"];
 const GATEWAY_URL = (
   (import.meta as ImportMeta & { env?: { VITE_GATEWAY_URL?: string } }).env?.VITE_GATEWAY_URL ??
@@ -223,12 +231,12 @@ export default function Gates() {
             <span className="absolute h-full w-full animate-ping bg-volt opacity-60" />
             <span className="relative h-1.5 w-1.5 bg-volt" />
           </span>
-          READINESS BOARD · GATES TO MARC · UPDATES IN BLOCK HEIGHT
+          READINESS BOARD · GATES TO CENT · UPDATES IN BLOCK HEIGHT
         </div>
 
         <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-end">
           <div>
-            <h1 className="font-display text-[clamp(2.4rem,6vw,5rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+            <h1 className="font-display text-[clamp(2.4rem,6vw,5rem)] font-medium leading-[0.98] tracking-[-0.04em] text-mist">
               Counting in block height,{" "}
               <em className="font-serif font-normal italic tracking-[-0.01em] text-volt">
                 not quarters.
@@ -236,26 +244,26 @@ export default function Gates() {
             </h1>
             <p className="mt-5 max-w-[520px] text-[14px] leading-[1.8] text-mute">
               Gate #4 can't be gamed or negotiated: sixty public days of epoch
-              accrual, verifiable by anyone, before MARC trades. The clock
+              accrual, verifiable by anyone, before CENT trades. The clock
               below is the clock — start-anchored, ticked by this page, signed
               by an operator key.
             </p>
           </div>
 
-          {/* the counter */}
+          {/* the counter — code surface on light canvas */}
           <div className="border border-volt/50 bg-deepgreen p-5 md:p-6">
-            <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-mute">
+            <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-code-mute">
               <span>G4 — EPOCH ACCRUAL</span>
               <span className="text-volt">DAY {days} / {GATE4_DAYS}</span>
             </div>
             <div className="mt-3 font-display text-[54px] font-medium tabular-nums leading-none tracking-[-0.03em] text-volt md:text-[64px]">
               {String(days).padStart(2, "0")}
-              <span className="ml-3 font-mono text-[11px] tracking-[0.2em] text-mute">DAYS</span>
+              <span className="ml-3 font-mono text-[11px] tracking-[0.2em] text-code-mute">DAYS</span>
             </div>
-            <div className="mt-4 h-1.5 w-full bg-edge">
+            <div className="mt-4 h-1.5 w-full bg-code-edge">
               <div className="h-full bg-volt transition-all duration-1000" style={{ width: `${pct}%` }} />
             </div>
-            <div className="mt-2.5 flex justify-between font-mono text-[7.5px] tracking-[0.18em] text-mute/60">
+            <div className="mt-2.5 flex justify-between font-mono text-[7.5px] tracking-[0.18em] text-code-mute/80">
               <span>GENESIS · BLK 12,840,117 · op:0x71be…e8d3</span>
               <span>ETA ≥ {formatEta(now)}</span>
             </div>
@@ -287,31 +295,36 @@ export default function Gates() {
               ))}
             </div>
 
-            {/* freeze-hash anchor */}
-            <div className="mt-6 border border-amber-300/40 bg-amber-300/[0.05] p-5">
-              <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">
+            {/* freeze-hash anchor — light panel, never cream-on-void */}
+            <div className="mt-6 border border-amber-600/35 bg-panel p-5">
+              <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-mute">
                 <span>ENG-A FREEZE HASH — AUDIT ANCHOR</span>
-                <span className="text-amber-300">PENDING BROADCAST</span>
+                <span className="text-amber-700">PENDING BROADCAST</span>
               </div>
               <div className="mt-3 space-y-2 font-mono text-[10.5px]">
                 <div className="flex justify-between gap-6">
-                  <span className="text-[#fff1e6]/70">SCOPE</span>
-                  <span className="text-[#fff1e6]">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
+                  <span className="text-mute">SCOPE</span>
+                  <span className="text-mist">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
                 </div>
                 <div className="flex justify-between gap-6">
-                  <span className="text-[#fff1e6]/70">HASH</span>
-                  <span className="text-[#fff1e6]/50">sha256(contracts/) — computed at broadcast</span>
+                  <span className="text-mute">HASH</span>
+                  <span className="text-mute">sha256(contracts/) — computed at broadcast</span>
                 </div>
                 <div className="flex justify-between gap-6">
-                  <span className="text-[#fff1e6]/70">ANCHOR</span>
-                  <span className="text-[#fff1e6]/50">first batch root on Base-Sepolia · pending</span>
+                  <span className="text-mute">ANCHOR</span>
+                  <span className="text-mute">first batch root on Base-Sepolia · pending</span>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-300/25 pt-4">
-                <a href="https://github.com/CipherSentry-com" target="_blank" rel="noreferrer" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-[#fff1e6] transition-colors hover:border-volt/70 hover:text-volt">
-                  AUDIT PACK — DOC-07 →
+              <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-600/25 pt-4">
+                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  AUDIT PACK — DOC-06 →
                 </a>
-                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-[#fff1e6] transition-colors hover:border-volt/70 hover:text-volt">
+                <a
+                  href="https://github.com/CipherSentry/ciphersentry/blob/main/cipher/contracts/README.md"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
+                >
                   /contracts/README.md →
                 </a>
               </div>
@@ -332,7 +345,7 @@ export default function Gates() {
                 <div className="space-y-4 p-5">
                   <p className="text-[12px] leading-[1.7] text-mute">
                     Names now, bonds at the B2 deploy. Waitlist order is
-                    signed and public; bonds post in order, 25,000 MARC floor.
+                    signed and public; bonds post in order, 25,000 CENT floor.
                   </p>
                   <div>
                     <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.22em] text-mute">NODE HANDLE</label>
@@ -341,7 +354,8 @@ export default function Gates() {
                       onChange={(e) => setHandle(e.target.value)}
                       placeholder="vrf:your-node"
                       spellCheck={false}
-                      className="w-full border border-edge2 bg-ink px-3.5 py-3 font-mono text-[11.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
+                      autoComplete="username"
+                      className="w-full border border-edge2 bg-void px-3.5 py-3 font-mono text-[11.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -365,14 +379,20 @@ export default function Gates() {
                   </div>
                   <button
                     onClick={join}
-                    disabled={!valid || phase === "signing"}
+                    disabled={!valid || !key || phase === "signing"}
                     className={`flex w-full items-center justify-center gap-2.5 py-3.5 font-mono text-[10px] font-semibold tracking-[0.22em] transition-all ${
-                      valid ? "bg-volt text-void hover:bg-mist" : "cursor-not-allowed border border-edge2 text-mute/50"
+                      valid && key && phase !== "signing"
+                        ? "bg-volt text-ink hover:bg-volthot"
+                        : "cursor-not-allowed border border-edge2 text-mute/50"
                     }`}
                   >
                     {phase === "signing" ? (
                       <>
                         <Loader2 size={12} className="animate-spin" /> SIGNING…
+                      </>
+                    ) : !key ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" /> PREPARING KEY…
                       </>
                     ) : (
                       <>
@@ -392,16 +412,16 @@ export default function Gates() {
                   <span className="flex h-11 w-11 items-center justify-center border border-volt bg-volt/15">
                     <Check size={18} className="text-volt" />
                   </span>
-                  <div className="mt-4 font-display text-[18px] font-semibold">In the queue.</div>
+                  <div className="mt-4 font-display text-[18px] font-semibold text-mist">In the queue.</div>
                   <div className="mt-1.5 font-mono text-[9px] tracking-[0.18em] text-mute">
-                    POSITION #{queueNumber ?? "—"} · BOND {bond.toLocaleString()} MARC
+                    POSITION #{queueNumber ?? "—"} · BOND {bond.toLocaleString()} CENT
                   </div>
                   {sig && (
-                    <div className="mt-4 w-full border border-volt/40 bg-volt/[0.05] p-3.5 text-left font-mono text-[8.5px] leading-[1.9]">
-                      <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-mist/80">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-mute">KEY</span><span className="text-volt">{sig.fp}</span></div>
+                    <div className="mt-4 w-full border border-volt/40 bg-deepgreen p-3.5 text-left font-mono text-[8.5px] leading-[1.9]">
+                      <div className="flex justify-between gap-4"><span className="text-code-mute">SIG</span><span className="truncate text-code-fg">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-code-mute">KEY</span><span className="text-volt">{sig.fp}</span></div>
                       <div className="mt-1.5 flex items-center justify-between border-t border-volt/25 pt-1.5">
-                        <span className="text-mute">LOCAL VERIFY</span>
+                        <span className="text-code-mute">LOCAL VERIFY</span>
                         <span className="flex items-center gap-1 text-volt"><Check size={10} strokeWidth={3} /> VALID</span>
                       </div>
                     </div>
