@@ -168,8 +168,8 @@ starting March 2026: [#/docs/manifesto](#/docs/manifesto) (scroll to
 ## Links
 
 - Site — [ciphersentry.xyz](https://ciphersentry.xyz)
-- X — [@ciphersentry](https://x.com/ciphersentry)
-- GitHub — [CipherSentry-com](https://github.com/CipherSentry-com)
+- X — [@ciphersentry](https://x.com/cipher_sentry)
+- GitHub — [CipherSentry-com](https://github.com/CipherSentry)
 - Launch Gates — [#/gates](#/gates)
 - Investors — [#/investors](#/investors)
 - Contact — hello@ciphersentry.xyz
