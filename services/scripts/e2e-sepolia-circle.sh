@@ -88,6 +88,10 @@ trap cleanup EXIT
 export ESCROW_ADDRESS="$ESCROW" BATCHER_ADDRESS="$BATCHER" USDC_ADDRESS="$USDC"
 export SLASH_EXECUTOR_ADDRESS="$SLASH" CENT_ADDRESS="$CENT"
 export PROTOCOL_KEY="$KEY" PROTOCOL_FROM="$FROM" RULER_KEY="$KEY"
+# batcher keys for on-chain anchor (2-of-3) — must exist before gateway boot
+export BATCHER_KEY_1="${BATCHER_KEY_1:-$KEY}"
+export BATCHER_KEY_2="${BATCHER_KEY_2:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
+export BATCHER_KEY_3="${BATCHER_KEY_3:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
 export GATEWAY_HOST=127.0.0.1 GATEWAY_PORT=$GPORT
 export AUTH_REQUIRED=0 REDIS_URL="${REDIS_URL:-}" NATS_URL="${NATS_URL:-}"
 export BATCH_INTERVAL_MS=0 BATCH_MAX_PENDING=99 TICK_MS=60000
@@ -108,9 +112,16 @@ print("  health escrow=%s batcher=%s" % (h.get("escrow"), h.get("batcher")))
 PY
 
 RPC="$ROOT/services/gateway/scripts/rpc-call.mjs"
+rpc() {
+  local method=$1 params=${2:-'{}'}
+  node "$RPC" "$GBASE/rpc" "$method" "$params"
+}
+
 AMT="${CIRCLE_AMOUNT:-0.05}"
+FULL="${CIRCLE_FULL:-1}"   # 1 = commit+settle+anchor; 0 = commit only
+
 echo "== task.commit amount=$AMT USDC (Circle) =="
-C=$(node "$RPC" "$GBASE/rpc" task.commit \
+C=$(rpc task.commit \
   "{\"spec\":\"circle.usdc.commit\",\"worker\":\"agent:vector-7\",\"buyer\":\"agent:atlas-01\",\"escrow\":{\"amount\":\"$AMT\",\"asset\":\"USDC\"}}")
 echo "$C" | tee /tmp/cs-circle-commit.json >/dev/null
 python3 - <<'PY'
@@ -122,6 +133,8 @@ open("/tmp/cs-circle-tx.txt","w").write(ch["tx"])
 print("  task", c["task_id"], "tx", ch["tx"])
 PY
 TX=$(cat /tmp/cs-circle-tx.txt)
+TID=$(python3 -c 'import json;print(json.load(open("/tmp/cs-circle-commit.json"))["task_id"])')
+HASH=$(python3 -c 'import json;print(json.load(open("/tmp/cs-circle-commit.json"))["expected_hash"])')
 cast receipt "$TX" --rpc-url "$CHAIN_RPC" >/dev/null
 # RPC lag — poll until USDC drops
 after="$on_usdc"
@@ -132,8 +145,44 @@ for _ in $(seq 1 15); do
 done
 python3 -c "b,a=int('$on_usdc'),int('$after'); assert a<b, (b,a); print(f'  usdc {b} → {a}')"
 
+ANCHOR_TX=""
+if [[ "$FULL" == "1" ]]; then
+  echo "== settle (report + verify) =="
+  rpc task.report "{\"task_id\":\"$TID\",\"hash\":\"$HASH\"}" >/dev/null
+  V=$(rpc verify "{\"task_id\":\"$TID\"}")
+  echo "$V" | grep -q SETTLED || { echo "verify fail $V"; exit 1; }
+  echo "  settled $TID"
+
+  echo "== batch.anchor =="
+  # wait nonce quiet
+  for _ in $(seq 1 20); do
+    L=$(cast nonce "$FROM" --rpc-url "$CHAIN_RPC")
+    P=$(cast nonce "$FROM" --rpc-url "$CHAIN_RPC" --block pending)
+    [[ "$L" == "$P" ]] && break
+    sleep 2
+  done
+  sleep 2
+  A=$(rpc batch.anchor '{}')
+  echo "$A" | tee /tmp/cs-circle-anchor.json >/dev/null
+  python3 - <<'PY'
+import json
+a=json.load(open("/tmp/cs-circle-anchor.json"))
+assert a.get("mode") in ("submitted","simulated"), a
+if a.get("txHash"):
+  open("/tmp/cs-circle-anchor-tx.txt","w").write(a["txHash"])
+print("  anchor mode=%s root=%s tx=%s" % (a.get("mode"), (a.get("root") or "")[:18], (a.get("txHash") or "-")[:18]))
+PY
+  if [[ -f /tmp/cs-circle-anchor-tx.txt ]]; then
+    ANCHOR_TX=$(cat /tmp/cs-circle-anchor-tx.txt)
+    cast receipt "$ANCHOR_TX" --rpc-url "$CHAIN_RPC" >/dev/null
+    echo "  anchor receipt ok"
+  fi
+fi
+
 echo ""
-echo "CIRCLE USDC e2e OK"
-echo "  tx=$TX"
+echo "CIRCLE USDC e2e OK${FULL:+ (full settle)}"
+echo "  commit=$TX"
+[[ -n "$ANCHOR_TX" ]] && echo "  anchor=$ANCHOR_TX"
+echo "  task=$TID"
 echo "  explorer https://sepolia.basescan.org/tx/$TX"
 echo "  escrow https://sepolia.basescan.org/address/$ESCROW"

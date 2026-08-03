@@ -245,17 +245,26 @@ STX=$(cast send "$SLASH" "submitEvidence(bytes32,address,uint8)" \
 echo "$STX" | tee /tmp/cs-sep-slash-tx.txt >/dev/null
 cast receipt "$STX" --rpc-url "$CHAIN_RPC" >/dev/null
 echo "  slash $STX"
-# drain queue (do not swallow reverts — gas must clear L2 mempool)
-for i in $(seq 1 8); do
+# drain queue + poll bond cut (L2/RPC lag; EpochCapExceeded retries next loop)
+AFTER="$BEFORE"
+for i in $(seq 1 10); do
   Q=$(cast call "$SLASH" "challengeCount()(uint256)" --rpc-url "$CHAIN_RPC" | u256)
-  [[ "$Q" == "0" ]] && break
-  echo "  processNext try=$i queue=$Q"
-  cast send "$SLASH" "processNext()" \
-    --rpc-url "$CHAIN_RPC" --private-key "$PRIVATE_KEY" \
-    --priority-gas-price "${PRIORITY_GAS:-2gwei}" --gas-price "${GAS_PRICE:-10gwei}" >/dev/null
-  sleep 2
+  AFTER=$(cast call "$REGISTRY" "bondOf(address)(uint256)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
+  CUT=$(python3 -c "print(1 if int('${AFTER:-0}')<int('${BEFORE:-0}') else 0)")
+  [[ "$CUT" == "1" ]] && break
+  if [[ "${Q:-0}" != "0" ]]; then
+    echo "  processNext try=$i queue=$Q"
+    cast send "$SLASH" "processNext()" \
+      --rpc-url "$CHAIN_RPC" --private-key "$PRIVATE_KEY" \
+      --priority-gas-price "${PRIORITY_GAS:-2gwei}" --gas-price "${GAS_PRICE:-10gwei}" >/dev/null \
+      || echo "  processNext revert (epoch cap?) — retry"
+    sleep 2
+  else
+    # receipt lag: count may lag; wait and re-check
+    echo "  wait bond/queue try=$i bond=$AFTER"
+    sleep 2
+  fi
 done
-AFTER=$(cast call "$REGISTRY" "bondOf(address)(uint256)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
 python3 - <<PY
 b,a=int("$BEFORE"),int("$AFTER")
 assert b>0 and a<b, (b,a)
