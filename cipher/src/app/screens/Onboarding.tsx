@@ -96,7 +96,7 @@ export default function Onboarding() {
   return (
     <div className="no-scrollbar flex h-full flex-col overflow-y-auto bg-void">
       <div className="flex items-center justify-between px-6 pt-6">
-        <a href="#/" aria-label="Back to ciphersentry.com" className="group flex items-center">
+        <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex items-center">
           <LogoMark size={16} className="text-volt transition-transform duration-300 group-hover:scale-105" />
         </a>
         <span className="font-mono text-[8.5px] tracking-[0.24em] text-mute">OPS / V0.2</span>
@@ -248,7 +248,7 @@ export default function Onboarding() {
                     value={pw}
                     onChange={(e) => setPw(e.target.value)}
                     placeholder={backupMode === "export" ? "password (min 8 chars)…" : "keystore password…"}
-                    className="flex-1 border border-edge2 bg-ink px-3 py-2.5 font-mono text-[10.5px] text-mist placeholder:text-mute/40 focus:border-volt/60 focus:outline-none"
+                    className="flex-1 border border-edge2 bg-panel px-3 py-2.5 font-mono text-[10.5px] text-mist placeholder:text-mute/40 focus:border-volt/60 focus:outline-none"
                   />
                   <button
                     onClick={() => {

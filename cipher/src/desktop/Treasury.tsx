@@ -31,7 +31,7 @@ export default function Treasury() {
           { l: "IN ESCROW", v: w.escrow.toFixed(2), s: "LOCKED IN OPEN TASKS", i: LockKeyhole },
           { l: "STAKED", v: w.stake.toLocaleString(), s: "AT RISK · T2 PREFERRED", i: Landmark },
         ].map((c) => (
-          <div key={c.l} className="bg-[#0a0d08] p-4">
+          <div key={c.l} className="bg-panel p-4">
             <div className="flex items-center gap-2 font-mono text-[8px] tracking-[0.22em] text-mute">
               <c.i size={10} className="text-volt/70" /> {c.l}
             </div>
@@ -106,7 +106,7 @@ export default function Treasury() {
             <div key={n.id} className="flex items-center gap-2.5 border-b border-edge/60 px-4 py-[7px] font-mono text-[9px] last:border-b-0">
               <span className={`h-1.5 w-1.5 ${n.status === "LIVE" ? "bg-volt" : n.status === "EVAL" ? "bg-mute/50" : "bg-amber-300"}`} />
               <span className="text-mist/80">{n.label}</span>
-              <span className={`ml-auto text-[7.5px] tracking-[0.16em] ${n.tag === "MARC TGE" ? "text-volt" : "text-mute/50"}`}>{n.tag}</span>
+              <span className={`ml-auto text-[7.5px] tracking-[0.16em] ${n.tag === "CENT TGE" ? "text-volt" : "text-mute/50"}`}>{n.tag}</span>
             </div>
           ))}
         </div>

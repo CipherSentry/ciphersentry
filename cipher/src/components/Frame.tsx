@@ -1,7 +1,6 @@
 /**
- * Frame — disabled by the minimal doctrine.
- * Viewport hairlines and film grain read as decoration, never information.
- * The component stays as a no-op so imports across pages stay valid.
+ * Frame — page-local chrome hook.
+ * Kept as a no-op so existing page shells stay valid.
  */
 export default function Frame() {
   return null;

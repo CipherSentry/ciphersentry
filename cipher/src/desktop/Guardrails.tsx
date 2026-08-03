@@ -1,7 +1,11 @@
 import { OctagonX, ShieldCheck } from "lucide-react";
 import { HoldButton, Stepper, Switch } from "../app/ui";
+import { CipherSentry } from "../sdk/ciphersentry";
+import { describeTransport } from "../sdk/livePath";
 import { useDesk } from "./store";
 import { Panel } from "./widgets";
+
+const cent = CipherSentry.shared();
 
 function PolicyRow({
   idx,
@@ -34,16 +38,36 @@ export default function Guardrails() {
     ["fleet.daily_cap_usdc", <span className="text-volt">{L.global}</span>],
     ["escrow.auto_approve_below_usdc", <span className="text-volt">{L.requireAbove}</span>],
     ["auto_pause.failures_per_hr", <span className="text-volt">{L.autoPause ? 2 : 0}</span>],
-    ["routing.min_tier", <span className="text-[#e3ffa8]">{L.minTier ? '"T1"' : '"T0"'}</span>],
+    ["routing.min_tier", <span className="text-code-str">{L.minTier ? '"T1"' : '"T0"'}</span>],
     ["rate_limit.tasks_per_min_per_agent", <span className="text-volt">{L.ratePerMin}</span>],
-    ["region.allowlist", <span className="text-[#e3ffa8]">{`["${L.region}"]`}</span>],
-    ["signing.key", <span className="text-[#e3ffa8]">"op:0x71be…e8d3"</span>],
+    ["region.allowlist", <span className="text-code-str">{`["${L.region}"]`}</span>],
+    ["signing.key", <span className="text-code-str">"op:0x71be…e8d3"</span>],
   ];
+
+  const hud = describeTransport(cent.transport);
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_400px] divide-x divide-edge">
       {/* left: policies */}
       <div className="no-scrollbar min-h-0 overflow-y-auto p-5">
+        <div className="mb-4 flex flex-wrap items-center gap-3 border border-edge bg-panel/50 px-3 py-2 font-mono text-[8.5px] tracking-[0.16em]">
+          <span
+            className={
+              hud.tone === "volt"
+                ? "text-volt"
+                : hud.tone === "amber"
+                  ? "text-amber-600"
+                  : hud.tone === "red"
+                    ? "text-red-400"
+                    : "text-mute"
+            }
+          >
+            ●{hud.primary}
+          </span>
+          <span className="text-mute">{hud.secondary}</span>
+          {hud.sessionLine && <span className="text-volt">{hud.sessionLine}</span>}
+          {hud.kind === "sim" && <span className="text-mute/50">SIM — MUTATIONS LOCAL ONLY</span>}
+        </div>
         <Panel title="POLICY — SET ONCE, AGENTS RUN INSIDE IT" className="border-edge">
           <PolicyRow idx="P1" name="FLEET DAILY CAP · USDC" desc="ALL AGENTS COMBINED · HARD STOP" control={
             <Stepper value={L.global} min={250} max={10000} step={250} onChange={(v) => { d.setGlobalLimit(v); d.toast(`FLEET CAP → ${v} USDC/DAY`); }} />
@@ -93,24 +117,24 @@ export default function Guardrails() {
 
       {/* right: live policy file */}
       <Panel
-        title="POLICY.MRC.JSON — LIVE WRITE-BACK"
+        title="POLICY.CEN.JSON — LIVE WRITE-BACK"
         className="m-5 border-edge"
         right={<span className="font-mono text-[7.5px] tracking-[0.18em] text-volt">SIG ✓</span>}
         bodyClass="no-scrollbar overflow-y-auto"
       >
-        <pre className="p-4 font-mono text-[11px] leading-[2]">
-          <div className="text-mute/70">{"{"}</div>
+        <pre className="surface-code border-0 p-4 font-mono text-[11px] leading-[2]">
+          <div className="text-code-mute">{"{"}</div>
           {jsonLines.map(([k, v], i) => (
             <div key={k} className="whitespace-pre">
-              <span className="text-mist/80">  "{k}"</span>
-              <span className="text-mute/70">: </span>
+              <span className="text-code-fg/90">  "{k}"</span>
+              <span className="text-code-mute">: </span>
               {v}
-              {i < jsonLines.length - 1 && <span className="text-mute/70">,</span>}
+              {i < jsonLines.length - 1 && <span className="text-code-mute">,</span>}
             </div>
           ))}
-          <div className="text-mute/70">{"}"}</div>
+          <div className="text-code-mute">{"}"}</div>
         </pre>
-        <div className="border-t border-edge px-4 py-3 font-mono text-[8px] leading-[1.9] tracking-[0.16em] text-mute/50">
+        <div className="border-t border-edge px-4 py-3 font-mono text-[8px] leading-[1.9] tracking-[0.16em] text-mute">
           LAST WRITE: 3S AGO · BY op:0x71be…e8d3
           <br />
           PROPAGATION: 214 NODES · &lt; 500MS

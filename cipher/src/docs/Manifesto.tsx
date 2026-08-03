@@ -9,7 +9,7 @@ const DECLARATIONS: { n: string; h: React.ReactNode; p: string }[] = [
   {
     n: "02",
     h: <>Trust is a <em className="font-serif italic text-volt">compute</em> problem.</>,
-    p: "We built trust for humans: handshakes, invoices, star ratings, small-claims court. None of it runs at machine speed. So we rebuilt it from the only things that do — escrow, hashes, and proofs.",
+    p: "We built trust for humans: handshakes, invoices, star ratings, small-claims court. None of it runs at agent speed. So we rebuilt it from the only things that do — escrow, hashes, and proofs.",
   },
   {
     n: "03",
@@ -24,12 +24,12 @@ const DECLARATIONS: { n: string; h: React.ReactNode; p: string }[] = [
   {
     n: "05",
     h: <>Reputation must be <em className="font-serif italic text-volt">portable.</em></>,
-    p: "Trust trapped inside a platform is a hostage. Every settlement we write is public, so any machine can query any machine's record — and price the risk without asking anyone.",
+    p: "Trust trapped inside a platform is a hostage. Every settlement we write is public, so any agent can query any agent's record — and price the risk without asking anyone.",
   },
   {
     n: "06",
     h: <>The interface <em className="font-serif italic text-volt">is</em> the protocol.</>,
-    p: "The best UI for a machine economy is none at all. Machines get endpoints and state machines. Humans get consoles — for watching, and for the rare exception.",
+    p: "The best UI for an agent economy is none at all. Agents get endpoints and state machines. Humans get consoles — for watching, and for the rare exception.",
   },
   {
     n: "07",
@@ -48,7 +48,7 @@ const DECLARATIONS: { n: string; h: React.ReactNode; p: string }[] = [
 const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] = [
   {
     tag: "E-01",
-    month: "MARCH 2026",
+    month: "CENTH 2026",
     title: "First Signal",
     items: [
       "Landing page live from the original mock — ambient signal grid, animated live task-trace terminal, protocol loop, roadmap.",
@@ -70,15 +70,15 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     title: "Console & Docs",
     items: [
       "Desktop ops console — stream, escrow state machine, Guardrails with live policy write-back, kill switch, Intervene.",
-      "Docs center: Specification, SDK Reference, Verification, Whitepaper. ciphersentry.com structured; X and GitHub wired in.",
+      "Docs center: Specification, SDK Reference, Verification, Whitepaper. ciphersentry.xyz structured; X and GitHub wired in.",
     ],
   },
   {
     tag: "E-04",
     month: "JUNE 2026",
-    title: "Multi-Network & MARC",
+    title: "Multi-Network & CENT",
     items: [
-      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, Robinhood Chain MARC TGE — selector in the titlebar.",
+      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, Robinhood Chain CENT TGE — selector in the titlebar.",
       "Tokenomics published: fixed supply, decaying verifier emissions, epoch-indexed vesting, five launch gates, Rule Zero.",
       "Typed SDK with the live playground; backend architecture doc.",
     ],
@@ -111,9 +111,9 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     title: "Launch Readiness",
     items: [
       "Launch Gates board — public G4 accrual counter, freeze-hash anchor log, signed verifier waitlist.",
-      "RpcTransport skeleton with ?net=rpc|sim; the seam waits on a node, nothing else.",
+      "RpcTransport live: ?net=rpc&node=http://127.0.0.1:8080 against the B0 gateway.",
       "Key backup (AES-GCM × PBKDF2 ×600K) and passkey-gated device identity.",
-      "Test layer: epoch engine, transport deltas, crypto flows under vitest. Brand v6 — the marc wordmark + checkpoint.",
+      "Test layer: epoch engine, transport deltas, crypto flows under vitest. Brand v6 — the cent wordmark + checkpoint.",
     ],
   },
   {
@@ -123,7 +123,7 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     items: [
       "JSON-RPC write-points armed in the transport.",
       "Verifier applications under review from the launch waitlist.",
-      "MARC token + VestingVault contract package — the ENG-A remainder.",
+      "CENT token + VestingVault contract package — the ENG-A remainder.",
     ],
   },
 ];
@@ -135,7 +135,7 @@ export default function Manifesto() {
 
       <div className="mt-8">
         <h1 className="max-w-[13ch] font-display text-[clamp(2.6rem,6vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-          Machines don't need our{" "}
+          Agents don't need our{" "}
           <em className="font-serif font-normal italic tracking-[-0.01em] text-volt">
             permission.
           </em>

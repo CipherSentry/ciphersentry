@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 /* -------------------------------------------------------------------------- */
-/*  ENG-A/ENG-B REMAINDER INVARIANT SUITE — MARC, VESTING, SLASH EXECUTOR    */
+/*  ENG-A/ENG-B REMAINDER INVARIANT SUITE — CENT, VESTING, SLASH EXECUTOR    */
 /*  I-V1/V2/V3 · I-SE1/I-SE2/I-SE3 · proceeds math asserted by name          */
 /*                                                                            */
 /*  The SlashExecutor is isolated against a fixture ledger (FixtureSlashLedger) */
@@ -13,18 +13,18 @@ pragma solidity ^0.8.26;
 
 import { Test } from "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
-import { MockMARC } from "./RegistryElectionInvariants.t.sol";
+import { MockCENT } from "./RegistryElectionInvariants.t.sol";
 import { VestingVault } from "../src/VestingVault.sol";
 import { SlashExecutor } from "../src/SlashExecutor.sol";
 
 /* ------------------------- fixture slash ledger --------------------------- */
 
 contract FixtureSlashLedger {
-    MockMARC public marc;
+    MockCENT public cent;
     mapping(address => uint256) public bondOf;
 
-    constructor(MockMARC _marc) {
-        marc = _marc;
+    constructor(MockCENT _cent) {
+        cent = _cent;
     }
 
     function setBondFor(address v, uint256 amount) external {
@@ -35,14 +35,14 @@ contract FixtureSlashLedger {
     function slash(address v, uint256 amount, address payee) external {
         require(bondOf[v] >= amount, "insufficient bond");
         bondOf[v] -= amount;
-        marc.mint(payee, amount);
+        cent.mint(payee, amount);
     }
 }
 
 /* --------------------------------- suite ---------------------------------- */
 
 contract SlashVestingInvariants is StdInvariant, Test {
-    MockMARC internal marc;
+    MockCENT internal cent;
     VestingVault internal vault;
     FixtureSlashLedger internal ledger;
     SlashExecutor internal slash;
@@ -54,10 +54,10 @@ contract SlashVestingInvariants is StdInvariant, Test {
     address internal claimant = vm.addr(0xBEEF);
 
     function setUp() public {
-        marc = new MockMARC();
-        vault = new VestingVault(address(marc), grantor, 64);
-        ledger = new FixtureSlashLedger(marc);
-        slash = new SlashExecutor(address(ledger), address(marc), watcher, resolver, treasury);
+        cent = new MockCENT();
+        vault = new VestingVault(address(cent), grantor, 64);
+        ledger = new FixtureSlashLedger(cent);
+        slash = new SlashExecutor(address(ledger), address(cent), watcher, resolver, treasury);
     }
 
     /* ------------------------------ helpers --------------------------------- */
@@ -67,26 +67,26 @@ contract SlashVestingInvariants is StdInvariant, Test {
     }
 
     function _watchBond() internal {
-        marc.mint(watcher, 400_000 ether);
+        cent.mint(watcher, 400_000 ether);
         vm.prank(watcher);
-        marc.approve(address(slash), type(uint256).max);
+        cent.approve(address(slash), type(uint256).max);
     }
 
     function _bondedTarget(address target, uint256 amount) internal {
         ledger.setBondFor(target, amount);
     }
 
-    /* ------------------------------ MARC ------------------------------------ */
+    /* ------------------------------ CENT ------------------------------------ */
 
     function testFuzz_transfersRespectBalances(address from, address to, uint256 amt) public {
         vm.assume(from != to && to != address(0) && from != to);
         amt = bound(amt, 1 ether, 1_000_000 ether);
-        marc.mint(from, amt);
-        uint256 before_ = marc.balanceOf(from);
+        cent.mint(from, amt);
+        uint256 before_ = cent.balanceOf(from);
         vm.prank(from);
-        marc.transfer(to, amt);
-        assertEq(marc.balanceOf(from), before_ - amt, "I-T: drained wrong");
-        assertEq(marc.balanceOf(to), amt, "I-T: credited wrong");
+        cent.transfer(to, amt);
+        assertEq(cent.balanceOf(from), before_ - amt, "I-T: drained wrong");
+        assertEq(cent.balanceOf(to), amt, "I-T: credited wrong");
     }
 
     /* --------------------------- I-V1/I-V2/I-V3 ----------------------------- */
@@ -95,14 +95,14 @@ contract SlashVestingInvariants is StdInvariant, Test {
         uint96 amount = uint96(bound(uint256(amountSeed), 1 ether, 1e27));
         uint96 cliff = uint96(bound(uint256(cliffSeed), 1, 200));
         uint96 linear = uint96(bound(uint256(linearSeed), 1, 200));
-        marc.mint(address(vault), amount);
+        cent.mint(address(vault), amount);
 
         vm.prank(grantor);
         uint256 id = vault.grant(claimant, amount, cliff, linear);
 
         uint64 e0 = vault.currentEpoch();
         // strictly before cliff+1: nothing (I-V2)
-        assertEq(vault.vestedAt(id, e0 + cliff - 1), 0, "I-V2 pre-cliff vested");
+        assertEq(vault.vestedAt(id, uint64(uint256(e0) + uint256(cliff) - 1)), 0, "I-V2 pre-cliff vested");
 
         vm.roll((uint256(e0) + 1 + cliff) * 64);
         uint96 vA = vault.vestedAt(id, vault.currentEpoch());
@@ -115,7 +115,7 @@ contract SlashVestingInvariants is StdInvariant, Test {
 
     function test_claimConservationAndPayOut() public {
         uint96 amount = 100_000 ether;
-        marc.mint(address(vault), amount);
+        cent.mint(address(vault), amount);
         vm.prank(grantor);
         uint256 id = vault.grant(claimant, amount, 10, 20);
 
@@ -130,13 +130,13 @@ contract SlashVestingInvariants is StdInvariant, Test {
         (uint96 amt, uint96 claimed, , uint96 claimable) = vault.conservation(id);
         assertEq(claimed, vested, "I-V3: claimed tracked");
         assertEq(claimable, 0, "I-V3: claim over-released");
-        assertEq(marc.balanceOf(claimant), claimed, "I-V3: payout missing");
-        assertEq(marc.balanceOf(address(vault)), amt - claimed, "I-V3: vault residual wrong");
+        assertEq(cent.balanceOf(claimant), claimed, "I-V3: payout missing");
+        assertEq(cent.balanceOf(address(vault)), amt - claimed, "I-V3: vault residual wrong");
     }
 
     function testVestingEpochIndexed_NotWallClock() public {
         uint96 amount = 50_000 ether;
-        marc.mint(address(vault), amount);
+        cent.mint(address(vault), amount);
         vm.prank(grantor);
         uint256 id = vault.grant(claimant, amount, 5, 10);
         uint96 before_ = vault.vestedAt(id, vault.currentEpoch());
@@ -155,7 +155,7 @@ contract SlashVestingInvariants is StdInvariant, Test {
         uint256 queueId = slash.submitEvidence(evidenceHash, claimant, SlashExecutor.Severity.FalseVote);
         assertEq(queueId, 0, "queue index drifted");
 
-        vm.expectRevert(SlashExecutor.EvidenceReplayed.selector);
+        vm.expectRevert(abi.encodeWithSelector(SlashExecutor.EvidenceReplayed.selector, evidenceHash));
         vm.prank(watcher);
         slash.submitEvidence(evidenceHash, claimant, SlashExecutor.Severity.FalseVote);
     }
@@ -174,9 +174,17 @@ contract SlashVestingInvariants is StdInvariant, Test {
         vm.prank(watcher);
         slash.submitEvidence(_evidence("b"), colluderB, SlashExecutor.Severity.Collusion);
 
-        slash.processNext(); // first 80k cut — within 100k epoch cap ✓
+        slash.processNext(); // first 80k cut - within 100k epoch cap
 
-        vm.expectRevert(SlashExecutor.EpochCapExceeded.selector);
+        // remaining attempt is 80k against remaining 20k headroom
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SlashExecutor.EpochCapExceeded.selector,
+                80_000 ether,
+                80_000 ether,
+                100_000 ether
+            )
+        );
         slash.processNext(); // +80k > 100k cap: defers cleanly, never truncates
 
         vm.roll(block.number + 64 + 1); // epoch rotates; cap refreshes
@@ -218,16 +226,16 @@ contract SlashVestingInvariants is StdInvariant, Test {
         uint256 expectedBounty = (cut - expectedBurned) / 2;
         uint256 expectedTreasury = cut - expectedBurned - expectedBounty;
 
-        uint256 watcherBefore = marc.balanceOf(watcher);
+        uint256 watcherBefore = cent.balanceOf(watcher);
         slash.processNext();
 
         assertEq(
-            marc.balanceOf(address(0x000000000000000000000000000000000000dEaD)),
+            cent.balanceOf(address(0x000000000000000000000000000000000000dEaD)),
             expectedBurned,
             "burn share wrong"
         );
-        assertEq(marc.balanceOf(treasury), expectedTreasury, "treasury share missing");
-        assertEq(marc.balanceOf(watcher), watcherBefore + slash.CHALLENGE_BOND() + expectedBounty, "bounty wrong");
+        assertEq(cent.balanceOf(treasury), expectedTreasury, "treasury share missing");
+        assertEq(cent.balanceOf(watcher), watcherBefore + slash.CHALLENGE_BOND() + expectedBounty, "bounty wrong");
         assertEq(ledger.bondOf(target), aBond - cut, "I-SE4: ledger cut mismatch");
 
         // exact conservation: three destinations sum to the cut, no dust

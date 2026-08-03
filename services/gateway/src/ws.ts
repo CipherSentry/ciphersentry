@@ -1,11 +1,18 @@
 /**
  * WebSocket subscription hub — the endpoint RpcTransport subscribes to via
  * `events.subscribe`. Frames match src/sdk/rpc.ts frame routing:
- *   { jsonrpc: "2.0", method: "task.event",  params: { topic: "tasks",   data } }
- *   { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data } }
+ *   { jsonrpc: "2.0", method: "task.event",  params: { topic, data, ts, sig, pubkey } }
+ *
+ * Domain events arrive via the EventBus (NATS/memory). Hub signs as they fire
+ * (architecture §6). Producers never call broadcast for live traffic.
  */
 
-import type { SimDriver, BatchRowPacket, TaskRow } from "./sim";
+import type { EventBus, Topic } from "@ciphersentry/bus";
+import { toWsFrame } from "@ciphersentry/bus";
+import type { SimDriver } from "./sim.ts";
+import type { ChallengeCase } from "./fraud-proof.ts";
+import { publicFraudCase } from "./fraud-proof.ts";
+import { EventSigner } from "./event-sign.ts";
 
 export interface SocketLike {
   send(payload: string): void;
@@ -15,12 +22,58 @@ export interface SocketLike {
   readyState?: number;
 }
 
+const ALLOWED = new Set<string>(["tasks", "batches", "fraud"]);
+
 export class SubscriptionHub {
   private clients = new Map<SocketLike, Set<string>>();
+  private fraudSnapshot: () => ChallengeCase[] = () => [];
+  private unsubBus?: () => void;
+  readonly signer: EventSigner;
 
-  attachEvents(sim: SimDriver): void {
-    sim.onTask = (t: TaskRow) => this.broadcast("tasks", { jsonrpc: "2.0", method: "task.event", params: { topic: "tasks", data: t } });
-    sim.onBatch = (b: BatchRowPacket) => this.broadcast("batches", { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data: b } });
+  constructor(signer?: EventSigner) {
+    this.signer = signer ?? EventSigner.fromEnv();
+  }
+
+  get clientCount(): number {
+    return this.clients.size;
+  }
+
+  get eventPubkey(): string {
+    return this.signer.pubkey;
+  }
+
+  /** Optional hydrate source for fraud topic. */
+  setFraudSnapshot(fn: () => ChallengeCase[]): void {
+    this.fraudSnapshot = fn;
+  }
+
+  /**
+   * Subscribe hub to the bus for live fan-out. Call once at boot after bus is ready.
+   * Returns unsubscribe for shutdown.
+   */
+  async attachBus(bus: EventBus): Promise<() => void> {
+    this.unsubBus?.();
+    this.unsubBus = await bus.subscribe(["tasks", "batches", "fraud"], (topic, data) => {
+      this.broadcast(topic, this.signedFrame(topic, data));
+    });
+    return this.unsubBus;
+  }
+
+  /**
+   * Wire sim → bus (not hub). Keeps WS a pure bus consumer.
+   * When bus is omitted (tests), falls back to direct broadcast.
+   */
+  attachEvents(sim: SimDriver, bus?: EventBus): void {
+    const emit = (topic: Topic, data: unknown) => {
+      if (bus) void bus.publish(topic, data);
+      else this.broadcast(topic, this.signedFrame(topic, data));
+    };
+    sim.onTask = (t) => emit("tasks", t);
+    sim.onBatch = (b) => emit("batches", b);
+  }
+
+  private signedFrame(topic: Topic, data: unknown) {
+    return this.signer.signFrame(toWsFrame(topic, data));
   }
 
   register(ws: SocketLike, sim: SimDriver): void {
@@ -31,14 +84,18 @@ export class SubscriptionHub {
       try {
         env = JSON.parse(raw);
       } catch {
-        this.send(ws, frame("error", { code: "MRC_E_SCHEMA", message: "invalid frame" }));
+        this.send(ws, frame("error", { code: "CEN_E_SCHEMA", message: "invalid frame" }));
         return;
       }
       if (env.method !== "events.subscribe" || !env.params?.topics?.length) {
-        this.send(ws, { jsonrpc: "2.0", id: env.id ?? 0, error: { code: "MRC_E_SCHEMA", message: "expected events.subscribe" } });
+        this.send(ws, {
+          jsonrpc: "2.0",
+          id: env.id ?? 0,
+          error: { code: "CEN_E_SCHEMA", message: "expected events.subscribe" },
+        });
         return;
       }
-      const topics = env.params.topics.filter((t) => t === "tasks" || t === "batches");
+      const topics = env.params.topics.filter((t) => ALLOWED.has(t));
       topics.forEach((t) => this.clients.get(ws)?.add(t));
       this.send(ws, { jsonrpc: "2.0", id: env.id, result: { subscribed: topics } });
       this.hydrate(ws, sim, topics);
@@ -51,12 +108,17 @@ export class SubscriptionHub {
     const { tasks, batches } = sim.snapshots();
     if (topics.includes("tasks")) {
       for (const t of tasks.slice(0, 8)) {
-        this.send(ws, { jsonrpc: "2.0", method: "task.event", params: { topic: "tasks", data: t } });
+        this.send(ws, this.signedFrame("tasks", t));
       }
     }
     if (topics.includes("batches")) {
       for (const b of batches.slice(-2)) {
-        this.send(ws, { jsonrpc: "2.0", method: "batch.event", params: { topic: "batches", data: b } });
+        this.send(ws, this.signedFrame("batches", b));
+      }
+    }
+    if (topics.includes("fraud")) {
+      for (const c of this.fraudSnapshot().slice(-8)) {
+        this.send(ws, this.signedFrame("fraud", publicFraudCase(c)));
       }
     }
   }
@@ -74,4 +136,8 @@ export class SubscriptionHub {
       this.clients.delete(ws);
     }
   }
+}
+
+function frame(method: string, params: unknown): unknown {
+  return { jsonrpc: "2.0", method, params };
 }

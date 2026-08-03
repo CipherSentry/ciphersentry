@@ -1,0 +1,184 @@
+# Deploy Cipher Sentry contracts to Base Sepolia.
+# Secrets (repo Settings → Secrets and variables → Actions):
+#   PRIVATE_KEY       — funded deployer EOA (with or without 0x; we normalize)
+#   BASE_SEPOLIA_RPC  — Alchemy/QuickNode HTTPS endpoint
+#
+# Optional:
+#   SIGNER_2 / SIGNER_3 — distinct batcher signers (defaults: anvil-style placeholders)
+#
+# Artifacts: deployments JSON uploaded; on success, commits addresses back if WRITE_DEPLOYMENT=true
+# (default false — open a PR from the artifact instead).
+
+name: deploy-base-sepolia
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "local = MockUSDC faucet stack; production = Circle USDC"
+        type: choice
+        options:
+          - local
+          - production
+        default: local
+      write_deployment:
+        description: "Commit deployments/*.json back to the branch"
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-base-sepolia
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: Forge deploy (Base Sepolia)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: cipher/contracts
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Show forge version
+        run: forge --version
+
+      - name: Install forge-std
+        run: |
+          if [ ! -d lib/forge-std/src ]; then
+            forge install foundry-rs/forge-std --no-git
+          fi
+
+      - name: Derive deployer + balance check
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          BASE_SEPOLIA_RPC: ${{ secrets.BASE_SEPOLIA_RPC }}
+        run: |
+          set -euo pipefail
+          test -n "${PRIVATE_KEY:-}" || { echo "missing secret PRIVATE_KEY"; exit 1; }
+          test -n "${BASE_SEPOLIA_RPC:-}" || { echo "missing secret BASE_SEPOLIA_RPC"; exit 1; }
+          # forge vm.envUint requires 0x; GitHub secrets often omit it
+          case "$PRIVATE_KEY" in
+            0x*|0X*) PK="$PRIVATE_KEY" ;;
+            *) PK="0x${PRIVATE_KEY}" ;;
+          esac
+          export PRIVATE_KEY="$PK"
+          echo "PRIVATE_KEY=$PK" >> "$GITHUB_ENV"
+          ADDR=$(cast wallet address --private-key "$PRIVATE_KEY")
+          BAL=$(cast balance "$ADDR" --rpc-url "$BASE_SEPOLIA_RPC")
+          echo "deployer=$ADDR"
+          echo "balance_wei=$BAL"
+          python3 - <<PY
+          bal=int("$BAL")
+          print(f"balance_eth={bal/1e18:.6f}")
+          if bal < 10**14:
+              raise SystemExit("deployer balance too low for gas on Base Sepolia")
+          PY
+          echo "DEPLOYER=$ADDR" >> "$GITHUB_ENV"
+
+      - name: Broadcast Deploy.s.sol
+        env:
+          BASE_SEPOLIA_RPC: ${{ secrets.BASE_SEPOLIA_RPC }}
+          LOCAL: ${{ inputs.mode == 'local' && 'true' || 'false' }}
+          SIGNER_2: ${{ secrets.SIGNER_2 }}
+          SIGNER_3: ${{ secrets.SIGNER_3 }}
+        run: |
+          set -euo pipefail
+          # PRIVATE_KEY already normalized into GITHUB_ENV
+          test -n "${PRIVATE_KEY:-}" || { echo "PRIVATE_KEY missing after normalize"; exit 1; }
+          export SIGNER_1="${DEPLOYER}"
+          export SIGNER_2="${SIGNER_2:-0x70997970C51812dc3A010C7d01b50e0d17dc79C8}"
+          export SIGNER_3="${SIGNER_3:-0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC}"
+          mkdir -p deployments
+          # only pass LOCAL=true when requested (envOr bool treats "false" string oddly)
+          if [ "${LOCAL}" = "true" ]; then
+            export LOCAL=true
+          else
+            unset LOCAL || true
+          fi
+          forge script script/Deploy.s.sol:Deploy \
+            --rpc-url "$BASE_SEPOLIA_RPC" \
+            --broadcast \
+            -vv
+      - name: Normalize deployment artifact name
+        run: |
+          set -euo pipefail
+          MODE="${{ inputs.mode }}"
+          if [ "$MODE" = "local" ]; then
+            # Deploy.s.sol writes deployments/local.json when LOCAL=true
+            if [ -f deployments/local.json ]; then
+              python3 - <<'PY'
+          import json
+          d=json.load(open("deployments/local.json"))
+          d["mode"]="base-sepolia-mockusdc"
+          d["chainId"]=d.get("chainId", 84532)
+          json.dump(d, open("deployments/base-sepolia-mockusdc.json","w"), indent=2)
+          print("wrote deployments/base-sepolia-mockusdc.json")
+          print(json.dumps(d, indent=2))
+          PY
+            fi
+          else
+            test -f deployments/base-sepolia.json
+            cat deployments/base-sepolia.json
+          fi
+
+      - name: Write gateway env snippet (no secrets)
+        run: |
+          set -euo pipefail
+          MODE="${{ inputs.mode }}"
+          if [ "$MODE" = "local" ]; then
+            J=deployments/base-sepolia-mockusdc.json
+            OUT=deployments/gateway.base-sepolia-mockusdc.env.example
+          else
+            J=deployments/base-sepolia.json
+            OUT=deployments/gateway.base-sepolia.env.example
+          fi
+          python3 - <<PY
+          import json
+          d=json.load(open("$J"))
+          open("$OUT","w").write(
+          f"""# copy to process env — set CHAIN_RPC yourself
+          CHAIN_ID=84532
+          ESCROW_ADDRESS={d['escrow']}
+          BATCHER_ADDRESS={d['batcher']}
+          USDC_ADDRESS={d['usdc']}
+          PROTOCOL_FROM={d['deployer']}
+          """)
+          print("wrote", "$OUT")
+          PY
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-sepolia-deploy-${{ inputs.mode }}-${{ github.run_number }}
+          path: |
+            cipher/contracts/deployments/*.json
+            cipher/contracts/deployments/*.env.example
+            cipher/contracts/broadcast/Deploy.s.sol/84532/run-latest.json
+          if-no-files-found: warn
+
+      - name: Commit deployment addresses
+        if: ${{ inputs.write_deployment }}
+        run: |
+          set -euo pipefail
+          cd "${GITHUB_WORKSPACE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cipher/contracts/deployments/*.json cipher/contracts/deployments/*.env.example || true
+          if git diff --cached --quiet; then
+            echo "no deployment file changes"
+            exit 0
+          fi
+          git commit -m "ci: update Base Sepolia ${{ inputs.mode }} deployment addresses"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

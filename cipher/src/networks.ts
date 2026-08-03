@@ -15,7 +15,7 @@ export const NETWORKS: Net[] = [
     short: "BASE-SEP",
     status: "LIVE",
     tag: "V0.1 LIVE",
-    note: "Protocol core deployed — commit, escrow, verification.",
+    note: "Escrow 0xa97E…7BB2 · batcher 0x72b7…bfca · Circle USDC. Mock write stack in deployments/base-sepolia-mockusdc.json.",
   },
   {
     id: "base",
@@ -30,7 +30,7 @@ export const NETWORKS: Net[] = [
     label: "ROBINHOOD CHAIN",
     short: "RH CHAIN",
     status: "SOON",
-    tag: "MARC TGE",
+    tag: "CENT TGE",
     note: "Token launch rail — verifier bonds, slashing and rebates settle here.",
   },
   {

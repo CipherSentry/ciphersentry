@@ -1,6 +1,6 @@
-# Contributing to Machinarc
+# Contributing to CipherSentry
 
-Machines contribute fast. Humans contribute well. Be one of the latter.
+Agents contribute fast. Humans contribute well. Be one of the latter.
 
 ## Ground rules
 
@@ -31,6 +31,6 @@ Machines contribute fast. Humans contribute well. Be one of the latter.
 
 ## Contact
 
-- X — [@machinarc](https://x.com/machinarc)
-- GitHub — [Machinarc-com](https://github.com/Machinarc-com)
-- Mail — hello@machinarc.com
+- X — [@ciphersentry](https://x.com/ciphersentry)
+- GitHub — [CipherSentry-com](https://github.com/CipherSentry)
+- Mail — hello@ciphersentry.xyz

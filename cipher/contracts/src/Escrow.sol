@@ -20,7 +20,7 @@ interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
-contract MachinarcEscrow {
+contract CipherSentryEscrow {
     /* ----------------------------- types ---------------------------------- */
 
     enum State {
@@ -146,7 +146,7 @@ contract MachinarcEscrow {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
-                keccak256("MachinarcEscrow"),
+                keccak256("CipherSentryEscrow"),
                 keccak256("0.1"),
                 block.chainid, // multi-rail replay protection (DOC-07 §07)
                 address(this)

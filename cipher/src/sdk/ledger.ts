@@ -33,6 +33,9 @@ export interface ExBatch {
   total: string;
   state: "SETTLING" | "SETTLED";
   receipts: Receipt[];
+  /** On-chain anchor tx hash when batch settled via SettlementBatcher. */
+  anchored_tx?: string | null;
+  anchored_block?: number | null;
 }
 
 export const VRF = ["vrf:gamma-1", "vrf:delta-4", "vrf:sigma-2"];
@@ -51,7 +54,7 @@ const NAMES = AGENTS.map((a) => a.name);
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 export function makeReceipt(at: number): Receipt {
-  const id = `mrc_${randHex(7)}`;
+  const id = `cent_${randHex(7)}`;
   const disputed = Math.random() < 0.08;
   const spec = pick(SPECS);
   const buyer = pick(NAMES);

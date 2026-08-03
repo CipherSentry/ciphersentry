@@ -126,9 +126,10 @@ export class SimDriver {
       const t = this.genTask(now - i * 47_000);
       t.state = i <= 2 ? "RUNNING" : i === 3 ? "VERIFYING" : "SETTLED";
       this.state.tasks.push(t);
+      if (t.state === "SETTLED") this.state.pending.push(t);
     }
     const f81 = {
-      id: "mrc_f81c2a0",
+      id: "cent_f81c2a0",
       agent: "agent:forge-11",
       counterparty: "agent:orbit-2",
       role: "work" as const,
@@ -148,7 +149,7 @@ export class SimDriver {
 
   private genTask(at: number): TaskRow {
     return {
-      id: `mrc_${randHex(7)}`,
+      id: `cent_${randHex(7)}`,
       agent: `${pick(AGENTS)}`,
       counterparty: `${pick(AGENTS)}`,
       role: Math.random() > 0.45 ? "work" : "buy",
@@ -188,7 +189,8 @@ export class SimDriver {
   }
 
   private flushBatch(now: number): void {
-    if (this.state.pending.length === 0 && this.batches.length > 0) return;
+    // Never emit empty batches — empty root "genesis" breaks indexer reconcile.
+    if (this.state.pending.length === 0) return;
     const included = this.state.pending.splice(0, 9);
     const receipts = included.map<ReceiptRow>((t) => {
       const honest = sh(`${t.id}:${t.spec}:${t.amount}`);

@@ -71,7 +71,7 @@ export default function Inspector() {
           </div>
           <div className="grid grid-cols-3 gap-px border-t border-edge bg-edge">
             {[{ v: "gamma-1", ok: !disputed }, { v: "delta-4", ok: true }, { v: "sigma-2", ok: true }].map((x) => (
-              <div key={x.v} className="flex items-center justify-center gap-1.5 bg-[#0a0d08] py-2 font-mono text-[8px]">
+              <div key={x.v} className="flex items-center justify-center gap-1.5 bg-panel py-2 font-mono text-[8px]">
                 {x.ok ? <Check size={9} className="text-volt" /> : <X size={9} className="text-red-400" />}
                 <span className={x.ok ? "text-mute" : "text-red-400"}>{x.v}</span>
               </div>

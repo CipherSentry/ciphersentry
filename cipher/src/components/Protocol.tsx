@@ -44,13 +44,14 @@ const STEPS = [
 
 /* ---------------- code styling ---------------- */
 
+/* syntax colors for surface-code (dark) only */
 const C = {
   kw: "text-volt",
-  str: "text-[#dfffa7]",
-  cm: "text-[#5c6350]",
-  pn: "text-mute/70",
-  tx: "text-mist/80",
-  fn: "text-mist font-medium",
+  str: "text-code-str",
+  cm: "text-code-mute",
+  pn: "text-code-mute/80",
+  tx: "text-code-fg/85",
+  fn: "text-code-fg font-medium",
 };
 
 function CodeBlock() {
@@ -58,27 +59,27 @@ function CodeBlock() {
     <div className="overflow-x-auto p-6 font-mono text-[11.5px] leading-[1.9] sm:p-8">
       <div className="whitespace-nowrap">
         <span className={C.pn}>$</span> <span className={C.tx}>npm install</span>{" "}
-        <span className={C.str}>@machinarc/sdk</span>
+        <span className={C.str}>@ciphersentry/sdk</span>
       </div>
       <div className="whitespace-nowrap">&nbsp;</div>
       <div className="whitespace-nowrap">
         <span className={C.kw}>import</span>{" "}
-        <span className={C.pn}>{"{ Machinarc }"}</span>{" "}
-        <span className={C.kw}>from</span> <span className={C.str}>"@machinarc/sdk"</span>
+        <span className={C.pn}>{"{ CipherSentry }"}</span>{" "}
+        <span className={C.kw}>from</span> <span className={C.str}>"@ciphersentry/sdk"</span>
         <span className={C.pn}>;</span>
       </div>
       <div className="whitespace-nowrap">&nbsp;</div>
       <div className="whitespace-nowrap">
-        <span className={C.kw}>const</span> <span className={C.tx}>mrc</span>{" "}
+        <span className={C.kw}>const</span> <span className={C.tx}>cent</span>{" "}
         <span className={C.pn}>=</span> <span className={C.kw}>new</span>{" "}
-        <span className={C.fn}>Machinarc</span>
-        <span className={C.pn}>({"{ key: env.MRC_KEY }"});</span>
+        <span className={C.fn}>CipherSentry</span>
+        <span className={C.pn}>({"{ key: env.CEN_KEY }"});</span>
       </div>
       <div className="whitespace-nowrap">&nbsp;</div>
       <div className="whitespace-nowrap">
         <span className={C.kw}>const</span> <span className={C.tx}>task</span>{" "}
         <span className={C.pn}>=</span> <span className={C.kw}>await</span>{" "}
-        <span className={C.tx}>mrc.task.</span>
+        <span className={C.tx}>cent.task.</span>
         <span className={C.fn}>commit</span>
         <span className={C.pn}>({"{"}</span>
       </div>
@@ -106,7 +107,7 @@ function CodeBlock() {
       <div className="whitespace-nowrap">
         <span className={C.kw}>const</span> <span className={C.tx}>receipt</span>{" "}
         <span className={C.pn}>=</span> <span className={C.kw}>await</span>{" "}
-        <span className={C.tx}>mrc.</span>
+        <span className={C.tx}>cent.</span>
         <span className={C.fn}>verify</span>
         <span className={C.pn}>(task, {"{ quorum:"}</span>{" "}
         <span className={C.str}>3</span>
@@ -141,9 +142,9 @@ export default function Protocol() {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-16">
-          <a href="#/" aria-label="Back to ciphersentry.com" className="group flex items-center">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-16">
+          <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
             <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
           </a>
           <nav className="hidden items-center gap-8 font-mono text-[10px] tracking-[0.22em] text-mute md:flex">
@@ -151,8 +152,11 @@ export default function Protocol() {
             <a href="#/docs" className="transition-colors hover:text-volt">DOCS</a>
             <a href="#/gates" className="transition-colors hover:text-volt">LAUNCH</a>
           </nav>
-          <div className="flex items-center gap-5">
-            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
+          <div className="flex items-center gap-3 sm:gap-5">
+            <a href="#/" className="font-mono text-[9px] tracking-[0.18em] text-mute transition-colors hover:text-volt md:hidden">
+              ← HOME
+            </a>
+            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -166,14 +170,14 @@ export default function Protocol() {
         kicker="THE PROTOCOL"
         title={
           <>
-            One loop.{" "}
+            One protocol.{" "}
             <em className="font-serif italic text-volt">Four state changes.</em>
           </>
         }
         desc="A task on Cipher Sentry moves exactly once through four transitions. No middle state, no reconciliation, no support tickets."
       />
 
-      <div className="grid gap-14 px-8 pb-24 md:px-16 lg:grid-cols-2 lg:items-center">
+      <div className="grid gap-10 px-4 pb-16 sm:gap-14 sm:px-8 sm:pb-24 md:px-16 lg:grid-cols-2 lg:items-center">
         <Reveal>
           <LoopDiagram />
         </Reveal>
@@ -211,19 +215,21 @@ export default function Protocol() {
       </div>
 
       {/* SDK panel */}
-      <Reveal className="px-8 pb-24 md:px-16">
+      <Reveal className="px-4 pb-16 sm:px-8 sm:pb-24 md:px-16">
         <div className="border border-edge bg-panel/40">
-          <div className="flex items-center justify-between border-b border-edge px-6 py-3.5 sm:px-8">
-            <span className="font-mono text-[9px] tracking-[0.26em] text-mute">
+          <div className="flex items-center justify-between gap-3 border-b border-edge px-4 py-3 sm:px-6 sm:py-3.5 md:px-8">
+            <span className="truncate font-mono text-[8px] tracking-[0.18em] text-mute sm:text-[9px] sm:tracking-[0.26em]">
               EXAMPLE / COMMIT-AND-VERIFY.TS
             </span>
-            <span className="font-mono text-[9px] tracking-[0.26em] text-volt">
+            <span className="shrink-0 font-mono text-[8px] tracking-[0.18em] text-volt sm:text-[9px] sm:tracking-[0.26em]">
               SDK V0.2.0
             </span>
           </div>
           <div className="grid lg:grid-cols-[1.3fr_1fr]">
-            <CodeBlock />
-            <div className="border-t border-edge lg:border-l lg:border-t-0">
+            <div className="surface-code border-0 border-volt/20 lg:border-r">
+              <CodeBlock />
+            </div>
+            <div className="border-t border-edge lg:border-l-0 lg:border-t-0">
               {SPEC_POINTS.map((p, i) => (
                 <div
                   key={p.k}

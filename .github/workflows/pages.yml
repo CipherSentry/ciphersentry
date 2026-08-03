@@ -1,0 +1,70 @@
+# Build the Vite single-file app and publish to GitHub Pages (ciphersentry.xyz).
+# Pages settings: Source = GitHub Actions (already set for this repo).
+
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cipher/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cipher
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: cipher/package-lock.json
+
+      - name: Install & build
+        env:
+          # Public Fly gateway (S1.3) — badge + live console deep links
+          VITE_PUBLIC_NODE: https://ciphersentry.fly.dev
+          VITE_PUBLIC_INDEXER: https://ciphersentry.fly.dev
+        run: |
+          npm ci
+          npm run build
+
+      - name: CNAME for custom domain
+        run: echo 'ciphersentry.xyz' > dist/CNAME
+
+      - name: Ensure SPA index present
+        run: |
+          test -f dist/index.html
+          ls -la dist/
+          head -c 200 dist/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: cipher/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

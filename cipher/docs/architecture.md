@@ -1,8 +1,9 @@
-# Machinarc Backend — Architecture Brainstorm
+# CipherSentry Backend — Architecture Brainstorm
 
-Status: **pre-implementation sketch** for V0.2 (Verifier Network). The front
-end in this repo already speaks the wire surface below; the sim in
-`src/sdk/machinarc.ts` is the reference client behavior.
+Status: **B6 indexer** — B5 fraud path plus **receipt graph indexer**:
+gateway WS events → Postgres transitions + ClickHouse analytics, independent
+keccak Merkle reconcile (never silent patch), public proof API on `:8081`.
+Reference client: `src/sdk/ciphersentry.ts` (`?net=rpc|sim`).
 
 ---
 
@@ -33,7 +34,7 @@ end in this repo already speaks the wire surface below; the sim in
 
 | Service | Duty | Notes |
 | --- | --- | --- |
-| **Edge gateway** | JSON-RPC + WS stream, auth | `task.commit`, `registry.query`, `verify`, `events/sub`; ed25519 sign-and-verify per session; rate limits keyed by stake |
+| **Edge gateway** | JSON-RPC + WS stream, auth | `task.commit`, `registry.query`, `verify`, `events/sub`; **ed25519** `auth.challenge`/`auth.session` (Redis or memory); rate limits keyed by stake (`CEN_E_CAP_BREACH`); `AUTH_REQUIRED=1` gates mutating methods |
 | **Registry** | Agents, specs, trust scores | Trust materialized per epoch (`T_i` from docs); deterministic-spec validation at publish (sandbox dry-run ×2 must agree) |
 | **Task service** | The 4-state machine | Postgres is system of record (`COMMITTED → EXECUTING → VERIFYING → SETTLED|DISPUTED|FAILED`); every transition is an event, never a mutation without log |
 | **Verifier pool** | Independent re-execution daemons | Specs compile to **WASM**; runs in Firecracker-style microVMs; deterministic clock injected (seed from task input); median recompute ≤ 500ms |
@@ -45,12 +46,12 @@ end in this repo already speaks the wire surface below; the sim in
 ## 3. Data
 
 - **Postgres** — tasks, agents, quorums, epochs, operator policies. Single writer per row via state-machine transitions.
-- **NATS/Kafka** — every domain event (`task.committed` … `dispute.opened`); consumers: notifier, console WS fan-out, indexer.
+- **NATS/Kafka** — every domain event (`task.committed` … `dispute.opened`); consumers: notifier, console WS fan-out, indexer. Shipped: `@ciphersentry/bus` on subjects `cs.events.{tasks,batches,fraud}` (gateway publish; hub + indexer subscribe).
 - **Redis** — live counters, rate limits, stream backpressure (the 2.8s cadence the console shows), quorum election lock per epoch.
 - **Object storage** — task outputs (content-addressed by their reported hash; dedupe is free).
 - **ClickHouse** — receipts, trust time-series, batch analytics, the public agent graph.
 
-## 4. MARC-readiness (V0.2 defaults)
+## 4. CENT-readiness (V0.2 defaults)
 
 - **Bond registry**: verifier bonds custodied in the staking contract; the pool reads them — never the app DB.
 - **Slash executor**: on proven fault → contract call; 50% burn / 50% challenger+treasury. Emit `stake.slashed`.
@@ -64,23 +65,33 @@ end in this repo already speaks the wire surface below; the sim in
 `operator.rule(id, ruling, sig)` · `stake(amount, tier)` ·
 `events.subscribe(topic)`.
 
-Errors are the six `MRC_E_*` codes from the spec — nothing else escapes.
+Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 
 ## 6. Security
 
 - Key custody splits: operator device keys (console), protocol signer (HSM), contract-held user escrows (no key at all).
 - Determinism is enforced twice: spec sandbox at registry publish, re-execution at verify.
-- WS fan-out signs events; consoles verify — the app already displays "signed as they fire".
+- WS fan-out signs events (`cent.event.v1|<topic>|<canonical>|<ts>`, ed25519);
+  frames include `params.{ts,sig,pubkey}`; consoles display **SIGNED AS THEY FIRE**.
 - Replay protection: commit envelopes include `task_id` client-generated + signer nonce; TTL enforced contract-side.
 
 ## 7. Rollout
 
 | Phase | Ships | Depends |
 | --- | --- | --- |
-| B0 — Ledger | Task service + escrow gateway on Base-Sepolia; console reads real chain | audit #1 scoped |
-| B1 — Verifier alpha | 3 foundation-run daemons, slashing dry-runs | WASM sandbox hardened |
-| B2 — Verifier network | External verifiers, epoch elections, real slashes | audits #1+#2 done |
-| B3 — MARC-ready | Bond registry + slash executor + accrual ledger | gate list in DOC-05 |
+| B0 — Ledger | Task service + escrow gateway; **local anvil E2E green** (deploy + commit + gateway write); Base-Sepolia via same script with `PRIVATE_KEY` | audit #1 scoped |
+| B1 — Verifier alpha | **3 foundation verifiers** on gateway `verify`; pure recompute + WASM sandbox; **slash dry-runs** | WASM sandbox hardened |
+| B2 — Verifier network | **External stake** (`stake`), **epoch.elect** (top-3, whale cap), **real registry slashes** on mismatch | audits #1+#2 done |
+| B3 — CENT-ready | **Accrual ledger** (0.35% fee, accuracy² weights, claim), **accuracy oracle**, **SlashExecutor** chain write (local: CENT approve + bonded target → `submitEvidence` + `processNext`) | gate list in DOC-05 |
+| B4 — Settlement batcher | **Merkle fold** of settled leaves, **2-of-3** EIP-712 `anchorRoot`, `batch.anchor` / auto-flush, on-chain `BatchAnchored` via Alchemy/anvil | B3 + batcher signers |
+| B5 — Fraud-proof worker | **Challenge cases** on mismatch, fresh quorum recompute, **ruling** (Refund/Release/Split), `fraud.*` RPC, optional **Escrow.rule** / defaultRefund | B4 + ruler key |
+| B6 — Indexer / receipt graph | **WS listener** on gateway events (tasks/batches/**fraud**), Postgres SoR + ClickHouse analytics, **keccak Merkle reconcile**, `/receipts/:id/proof` + `/fraud/:taskId` | B4/B5 events + compose (pg/ch) |
+| Hardening (post-B6) | Live **registry stake** into trust `s_i`, fraud `s_i ← 0.95·s_i`, **ed25519 WS verify** + pin, `?net=rpc&auth=1`, CI: `e2e:compose` / `e2e:full` (**NATS-only**, no WS fallback) / `e2e:rails:smoke` (anvil + **SlashExecutor** write-ready) · explorer live trust chart | B6 + AUTH + compose |
 
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.
+>
+> **B7** (ops prod): `CS_ENV=production` → AUTH + Redis sessions + NATS-only + `*_FILE` key
+> custody. Hosted: `services/docker-compose.b7.yml` / `npm run b7:compose`. CI: `e2e:full` on
+> PR; Sepolia scripts `workflow_dispatch` only (`e2e-sepolia.yml`). Mainnet (audits, Circle
+> mainnet USDC, key ceremony) only after 2–3 stable B7 hosted + CI greens.

@@ -1,0 +1,45 @@
+# Public durable indexer — Postgres SoR + CH-memory analytics + gateway WS fan-in.
+# Deploy from services/:
+#   bash fly/deploy-indexer.sh
+#   # or:
+#   fly deploy -a ciphersentry-indexer -c fly/fly.indexer.toml --dockerfile fly/Dockerfile --remote-only \
+#     --command "npm run indexer -w indexer"
+
+app = "ciphersentry-indexer"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  INDEXER_PORT = "8080"
+  INDEXER_HOST = "0.0.0.0"
+  # durable SoR
+  INDEXER_MEMORY = "0"
+  INDEXER_CH_MODE = "memory"
+  # gateway NATS is process-local — external indexer uses WS events
+  INDEXER_FORCE_WS = "1"
+  INDEXER_REQUIRE_NATS = "0"
+  NATS_URL = ""
+  NODE_EVENTS = "wss://ciphersentry.fly.dev/events"
+  GATEWAY_URL = "https://ciphersentry.fly.dev"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "8s"
+    grace_period = "60s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

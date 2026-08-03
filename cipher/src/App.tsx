@@ -58,10 +58,10 @@ export default function App() {
       {/* way back to the site on mobile */}
       <a
         href="#/"
-        aria-label="Back to ciphersentry.com"
-        className="fixed bottom-[104px] right-3 z-[80] border border-edge bg-void/85 px-3 py-2 font-mono text-[8px] tracking-[0.22em] text-mute backdrop-blur transition-colors hover:border-volt/60 hover:text-volt lg:hidden"
+        aria-label="Back to ciphersentry.xyz"
+        className="fixed bottom-[max(6.5rem,env(safe-area-inset-bottom,0px)+5.5rem)] right-3 z-[80] border border-edge bg-void/85 px-3 py-2 font-mono text-[8px] tracking-[0.22em] text-mute backdrop-blur transition-colors hover:border-volt/60 hover:text-volt lg:hidden"
       >
-        ← CIPHERSENTRY.COM
+        ← CIPHERSENTRY.XYZ
       </a>
     </>
   );

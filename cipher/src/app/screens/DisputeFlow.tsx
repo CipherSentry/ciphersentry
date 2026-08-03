@@ -8,6 +8,10 @@ import { BackHeader, Card, HoldButton, SectionLabel } from "../ui";
 import { signRuling } from "../../crypto/keys";
 import type { SignedRuling } from "../../crypto/keys";
 import { useOperator } from "../../crypto/useOperator";
+import { CipherSentry } from "../../sdk/ciphersentry";
+import { formatWireError, isRpcMode } from "../../sdk/livePath";
+
+const cent = CipherSentry.shared();
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -56,7 +60,7 @@ function LimitSheet({ a }: { a: Approval }) {
         <div className="font-display text-[22px] font-semibold">Decision signed</div>
         {sig && (
           <div className="w-full max-w-[300px] border border-volt/40 bg-deepgreen p-3.5 text-left font-mono text-[9px] leading-[1.9]">
-            <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-[#fff1e6]">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
+            <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-mist">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
             <div className="flex justify-between gap-4"><span className="text-mute">KEY</span><span className="text-volt">{sig.fp}</span></div>
             <div className="mt-1.5 flex items-center justify-between gap-4 border-t border-volt/25 pt-1.5">
               <span className="text-mute">LOCAL VERIFY</span>
@@ -170,6 +174,16 @@ export default function DisputeFlow({ id }: { id: string }) {
       },
       op.key,
     );
+
+    if (isRpcMode(cent.transport)) {
+      try {
+        await cent.operator.rule(a.ref, ruling, signed.sig);
+      } catch (e) {
+        app.toast(formatWireError(e));
+        return;
+      }
+    }
+
     setSig(signed);
     setDone(true);
     setTimeout(() => {
@@ -325,10 +339,10 @@ export default function DisputeFlow({ id }: { id: string }) {
                   <div className="font-display text-[22px] font-semibold">Ruling signed & broadcast</div>
                   {sig && (
                     <div className="w-full max-w-[300px] border border-volt/40 bg-deepgreen p-3.5 text-left font-mono text-[9px] leading-[1.9]">
-                      <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-[#fff1e6]">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-mist">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
                       <div className="flex justify-between gap-4"><span className="text-mute">KEY</span><span className="text-volt">{sig.fp}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-mute">ALG</span><span className="text-[#fff1e6]">{sig.algLabel}</span></div>
-                      <div className="flex justify-between gap-4"><span className="text-mute">TX</span><span className="text-[#fff1e6]">{sig.tx}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-mute">ALG</span><span className="text-mist">{sig.algLabel}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-mute">TX</span><span className="text-mist">{sig.tx}</span></div>
                       <div className="mt-1.5 flex items-center justify-between gap-4 border-t border-volt/25 pt-1.5">
                         <span className="text-mute">LOCAL VERIFY</span>
                         <span className="flex items-center gap-1 text-volt"><Check size={10} strokeWidth={3} /> VALID</span>

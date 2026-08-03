@@ -9,14 +9,16 @@
  * Median recompute budget ≤ 500ms wall per task (monitored, logged).
  */
 
-import { DeterministicSandbox, canonicalize, outputHashOf } from "./runtime";
+import { DeterministicSandbox, canonicalize, outputHashOf, pureRecompute } from "./runtime.ts";
 
 /* ------------------------------ envelopes --------------------------------- */
 
 export interface Assignment {
   taskId: string;
-  wasmUrl: string; // resolved by the registry: content-addressed spec bytes
+  wasmUrl?: string; // resolved by the registry: content-addressed spec bytes
   wasm?: Uint8Array; // may be inlined in dev fixtures
+  /** pure (default) | wasm — pure is the B1 path for tasks without a WASM spec */
+  mode?: "pure" | "wasm";
   inputJson: unknown;
   reportedHash: string;
   buyer: string;
@@ -48,6 +50,7 @@ export interface VotePacket {
   taskId: string;
   verifier: string;
   recomputed: string;
+  ok: boolean;
   ms: number;
   sig: string;
 }
@@ -65,18 +68,29 @@ export interface DaemonConfig {
 
 export class VerifierDaemon {
   private sandbox = new DeterministicSandbox();
+  private cfg: DaemonConfig;
 
-  constructor(private cfg: DaemonConfig) {}
+  constructor(cfg: DaemonConfig) {
+    this.cfg = cfg;
+  }
 
   /** Run one assignment end-to-end and return the quorum outcome. */
-  async process(a: Assignment): Promise<{ settled: boolean; votes: Vote[]; evidence?: EvidencePackage }> {
-    const wasm = a.wasm ?? (await this.load(a.wasmUrl));
+  async process(a: Assignment): Promise<{ settled: boolean; votes: Vote[]; evidence?: EvidencePackage; mode: "pure" | "wasm" }> {
+    const mode: "pure" | "wasm" = a.mode ?? (a.wasm && a.wasm.byteLength > 0 ? "wasm" : "pure");
+    let wasm: Uint8Array | undefined;
+    if (mode === "wasm") {
+      wasm = a.wasm ?? (a.wasmUrl ? await this.load(a.wasmUrl) : undefined);
+      if (!wasm || wasm.byteLength === 0) {
+        throw new Error("wasm mode requires wasm bytes or wasmUrl");
+      }
+    }
 
     // every seeded quorum member recomputes — same sandbox, same bytes
     const votes: Vote[] = [];
     for (const id of this.cfg.quorumVoices) {
       const r = await this.sandbox.run({
         wasm,
+        mode,
         taskId: a.taskId,
         inputJson: a.inputJson,
         wallBudgetMs: 500,
@@ -89,12 +103,14 @@ export class VerifierDaemon {
         votes.push({ verifier: id, recomputed: "ERROR", ok: false, ms: r.ms });
       }
 
-      const canonical = canonicalize({ taskId: a.taskId, verifier: id, recomputed: votes.at(-1)!.recomputed });
+      const last = votes.at(-1)!;
+      const canonical = canonicalize({ taskId: a.taskId, verifier: id, recomputed: last.recomputed });
       await this.cfg.voteSink?.({
         type: "vote",
         taskId: a.taskId,
         verifier: id,
-        recomputed: votes.at(-1)!.recomputed,
+        recomputed: last.recomputed,
+        ok: last.ok,
         ms: r.ms,
         sig: this.sign(canonical),
       });
@@ -104,7 +120,7 @@ export class VerifierDaemon {
     const mismatched = votes.length - matched;
     const settles = mismatched === 0; // unanimity required to settle cleanly
 
-    if (settles) return { settled: true, votes };
+    if (settles) return { settled: true, votes, mode };
 
     if (mismatched >= Math.ceil((votes.length * 2) / 3)) {
       const canonical = canonicalize({
@@ -126,10 +142,10 @@ export class VerifierDaemon {
         sig: this.sign(canonical),
       };
       await this.cfg.evidenceSink?.(evidence);
-      return { settled: false, votes, evidence };
+      return { settled: false, votes, evidence, mode };
     }
 
-    return { settled: false, votes }; // minority dissent: window stays open
+    return { settled: false, votes, mode }; // minority dissent: window stays open
   }
 
   private sign(canonical: string): string {
@@ -144,13 +160,23 @@ export class VerifierDaemon {
   }
 }
 
+/* ----------------------- foundation ids + helpers -------------------------- */
+
+/** Three foundation-run verifiers for B1 alpha. */
+export const FOUNDATION_QUORUM = ["vrf:gamma-1", "vrf:delta-4", "vrf:sigma-2"] as const;
+
+/** Expected honest hash for a pure-mode assignment. */
+export function expectedPureHash(taskId: string, inputJson: unknown): string {
+  return pureRecompute(inputJson, taskId).outputHash;
+}
+
 /* ----------------------- dev fixture + entrypoint -------------------------- */
 
 const FIXTURE: Assignment = {
-  taskId: "mrc_demo_fixtur",
-  wasmUrl: "https://registry.machinarc.dev/specs/render.sequence.4k.wasm",
+  taskId: "cent_demo_fixtur",
+  mode: "pure",
   inputJson: { frames: 240, seed: 88421 },
-  reportedHash: outputHashOf(canonicalize({ frames: 240, seed: 88421 })),
+  reportedHash: expectedPureHash("cent_demo_fixtur", { frames: 240, seed: 88421 }),
   buyer: "agent:atlas-01",
   worker: "agent:vector-7",
   amount: "42.80",
@@ -159,9 +185,8 @@ const FIXTURE: Assignment = {
 async function main(): Promise<void> {
   const daemon = new VerifierDaemon({
     verifierId: "vrf:alpha-1",
-    quorumVoices: ["vrf:gamma-1", "vrf:delta-4", "vrf:sigma-2"],
+    quorumVoices: [...FOUNDATION_QUORUM],
     evidenceSink: async (pkg) => {
-      // dev: print the exact envelope the indexer expects to consume
       console.log("[evidence]", JSON.stringify(pkg, null, 2));
     },
     voteSink: async (v) => {
@@ -169,11 +194,14 @@ async function main(): Promise<void> {
     },
   });
 
-  console.log("verifier-daemon alpha — fixture pass");
+  console.log("verifier-daemon alpha — pure fixture pass");
   console.log("");
   const out = await daemon.process(FIXTURE);
   console.log("");
-  console.log(`result: ${out.settled ? "SETTLED-ELIGIBLE" : out.evidence ? "DISPUTE EVIDENCE EMITTED" : "MINORITY DISSENT"}`);
+  console.log(
+    `result: ${out.settled ? "SETTLED-ELIGIBLE" : out.evidence ? "DISPUTE EVIDENCE EMITTED" : "MINORITY DISSENT"} (${out.mode})`,
+  );
+  if (!out.settled) process.exitCode = 1;
 }
 
 // index-canonical entrypoint

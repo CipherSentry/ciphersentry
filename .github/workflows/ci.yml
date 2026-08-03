@@ -1,0 +1,167 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: forge test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: cipher/contracts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Install forge-std
+        run: |
+          if [ ! -d lib/forge-std/src ]; then
+            forge install foundry-rs/forge-std --no-git
+          fi
+      - name: Build
+        run: forge build
+      - name: Test (reduced invariant campaign for CI)
+        run: |
+          FOUNDRY_FUZZ_RUNS=256 \
+          FOUNDRY_INVARIANT_RUNS=32 \
+          FOUNDRY_INVARIANT_DEPTH=32 \
+          forge test -vv
+
+  frontend:
+    name: vitest + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: cipher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: cipher/package-lock.json
+      - run: npm ci
+      - run: npx vitest run --pool=threads tests/rpc-transport.test.ts tests/chain-decoder.test.ts tests/crypto.test.ts tests/epoch.test.ts tests/live-path.test.ts
+      - run: npm run build
+
+  sepolia-guard:
+    name: sepolia script guard (no keys)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse sepolia scripts + deployment addresses
+        run: |
+          set -euo pipefail
+          bash -n services/scripts/e2e-sepolia-full.sh
+          bash -n services/scripts/e2e-sepolia-circle.sh
+          bash -n services/scripts/demo-sepolia.sh
+          test -f services/fly/deploy-indexer.sh && bash -n services/fly/deploy-indexer.sh
+          python3 - <<'PY'
+          import json, sys
+          for name in ("base-sepolia-mockusdc.json", "base-sepolia.json"):
+              p = f"cipher/contracts/deployments/{name}"
+              d = json.load(open(p))
+              for k in ("escrow", "batcher", "usdc"):
+                  v = d.get(k)
+                  if not (isinstance(v, str) and v.startswith("0x") and len(v) == 42):
+                      sys.exit(f"{name}: bad {k}={v!r}")
+              print(name, "ok")
+          PY
+
+  services:
+    name: unit + memory e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/package-lock.json
+      - run: npm ci
+      - name: Verifier + gateway + indexer unit tests
+        run: npm test
+      - name: Gateway B5 smoke
+        run: |
+          npm run gateway &
+          GATEWAY_PID=$!
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8080/health >/dev/null; then break; fi
+            sleep 0.5
+          done
+          npm run smoke
+          kill $GATEWAY_PID
+      - name: AUTH abuse e2e (AUTH_REQUIRED=1)
+        run: npm run e2e:auth
+      - name: Indexer B6 smoke
+        run: npm run smoke:indexer
+      - name: Indexer B6 e2e (gateway WS → proof API)
+        run: npm run e2e:indexer
+      - name: Compose e2e (AUTH + settle → trust → fraud slash)
+        run: npm run e2e:compose
+
+  services-full:
+    name: full stack (pg + ch + nats)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: services
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/package-lock.json
+      - run: npm ci
+      - name: Full e2e (compose AUTH settle CH trust fraud)
+        env:
+          FULL_CLEAN: "1"
+        run: npm run e2e:full
+
+  rails:
+    name: anvil rails (escrow + batcher + ruler)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: services
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/package-lock.json
+      - name: Install forge-std
+        working-directory: cipher/contracts
+        run: |
+          if [ ! -d lib/forge-std/src ]; then
+            forge install foundry-rs/forge-std --no-git
+          fi
+      - run: npm ci
+      - name: Rails smoke (deploy + anchor + fraud path)
+        run: npm run e2e:rails:smoke

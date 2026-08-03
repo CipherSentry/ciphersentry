@@ -1,14 +1,11 @@
 /**
  * Chain watcher — binds the gateway's event stream to deployed contracts.
  *
- * Listens over JSON-RPC eth_getLogs for our two ENG-A contracts and decodes
- * events ONLY by their exact topic0 signature hash (computed here from the
- * event signatures of Escrow.sol and SettlementBatcher.sol — no guessing,
- * validated by tests, not trust). A tiny legal-transition fallback remains
- * for any future events the table doesn't know yet.
+ * Listens over JSON-RPC eth_getLogs for ENG-A contracts and decodes
+ * events by topic0 signature hash (Escrow.sol + SettlementBatcher.sol).
  */
 
-import { keccak256 } from "./keccak256";
+import { keccak256 } from "./keccak256.ts";
 
 /* ------------------------------ config ------------------------------------- */
 
@@ -33,30 +30,29 @@ const DEFAULT_POLL = 2_500;
 
 /* --------------------- event topic registry (the law) ---------------------- */
 
-const S = (s: string) => keccak256(new TextEncoder().encode(s));
+const S = (s: string) => keccak256(new TextEncoder().encode(s)).toLowerCase();
 
-/**
- * Signature of every event our broadcasts emit, hashed at load time into its
- * topic0 fingerprint. Order-independent lookup across both contracts.
- */
-export const EVENT_TOPICS: Record<string, { state: string }> = {
-  [S("Committed(bytes32,address,address,uint96,uint96,bytes32)")]: { state: "COMMITTED" },
-  [S("Acknowledged(bytes32,uint64)")]: { state: "EXECUTING" },
-  [S("Reported(bytes32,bytes32)")]: { state: "VERIFYING" },
-  [S("Voted(bytes32,address,bool,uint8,uint8)")]: { state: "VERIFYING" },
-  [S("Disputed(bytes32,bytes32,bytes32)")]: { state: "DISPUTED" },
-  [S("Settled(bytes32,uint8,uint96,uint96,uint96)")]: { state: "SETTLED" },
-  [S("Ruled(bytes32,uint8,uint64)")]: { state: "SETTLED" },
-  [S("Failed(bytes32,uint96)")]: { state: "FAILED" },
-  [S("BatchAnchored(uint64,bytes32,uint32,address,bool)")]: { state: "ANCHORED" },
+export const EVENT_TOPICS: Record<string, { state: string; name: string }> = {
+  [S("Committed(bytes32,address,address,uint96,uint96,bytes32)")]: { state: "COMMITTED", name: "Committed" },
+  [S("Acknowledged(bytes32,uint64)")]: { state: "EXECUTING", name: "Acknowledged" },
+  [S("Reported(bytes32,bytes32)")]: { state: "VERIFYING", name: "Reported" },
+  [S("Voted(bytes32,address,bool,uint8,uint8)")]: { state: "VERIFYING", name: "Voted" },
+  [S("Disputed(bytes32,bytes32,bytes32)")]: { state: "DISPUTED", name: "Disputed" },
+  [S("Settled(bytes32,uint8,uint96,uint96,uint96)")]: { state: "SETTLED", name: "Settled" },
+  [S("Ruled(bytes32,uint8,uint64)")]: { state: "SETTLED", name: "Ruled" },
+  [S("Failed(bytes32,uint96)")]: { state: "FAILED", name: "Failed" },
+  [S("BatchAnchored(uint64,bytes32,uint32,address,bool)")]: { state: "ANCHORED", name: "BatchAnchored" },
 };
 
+/** Legal next states (self-loops allowed where events re-emit same phase). */
 const NEXT: Record<string, string[]> = {
-  COMMITTED: ["EXECUTING"],
-  EXECUTING: ["VERIFYING", "FAILED"],
-  VERIFYING: ["SETTLED", "DISPUTED"],
+  COMMITTED: ["COMMITTED", "EXECUTING", "FAILED"],
+  EXECUTING: ["EXECUTING", "VERIFYING", "FAILED"],
+  VERIFYING: ["VERIFYING", "SETTLED", "DISPUTED"],
   DISPUTED: ["SETTLED", "FAILED"],
 };
+
+const TERMINAL = new Set(["SETTLED", "FAILED"]);
 
 /** Pure decode — importable in tests without invoking the watcher. */
 export function decodeLog(
@@ -65,21 +61,27 @@ export function decodeLog(
   isEscrow: boolean,
 ): { state?: string; taskId?: string } | { anchor: true; batchId: number; root: string } | null {
   const t0 = log.topics[0]?.toLowerCase();
-  let state = t0 ? EVENT_TOPICS[t0]?.state : undefined;
+  const meta = t0 ? EVENT_TOPICS[t0] : undefined;
+  let state = meta?.state;
+  const name = meta?.name;
 
   if (!state) {
-    // legal-transition fallback for any future events the table doesn't know
-    state = isEscrow && last && NEXT[last]
-      ? NEXT[last]![0]
-      : isEscrow
-        ? "COMMITTED"
-        : "ANCHORED";
+    if (!isEscrow) return null;
+    if (!lastState) state = "COMMITTED";
+    else if (TERMINAL.has(lastState) || !NEXT[lastState]) return null;
+    else state = NEXT[lastState][0];
   }
 
   if (isEscrow) {
     const rawId = log.topics[1];
     if (!rawId) return null;
-    if (lastState && NEXT[lastState] && !NEXT[lastState].includes(state)) return null; // skip impossible orders
+
+    // Dispute resolves only via Ruled (or Failed), not the clean Settled path.
+    if (lastState === "DISPUTED" && name === "Settled") return null;
+
+    if (lastState && NEXT[lastState] && !NEXT[lastState].includes(state)) return null;
+    if (lastState && TERMINAL.has(lastState) && state !== lastState) return null;
+
     return { state, taskId: rawId.toLowerCase() };
   }
 
@@ -168,7 +170,7 @@ export class ChainWatcher {
       for (const log of logs) this.handle(log);
       this.lastBlock = to;
     } catch {
-      // tolerant: chain polling should never kill the gateway's tick loop
+      // tolerant: chain polling must not kill the gateway tick loop
     }
   }
 

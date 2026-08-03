@@ -20,7 +20,7 @@ interface IMarc {
 contract VestingVault {
     struct Grant {
         address beneficiary;
-        uint96 amount; // MARC, 18 decimals
+        uint96 amount; // CENT, 18 decimals
         uint96 cliff; // first epoch anything vests
         uint96 linear; // epochs over which it vests after cliff
         uint96 claimed;
@@ -43,8 +43,8 @@ contract VestingVault {
     error NothingVested();
     error OverRelease();
 
-    constructor(address marc_, address grantor_, uint256 epochBlocks) {
-        MRC = IMarc(marc_);
+    constructor(address cent_, address grantor_, uint256 epochBlocks) {
+        MRC = IMarc(cent_);
         GRANTOR = grantor_;
         EPOCH_BLOCKS = epochBlocks == 0 ? 64 : epochBlocks;
     }
@@ -73,11 +73,11 @@ contract VestingVault {
     function vestedAt(uint256 id, uint64 epoch) public view returns (uint96) {
         Grant memory g = grants[id];
         if (g.amount == 0) return 0;
-        if (epoch <= g.cliff) return 0; // strictly before cliff+1
-        uint64 past = epoch - g.cliff;
-        if (past > g.linear) past = g.linear;
-        // amount * past / linear — bounded integers, no Dw sequence needed
-        return uint96((uint256(g.amount) * uint256(past)) / uint256(g.linear));
+        if (uint256(epoch) <= uint256(g.cliff)) return 0; // strictly before cliff+1
+        uint256 past = uint256(epoch) - uint256(g.cliff);
+        if (past > uint256(g.linear)) past = uint256(g.linear);
+        // amount * past / linear - bounded integers, no Dw sequence needed
+        return uint96((uint256(g.amount) * past) / uint256(g.linear));
     }
 
     function claimable(uint256 id) external view returns (uint96) {

@@ -8,10 +8,10 @@ import {
   AGENTS,
 } from "./data";
 import type { Agent, Approval, TaskEvent } from "./data";
-import { Machinarc } from "../sdk/machinarc"; /* brand pivot: protocol client renames in deploy kit; class stays for now */
+import { CipherSentry } from "../sdk/ciphersentry"; /* brand pivot: protocol client renames in deploy kit; class stays for now */
 import { AppCtx } from "./store";
 
-const mrc = Machinarc.shared();
+const cent = CipherSentry.shared();
 import type { AppValue, Overlay, Tab, Toast } from "./store";
 import AgentDetail from "./screens/AgentDetail";
 import Alerts from "./screens/Alerts";
@@ -33,7 +33,7 @@ export default function OperatorApp() {
   const [tab, setTabState] = useState<Tab>("feed");
   const [overlays, setOverlays] = useState<Overlay[]>([]);
   const [now, setNow] = useState(SIM_START);
-  const [feed, setFeed] = useState<TaskEvent[]>(() => mrc.stream.state().slice(0, 16));
+  const [feed, setFeed] = useState<TaskEvent[]>(() => cent.stream.state().slice(0, 16));
   const [agents, setAgents] = useState<Agent[]>(AGENTS);
   const [approvals, setApprovals] = useState<Approval[]>(() => seedApprovals(SIM_START));
   const [batches] = useState(() => seedBatches(SIM_START));
@@ -59,7 +59,7 @@ export default function OperatorApp() {
   /* live task stream — via the shared typed client transport */
   useEffect(() => {
     if (!connected) return;
-    return mrc.stream.onTick((events, delta) => {
+    return cent.stream.onTick((events, delta) => {
       setFeed([...events.slice(0, 16)]);
       if (delta && (delta.earned || delta.spent || delta.escrowDelta)) {
         setWallet((w) => ({
@@ -126,7 +126,7 @@ export default function OperatorApp() {
       hire: (name) => toast(`TASK TEMPLATE COMMITTED → ${name.toUpperCase()}`),
       stakeMore: (v) => setWallet((w) => ({ ...w, stake: w.stake + v, avail: Math.max(0, w.avail - v) })),
       settleFeedItem: (id, state) => {
-        mrc.transport.setTaskState(id, state);
+        cent.transport.setTaskState(id, state);
       },
     };
   }, [connected, tab, overlays, now, feed, agents, approvals, batches, alerts, limits, wallet, toasts]);
@@ -196,7 +196,7 @@ export default function OperatorApp() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.97 }}
                 transition={{ duration: 0.3, ease: EASE }}
-                className="flex items-center gap-2.5 border border-volt/50 bg-ink/95 px-4 py-3 font-mono text-[9px] tracking-[0.18em] text-mist shadow-[0_10px_40px_rgba(0,0,0,0.7)]"
+                className="flex items-center gap-2.5 border border-volt/50 bg-code/95 px-4 py-3 font-mono text-[9px] tracking-[0.18em] text-code-fg shadow-[0_10px_40px_rgba(0,0,0,0.35)]"
               >
                 <span className="flex h-4 w-4 items-center justify-center bg-volt">
                   <Check size={10} strokeWidth={3.5} className="text-void" />

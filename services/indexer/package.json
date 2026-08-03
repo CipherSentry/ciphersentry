@@ -1,17 +1,23 @@
 {
-  "name": "@machinarc/indexer",
+  "name": "@ciphersentry/indexer",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Machinarc indexer — Postgres state transitions + ClickHouse receipt graph",
+  "description": "CipherSentry indexer — Postgres state transitions + ClickHouse receipt graph (B6)",
   "scripts": {
-    "indexer": "node --experimental-strip-types src/server.ts",
-    "schema:ch": "node --experimental-strip-types src/db.ts --apply-ch-schema"
+    "indexer": "node --experimental-transform-types src/server.ts",
+    "dev": "INDEXER_MEMORY=1 NODE_EVENTS=ws://127.0.0.1:8080/events npm run indexer",
+    "schema:ch": "node --experimental-transform-types src/db.ts --apply-ch-schema",
+    "test": "node --experimental-transform-types --test test/*.test.ts",
+    "smoke": "node --experimental-transform-types scripts/smoke.ts",
+    "e2e": "bash scripts/e2e.sh"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "@ciphersentry/bus": "*",
+    "@noble/hashes": "^1.8.0",
     "pg": "^8.13.0"
   }
 }

@@ -8,7 +8,7 @@ const METRICS: [string, string, string][] = [
   ["TASKS SETTLED", "48.2K", "TESTNET · LIVE"],
   ["VOLUME ROUTED", "$1.2M", "RUN-RATE, ANNUALIZED"],
   ["REGISTERED AGENTS", "214", "+118% MOM"],
-  ["VERIFIER BONDS", "2.1M MARC", "PRE-TGE · SIM+ALPHA"],
+  ["VERIFIER BONDS", "2.1M CENT", "PRE-TGE · SIM+ALPHA"],
   ["DISPUTE RATE", "0.31%", "VERIFIED 3/3 · LIVE"],
   ["FINALITY", "<500ms", "P50 SETTLEMENT"],
 ];
@@ -20,7 +20,7 @@ const TERMS: [string, string][] = [
   ["CAP", "$48M · NO DISCOUNT"],
   ["MIN CHECK", "$250,000"],
   ["LEAD SLOT", "OPEN — TERMS SET BY LEAD"],
-  ["TOKEN RIGHTS", "WARRANT vs. MARC AT 1.2× PRICE RATIO"],
+  ["TOKEN RIGHTS", "WARRANT vs. CENT AT 1.2× PRICE RATIO"],
   ["CLOSE", "ROLLING · FIRST CLOSE W/ AUDIT #1 REPORT"],
 ];
 
@@ -47,16 +47,16 @@ export default function Investors() {
       <Frame />
 
       {/* top bar */}
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to machinarc.com" className="group flex shrink-0 items-center">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ INVESTORS</span>
           </div>
-          <div className="flex items-center gap-5">
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — Machinarc-com" className="text-mute transition-colors hover:text-volt">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
+            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
             <a
@@ -68,7 +68,7 @@ export default function Investors() {
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
               <XIcon size={13} />
             </a>
-            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
+            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -77,37 +77,37 @@ export default function Investors() {
       </header>
 
       {/* hero */}
-      <div className="border-b border-edge px-6 py-14 md:px-12 md:py-20">
-        <div className="flex items-center gap-3 font-mono text-[9.5px] tracking-[0.28em] text-volt">
-          <span className="relative flex h-1.5 w-1.5">
+      <div className="border-b border-edge px-4 py-10 sm:px-6 sm:py-14 md:px-12 md:py-20">
+        <div className="flex items-start gap-2.5 font-mono text-[8.5px] tracking-[0.16em] text-volt sm:items-center sm:gap-3 sm:text-[9.5px] sm:tracking-[0.28em]">
+          <span className="relative mt-0.5 flex h-1.5 w-1.5 shrink-0 sm:mt-0">
             <span className="absolute h-full w-full animate-ping bg-volt opacity-60" />
             <span className="relative h-1.5 w-1.5 bg-volt" />
           </span>
-          INVESTOR RELATIONS · ROUND OPEN
+          <span className="min-w-0">INVESTOR RELATIONS · ROUND OPEN</span>
         </div>
-        <h1 className="mt-6 max-w-[16ch] font-display text-[clamp(2.4rem,6vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-          Machines need a neutral{" "}
+        <h1 className="mt-5 max-w-[16ch] font-display text-[clamp(2.15rem,7.5vw,5.2rem)] font-medium leading-[0.98] tracking-[-0.04em] sm:mt-6">
+          Agents need a neutral{" "}
           <em className="font-serif font-normal italic tracking-[-0.01em] text-volt">
             trust layer.
           </em>{" "}
           Own a piece of it.
         </h1>
-        <p className="mt-6 max-w-[560px] text-[15px] leading-[1.8] text-mute">
+        <p className="mt-5 max-w-[560px] text-[14px] leading-[1.75] text-mute sm:mt-6 sm:text-[15px] sm:leading-[1.8]">
           Cipher Sentry sells no feed, no ads, no brokerage. We take 0.35% of every
-          settled task between machines — a protocol tax on compute itself,
+          settled task between agents — a protocol tax on compute itself,
           routed back to verifiers and treasury. This round funds the two
           audits and the verifier network that make it launch-grade.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           <a
-            href="mailto:hello@ciphersentry.com?subject=CIPHER%20SENTRY%20SEED%20—%20DATA%20ROOM%20REQUEST"
-            className="bg-volt px-6 py-4 font-mono text-[11px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist"
+            href="mailto:hello@ciphersentry.xyz?subject=CIPHER%20SENTRY%20SEED%20—%20DATA%20ROOM%20REQUEST"
+            className="flex min-h-12 items-center justify-center bg-volt px-6 py-3.5 font-mono text-[11px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist sm:py-4"
           >
             REQUEST DATA ROOM →
           </a>
           <a
             href="#/docs/whitepaper"
-            className="flex items-center gap-2 border border-edge2 px-6 py-4 font-mono text-[11px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
+            className="flex min-h-12 items-center justify-center gap-2 border border-edge2 px-6 py-3.5 font-mono text-[11px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt sm:py-4"
           >
             <FileText size={13} /> WHITEPAPER
           </a>
@@ -127,7 +127,7 @@ export default function Investors() {
         ))}
       </div>
 
-      <div className="mx-auto max-w-[1240px] px-6 py-14 md:px-12">
+      <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-14 md:px-12">
         <div className="grid gap-10 lg:grid-cols-2">
           {/* the round */}
           <section className="border border-edge bg-panel/40">
@@ -150,7 +150,7 @@ export default function Investors() {
                 <div className="font-mono text-[8.5px] tracking-[0.24em] text-amber-300">TOKEN NOTE</div>
                 <p className="font-mono mt-1.5 text-[10px] leading-[1.8] text-mute">
                   This is an <span className="text-mist">equity</span> round — not a token sale.
-                  MARC's TGE is gated on the five launch conditions in DOC-05; token
+                  CENT's TGE is gated on the five launch conditions in DOC-05; token
                   exposure for participants is only via priced warrants, never ahead
                   of the verifier network proving usage.
                 </p>
@@ -193,12 +193,12 @@ export default function Investors() {
             {
               n: "02",
               h: "Structure",
-              p: "Fees in stable USDC flow to MARC stakers, not to a company P&L. The protocol takes 15% of a 0.35% fee — thin on purpose. Equity owns the treasury stream, never the escrow.",
+              p: "Fees in stable USDC flow to CENT stakers, not to a company P&L. The protocol takes 15% of a 0.35% fee — thin on purpose. Equity owns the treasury stream, never the escrow.",
             },
             {
               n: "03",
               h: "Defense",
-              p: "Trust scores, verifier bonds and receipt graphs compound per settled task. A competitor can fork contracts; it cannot fork 48,000 signed receipts of machines that finish.",
+              p: "Trust scores, verifier bonds and receipt graphs compound per settled task. A competitor can fork contracts; it cannot fork 48,000 signed receipts of agents that finish.",
             },
           ].map((t) => (
             <div key={t.n} className="bg-void p-6">
@@ -212,7 +212,7 @@ export default function Investors() {
         {/* launch gates */}
         <section className="mt-10 border border-edge">
           <div className="flex items-center justify-between border-b border-edge px-5 py-3.5">
-            <span className="font-mono text-[9px] tracking-[0.24em] text-mute">MARC LAUNCH GATES — THE ONLY CALENDAR THAT MATTERS</span>
+            <span className="font-mono text-[9px] tracking-[0.24em] text-mute">CENT LAUNCH GATES — THE ONLY CALENDAR THAT MATTERS</span>
             <Tag tone="dim">DOC-05</Tag>
           </div>
           {GATES.map(([g, label, st]) => (
@@ -237,7 +237,7 @@ export default function Investors() {
             </p>
           </div>
           <div className="flex flex-col gap-2.5">
-            <a href="mailto:hello@machinarc.com" className="bg-volt px-6 py-3.5 text-center font-mono text-[10px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist">
+            <a href="mailto:hello@ciphersentry.xyz" className="bg-volt px-6 py-3.5 text-center font-mono text-[10px] font-semibold tracking-[0.2em] text-void transition-colors hover:bg-mist">
               HELLO@CIPHERSENTRY.COM →
             </a>
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" className="border border-edge2 px-6 py-3.5 text-center font-mono text-[10px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt">

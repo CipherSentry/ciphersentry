@@ -1,9 +1,10 @@
 {
-  "name": "@machinarc/services",
+  "name": "@ciphersentry/services",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "workspaces": [
+    "bus",
     "gateway",
     "indexer",
     "verifier-daemon"
@@ -12,6 +13,31 @@
     "gateway": "npm run gateway -w gateway",
     "indexer": "npm run indexer -w indexer",
     "schema:ch": "npm run schema:ch -w indexer",
-    "daemon": "npm run daemon -w verifier-daemon"
+    "daemon": "npm run daemon -w verifier-daemon",
+    "test": "npm run test -w bus && npm run test -w verifier-daemon && npm run test -w gateway && npm run test -w indexer",
+    "smoke": "npm run smoke -w gateway",
+    "smoke:auth": "npm run smoke:auth -w gateway",
+    "smoke:indexer": "npm run smoke -w indexer",
+    "e2e:auth": "bash scripts/e2e-auth.sh",
+    "e2e:auth:public": "bash scripts/e2e-auth-public.sh",
+    "flip:auth:public": "bash scripts/flip-public-auth.sh",
+    "e2e:indexer": "bash indexer/scripts/e2e.sh",
+    "e2e:indexer:pg": "bash indexer/scripts/e2e-pg.sh",
+    "e2e:batcher": "bash gateway/scripts/e2e-batcher.sh",
+    "e2e:compose": "bash scripts/e2e-compose.sh",
+    "e2e:full": "bash scripts/e2e-full.sh",
+    "e2e:rails": "bash scripts/e2e-rails.sh",
+    "e2e:rails:smoke": "bash scripts/e2e-rails-smoke.sh",
+    "demo:sepolia": "bash scripts/demo-sepolia.sh",
+    "demo:local": "DEMO_LOCAL=1 DEMO_HOLD=0 bash scripts/demo-sepolia.sh",
+    "e2e:sepolia:full": "bash scripts/e2e-sepolia-full.sh",
+    "e2e:sepolia:circle": "bash scripts/e2e-sepolia-circle.sh",
+    "b7:init": "bash scripts/b7-host.sh init",
+    "b7:up": "bash scripts/b7-host.sh up",
+    "b7:health": "bash scripts/b7-host.sh health",
+    "b7:compose": "bash scripts/b7-host.sh compose",
+    "b7:down": "bash scripts/b7-host.sh down",
+    "fly:indexer": "bash fly/deploy-indexer.sh"
   }
 }
+

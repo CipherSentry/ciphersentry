@@ -3,10 +3,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { timeAgo } from "../data";
 import { useApp } from "../store";
 import { SectionLabel, Stat, StateDot } from "../ui";
+import { CipherSentry } from "../../sdk/ciphersentry";
+import { describeTransport } from "../../sdk/livePath";
+
+const cent = CipherSentry.shared();
 
 export default function Feed() {
   const app = useApp();
   const { feed, approvals, now } = app;
+  const hud = describeTransport(cent.transport);
+  const streamLabel = hud.sessionLine ?? hud.primary;
+  const dotTone =
+    hud.tone === "volt" ? "bg-volt" : hud.tone === "amber" ? "bg-amber-300" : hud.tone === "red" ? "bg-red-400" : "bg-mute";
 
   return (
     <div className="no-scrollbar h-full overflow-y-auto pb-28">
@@ -16,10 +24,16 @@ export default function Feed() {
           <div className="mt-1 font-display text-[22px] font-semibold tracking-[-0.02em]">
             Live trace
           </div>
+          {hud.kind === "rpc" && (
+            <div className="mt-1 font-mono text-[8px] tracking-[0.16em] text-mute/70" title={hud.node}>
+              {hud.secondary}
+              {hud.sessionLine ? ` · ${hud.sessionLine}` : ""}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 px-2 py-2 font-mono text-[8.5px] tracking-[0.2em] text-mute">
-          <span className="h-1.5 w-1.5 bg-volt" />
-          SYNCED
+          <span className={`h-1.5 w-1.5 ${dotTone}`} />
+          {streamLabel}
         </div>
       </div>
 
@@ -44,7 +58,7 @@ export default function Feed() {
                   {a.type === "DISPUTE" ? <Scale size={13} /> : <TrendingUp size={13} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-mono text-[11px] text-[#fff1e6]">
+                  <span className="block truncate font-mono text-[11px] text-mist">
                     {a.type === "DISPUTE" ? "Dispute " : "Limit "}
                     <span className="text-volt">{a.ref}</span>
                   </span>

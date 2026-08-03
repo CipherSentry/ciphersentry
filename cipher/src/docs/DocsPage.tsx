@@ -32,24 +32,24 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">
               / DOCS{doc ? ` / ${doc.title.toUpperCase()}` : ""}
             </span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
             <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
               <XIcon size={13} />
             </a>
-            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
+            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -57,14 +57,14 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1240px] gap-x-14 gap-y-10 px-6 py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <nav className="no-scrollbar -mx-6 flex gap-1.5 overflow-x-auto px-6 lg:hidden" aria-label="Docs index">
+      <div className="mx-auto grid max-w-[1240px] gap-x-10 gap-y-6 px-4 py-6 sm:gap-x-14 sm:gap-y-10 sm:px-6 sm:py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
+        <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+          <nav className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:hidden" aria-label="Docs index">
             {DOCS.map((d, i) => (
               <a
                 key={d.slug}
                 href={`#/docs/${d.slug}`}
-                className={`shrink-0 border px-3 py-2 font-mono text-[9px] tracking-[0.18em] transition-colors ${
+                className={`shrink-0 border px-2.5 py-2 font-mono text-[8.5px] tracking-[0.14em] transition-colors sm:px-3 sm:text-[9px] sm:tracking-[0.18em] ${
                   doc?.slug === d.slug ? "border-volt/70 bg-volt/10 text-volt" : "border-edge2 text-mute"
                 }`}
               >
@@ -141,29 +141,29 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
           <article key={doc.slug} className="min-w-0 max-w-[780px] pb-10">
             {Doc ? <Doc /> : null}
 
-            <div className="mt-16 grid grid-cols-2 gap-3 border-t border-edge pt-6">
+            <div className="mt-12 grid grid-cols-1 gap-2.5 border-t border-edge pt-5 sm:mt-16 sm:grid-cols-2 sm:gap-3 sm:pt-6">
               {prev && (
-                <a href={`#/docs/${prev.slug}`} className="group flex items-center gap-2.5 border border-edge px-4 py-3.5 transition-colors hover:border-volt/60">
-                  <ArrowLeft size={13} className="text-mute transition-colors group-hover:text-volt" />
+                <a href={`#/docs/${prev.slug}`} className="group flex min-h-12 items-center gap-2.5 border border-edge px-3.5 py-3 transition-colors hover:border-volt/60 sm:px-4 sm:py-3.5">
+                  <ArrowLeft size={13} className="shrink-0 text-mute transition-colors group-hover:text-volt" />
                   <span className="min-w-0">
                     <span className="block font-mono text-[7.5px] tracking-[0.22em] text-mute/50">PREV</span>
-                    <span className="truncate font-mono text-[10.5px] text-mist">{prev.title}</span>
+                    <span className="block truncate font-mono text-[10.5px] text-mist">{prev.title}</span>
                   </span>
                 </a>
               )}
               {!prev && (
-                <a href="#/docs" className="group flex items-center gap-2.5 border border-edge px-4 py-3.5 transition-colors hover:border-volt/60">
-                  <ArrowLeft size={13} className="text-mute transition-colors group-hover:text-volt" />
+                <a href="#/docs" className="group flex min-h-12 items-center gap-2.5 border border-edge px-3.5 py-3 transition-colors hover:border-volt/60 sm:px-4 sm:py-3.5">
+                  <ArrowLeft size={13} className="shrink-0 text-mute transition-colors group-hover:text-volt" />
                   <span className="font-mono text-[10.5px] tracking-[0.18em] text-volt">DOCS INDEX</span>
                 </a>
               )}
               {next && (
-                <a href={`#/docs/${next.slug}`} className="group col-start-2 flex items-center justify-end gap-2.5 border border-edge px-4 py-3.5 text-right transition-colors hover:border-volt/60">
+                <a href={`#/docs/${next.slug}`} className="group flex min-h-12 items-center justify-end gap-2.5 border border-edge px-3.5 py-3 text-right transition-colors hover:border-volt/60 sm:col-start-2 sm:px-4 sm:py-3.5">
                   <span className="min-w-0">
                     <span className="block font-mono text-[7.5px] tracking-[0.22em] text-mute/50">NEXT</span>
-                    <span className="truncate font-mono text-[10.5px] text-mist">{next.title}</span>
+                    <span className="block truncate font-mono text-[10.5px] text-mist">{next.title}</span>
                   </span>
-                  <ArrowRight size={13} className="text-mute transition-colors group-hover:text-volt" />
+                  <ArrowRight size={13} className="shrink-0 text-mute transition-colors group-hover:text-volt" />
                 </a>
               )}
             </div>

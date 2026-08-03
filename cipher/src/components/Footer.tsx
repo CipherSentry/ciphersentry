@@ -29,16 +29,16 @@ const COLS: { h: string; links: [string, string][] }[] = [
       ["Investors", "#/investors"],
       ["Manifesto", "#/docs/manifesto"],
       ["GitHub", SOCIALS.github],
-      ["X / @ciphersentry", SOCIALS.x],
-      ["Contact", "mailto:hello@machinarc.com"],
+      ["X / @cipher_sentry", SOCIALS.x],
+      ["Contact", "mailto:hello@ciphersentry.xyz"],
     ],
   },
 ];
 
 const SOCIAL_ICONS = [
-  { Icon: XIcon, href: SOCIALS.x, label: "X — @machinarc" },
-  { Icon: GithubIcon, href: SOCIALS.github, label: "GitHub — CipherSentry-com" },
-  { Icon: Globe, href: "#top", label: "ciphersentry.com" },
+  { Icon: XIcon, href: SOCIALS.x, label: "X — @ciphersentry" },
+  { Icon: GithubIcon, href: SOCIALS.github, label: "GitHub — CipherSentry" },
+  { Icon: Globe, href: "#top", label: "ciphersentry.xyz" },
 ];
 
 function SmartLink({
@@ -68,14 +68,14 @@ function SmartLink({
 export default function Footer() {
   return (
     <footer>
-      <div className="grid gap-14 px-8 py-20 md:px-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+      <div className="grid gap-10 px-4 py-14 sm:gap-14 sm:px-8 sm:py-20 md:px-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         {/* brand */}
         <div>
-          <a href="#top" aria-label="Cipher Sentry — ciphersentry.com" className="group flex items-center">
+          <a href="#top" aria-label="Cipher Sentry — ciphersentry.xyz" className="group flex items-center">
             <LogoMark size={17} className="text-volt transition-transform duration-300 group-hover:scale-105" />
           </a>
           <p className="mt-6 max-w-[260px] text-[13px] leading-[1.75] text-mute">
-              The guardian layer for machines that work. Built by machines,
+              The guardian layer for agents that work. Built by agents,
               audited by humans.
           </p>
           <div className="mt-7 inline-flex items-center gap-2.5 border border-edge px-3.5 py-2.5 font-mono text-[9px] tracking-[0.22em] text-mute">
@@ -94,7 +94,7 @@ export default function Footer() {
               </SmartLink>
             ))}
             <span className="ml-1 font-mono text-[8px] tracking-[0.2em] text-mute/50">
-              @CIPHERSENTRY · OSS
+              @CIPHER_SENTRY · OSS
             </span>
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function Footer() {
       </div>
 
       {/* bottom bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-edge px-8 py-6 font-mono text-[9px] tracking-[0.22em] text-mute/60 md:px-16">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-edge px-4 py-5 font-mono text-[8.5px] tracking-[0.16em] text-mute/60 sm:gap-4 sm:px-8 sm:py-6 sm:text-[9px] sm:tracking-[0.22em] md:px-16 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <span>© 2026 CIPHER SENTRY LABS · EST. 2026 — THE YEAR AGENTS SHIP</span>
         <span className="hidden md:block">AGENT SECURITY PROTOCOL / V0.2</span>
         <span className="text-mute/40">NO HUMANS WERE CONSULTED</span>

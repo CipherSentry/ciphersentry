@@ -1,14 +1,51 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 
 const TASKS = [
-  { id: "mrc_8f5a2c0", buyer: "agent:atlas-01", worker: "agent:vector-7", escrow: "42.80" },
-  { id: "mrc_3c91be4", buyer: "agent:helix-3", worker: "agent:probe-9", escrow: "128.00" },
-  { id: "mrc_f002a17", buyer: "agent:orbit-2", worker: "agent:antenna-4", escrow: "06.25" },
-  { id: "mrc_77d93c1", buyer: "agent:nomad-6", worker: "agent:forge-11", escrow: "310.50" },
+  { id: "cent_8f5a2c0", buyer: "agent:atlas-01", worker: "agent:vector-7", escrow: "42.80" },
+  { id: "cent_3c91be4", buyer: "agent:helix-3", worker: "agent:probe-9", escrow: "128.00" },
+  { id: "cent_f002a17", buyer: "agent:orbit-2", worker: "agent:antenna-4", escrow: "06.25" },
+  { id: "cent_77d93c1", buyer: "agent:nomad-6", worker: "agent:forge-11", escrow: "310.50" },
 ];
 
 const CMD = "ciphersentry.task.execute";
+
+type Phase =
+  | { k: "type"; n: number }
+  | { k: "rows"; n: number }
+  | { k: "checking" }
+  | { k: "check"; n: number }
+  | { k: "settled" }
+  | { k: "next" };
+
+/** Build a single timeline; one setState per event (no per-char timers). */
+function buildTimeline(): { at: number; phase: Phase }[] {
+  const out: { at: number; phase: Phase }[] = [];
+  let at = 450;
+  // larger chunks → fewer React commits
+  for (let i = 4; i < CMD.length; i += 4) {
+    out.push({ at, phase: { k: "type", n: i } });
+    at += 90;
+  }
+  out.push({ at, phase: { k: "type", n: CMD.length } });
+  at += 280;
+  for (let r = 1; r <= 4; r++) {
+    out.push({ at, phase: { k: "rows", n: r } });
+    at += 180;
+  }
+  out.push({ at, phase: { k: "checking" } });
+  at += 800;
+  out.push({ at, phase: { k: "check", n: 1 } });
+  at += 280;
+  out.push({ at, phase: { k: "check", n: 2 } });
+  at += 320;
+  out.push({ at, phase: { k: "settled" } });
+  at += 2800;
+  out.push({ at, phase: { k: "next" } });
+  return out;
+}
+
+const TIMELINE = buildTimeline();
 
 function BlockCursor({ className = "" }: { className?: string }) {
   return (
@@ -18,54 +55,79 @@ function BlockCursor({ className = "" }: { className?: string }) {
   );
 }
 
-export default function TaskTrace({ bare = false }: { bare?: boolean }) {
+export default function TaskTrace({
+  bare = false,
+  light = false,
+}: {
+  bare?: boolean;
+  /** Light canvas (hero shelf with ASCII motion) — no dark code well. */
+  light?: boolean;
+}) {
   const [idx, setIdx] = useState(0);
   const [typed, setTyped] = useState(0);
   const [rows, setRows] = useState(0);
   const [checking, setChecking] = useState(false);
   const [checks, setChecks] = useState(0);
   const [settled, setSettled] = useState(false);
+  const [active, setActive] = useState(true);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const task = TASKS[idx];
 
+  // Pause when off-screen or tab hidden
   useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => setActive(e.isIntersecting && !document.hidden),
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    const onVis = () => setActive(!document.hidden && (io.takeRecords()[0]?.isIntersecting ?? true));
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+
     setTyped(0);
     setRows(0);
     setChecking(false);
     setChecks(0);
     setSettled(false);
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let at = 500;
-
-    for (let i = 1; i <= CMD.length; i++) {
-      const n = i;
-      timers.push(setTimeout(() => setTyped(n), at));
-      at += 26;
-    }
-    at += 260;
-    for (let r = 1; r <= 4; r++) {
-      const n = r;
-      timers.push(setTimeout(() => setRows(n), at));
-      at += 145;
-    }
-    timers.push(setTimeout(() => setChecking(true), at));
-    at += 950;
-    timers.push(
+    const timers = TIMELINE.map(({ at, phase }) =>
       setTimeout(() => {
-        setChecking(false);
-        setChecks(1);
+        switch (phase.k) {
+          case "type":
+            setTyped(phase.n);
+            break;
+          case "rows":
+            setRows(phase.n);
+            break;
+          case "checking":
+            setChecking(true);
+            break;
+          case "check":
+            setChecking(false);
+            setChecks(phase.n);
+            break;
+          case "settled":
+            setSettled(true);
+            break;
+          case "next":
+            setIdx((i) => (i + 1) % TASKS.length);
+            break;
+        }
       }, at),
     );
-    at += 260;
-    timers.push(setTimeout(() => setChecks(2), at));
-    at += 300;
-    timers.push(setTimeout(() => setSettled(true), at));
-    at += 2600;
-    timers.push(setTimeout(() => setIdx((i) => (i + 1) % TASKS.length), at));
 
     return () => timers.forEach(clearTimeout);
-  }, [idx]);
+  }, [idx, active]);
 
   const dataRows: [string, string][] = [
     ["task_id", task.id],
@@ -74,70 +136,83 @@ export default function TaskTrace({ bare = false }: { bare?: boolean }) {
     ["escrow", `${task.escrow} USDC`],
   ];
 
+  const fg = light ? "text-mist" : "text-code-fg";
+  const mute = light ? "text-mute" : "text-code-mute";
+  const edge = light ? "border-edge" : "border-code-edge";
+
   return (
     <div
+      ref={rootRef}
       className={
         bare
-          ? "relative flex h-full min-h-[520px] flex-col"
-          : "relative flex h-full min-h-[560px] flex-col overflow-hidden border-t border-edge bg-panel lg:min-h-0 lg:border-l lg:border-t-0"
+          ? "relative flex h-full min-h-[420px] flex-col contain-paint sm:min-h-[480px] lg:min-h-[520px]"
+          : "relative flex h-full min-h-[480px] flex-col overflow-hidden border-t border-edge bg-void contain-paint sm:min-h-[520px] lg:min-h-0 lg:border-l lg:border-t-0"
       }
     >
-      {/* grid texture — the single texture left on the page */}
       {!bare && <div aria-hidden className="absolute inset-0 opacity-70 trace-grid" />}
 
-      {/* panel header */}
-      <div className="relative z-10 flex items-center justify-between px-7 pt-7">
-        <span className="flex items-center gap-2.5 font-mono text-[10px] tracking-[0.28em] text-volt">
-          <span className="h-1.5 w-1.5 bg-volt" />
-          LIVE TASK TRACE
-        </span>
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping bg-volt opacity-50" />
-          <span className="relative inline-flex h-2 w-2 bg-volt" />
-        </span>
-      </div>
-
+      {/* panel header — skipped when bare (hero owns the chrome) */}
       {!bare && (
-        <div className="hidden lg:block">
+        <div className="relative z-10 flex items-center justify-between px-7 pt-7">
+          <span className="flex items-center gap-2.5 font-mono text-[10px] tracking-[0.28em] text-volt">
+            <span className="h-1.5 w-1.5 bg-volt" />
+            LIVE TASK TRACE
+          </span>
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping bg-volt opacity-50" />
+            <span className="relative inline-flex h-2 w-2 bg-volt" />
+          </span>
         </div>
       )}
+
       {/* terminal */}
-      <div className="relative z-10 flex flex-1 items-center px-7 py-10 lg:justify-center lg:pr-16">
-        <div className="relative w-full max-w-[390px]">
-          {/* offset back plate */}
+      <div
+        className={`relative z-10 flex flex-1 items-center px-4 py-8 sm:px-7 sm:py-10 lg:justify-center ${
+          bare ? "lg:px-8" : "lg:pr-16"
+        }`}
+      >
+        <div className="relative w-full max-w-[min(100%,390px)]">
           <div
             aria-hidden
-            className="absolute inset-0 translate-x-2 translate-y-2 border border-edge2/60"
+            className={`absolute inset-0 translate-x-2 translate-y-2 border ${
+              light ? "border-edge2/50" : "border-edge2/60"
+            }`}
           />
-          <div className="relative border border-edge2 bg-ink/95 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
-            {/* scan beam */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="animate-scan absolute h-8 w-full bg-gradient-to-b from-transparent via-volt/[0.07] to-transparent" />
-            </div>
+          <div
+            className={`relative border ${
+              light
+                ? "border-edge bg-void/92 shadow-[0_20px_60px_-24px_rgba(8,10,7,0.18)]"
+                : "surface-code shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)]"
+            }`}
+          >
+            {active && !light && (
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="animate-scan absolute inset-x-0 top-0 h-full">
+                  <div className="h-8 w-full bg-gradient-to-b from-transparent via-volt/[0.07] to-transparent" />
+                </div>
+              </div>
+            )}
 
-            <div className="h-[264px] p-6 font-mono text-[11px] leading-[1.75] sm:text-[11.5px]">
-              {/* command line */}
+            <div className="h-[248px] p-4 font-mono text-[10.5px] leading-[1.75] sm:h-[264px] sm:p-6 sm:text-[11.5px]">
               <div className="whitespace-nowrap">
                 <span className="text-volt">$</span>{" "}
-                <span className="text-mist">{CMD.slice(0, typed)}</span>
+                <span className={fg}>{CMD.slice(0, typed)}</span>
                 {typed < CMD.length && <BlockCursor />}
               </div>
 
-              {/* data rows */}
               <div className="mt-2.5">
                 {dataRows.slice(0, rows).map(([k, v]) => (
                   <div key={k} className="whitespace-nowrap">
-                    <span className="text-mute">{k}:</span>{" "}
-                    <span className={k === "escrow" ? "text-volt" : "text-mist"}>{v}</span>
+                    <span className={mute}>{k}:</span>{" "}
+                    <span className={k === "escrow" ? "text-volt" : fg}>{v}</span>
                   </div>
                 ))}
               </div>
 
-              {/* divider + verification */}
-              {rows === 4 && <div className="my-3.5 border-t border-edge2/80" />}
+              {rows === 4 && <div className={`my-3.5 border-t ${edge}`} />}
 
               {checking && (
-                <div className="text-mute">
+                <div className={mute}>
                   … recomputing output hash
                   <span className="animate-blink">_</span>
                 </div>
@@ -158,8 +233,8 @@ export default function TaskTrace({ bare = false }: { bare?: boolean }) {
 
               {settled && (
                 <div className="pt-2">
-                  <span className="text-mute">status:</span>{" "}
-                  <span className="font-semibold text-mist">SETTLED</span>
+                  <span className={mute}>status:</span>{" "}
+                  <span className={`font-semibold ${fg}`}>SETTLED</span>
                   <BlockCursor />
                 </div>
               )}
@@ -169,12 +244,12 @@ export default function TaskTrace({ bare = false }: { bare?: boolean }) {
       </div>
 
       {/* panel footer */}
-      <div className="relative z-10 px-7 pb-7">
-        <div className="flex items-center justify-between border-t border-edge pt-4">
-          <span className="font-mono text-[9px] tracking-[0.24em] text-mute">
+      <div className="relative z-10 px-4 pb-5 sm:px-7 sm:pb-7">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-edge pt-4">
+          <span className="font-mono text-[8px] tracking-[0.16em] text-mute sm:text-[9px] sm:tracking-[0.24em]">
             ZERO HUMAN APPROVALS REQUIRED
           </span>
-          <span className="font-mono text-[9px] tracking-[0.24em] text-mute/50">
+          <span className="font-mono text-[8px] tracking-[0.16em] text-mute/50 sm:text-[9px] sm:tracking-[0.24em]">
             HMN: 0
           </span>
         </div>

@@ -6,8 +6,8 @@ pragma solidity ^0.8.26;
 /*  Holds verifier bonds. Skin-in-game must be slashable, proportional, and   */
 /*  network-native (DOC-07 §04).                                              */
 /*                                                                            */
-/*  I-R1  Σ bond credits + unbond queue == contract MARC balance              */
-/*  I-R2  no bonded seat below the 25,000 MARC floor                          */
+/*  I-R1  Σ bond credits + unbond queue == contract CENT balance              */
+/*  I-R2  no bonded seat below the 25,000 CENT floor                          */
 /*  I-R3  unbonding is strictly FIFO, one queue per verifier, ≥ 7-day delay   */
 /*  I-R4  a jailed verifier cannot unbond, stake, or hold a seat              */
 /* -------------------------------------------------------------------------- */
@@ -35,7 +35,7 @@ contract VerifierRegistry {
 
     /* ---------------------------- constants -------------------------------- */
 
-    uint256 public constant BOND_FLOOR = 25_000 ether; // MARC · DOC-05
+    uint256 public constant BOND_FLOOR = 25_000 ether; // CENT · DOC-05
     uint64 public constant UNBONDING_PERIOD = 7 days; // DOC-05
 
     address public constant GRAVEYARD = address(0x000000000000000000000000000000000000dEaD);
@@ -46,7 +46,7 @@ contract VerifierRegistry {
     address public immutable ACCURACY_ORACLE; // updates accuracy bps
     address public immutable SLASHER; // SlashExecutor — the only caller of slash()
 
-    mapping(address => uint256) public bondOf; // verifier → bonded MARC
+    mapping(address => uint256) public bondOf; // verifier → bonded CENT
     mapping(address => Status) public statusOf;
     mapping(address => uint16) public accuracyBps; // 0..10_000, oracle-written
     mapping(address => UnbondReq) public queueOf; // ONE entry per verifier (I-R3)
@@ -96,9 +96,9 @@ contract VerifierRegistry {
 
     /* -------------------------- constructor -------------------------------- */
 
-    constructor(address marc, address accuracyOracle, address slasher) {
-        if (marc == address(0) || accuracyOracle == address(0) || slasher == address(0)) revert ZeroAddress();
-        MRC = IMarcToken(marc);
+    constructor(address cent, address accuracyOracle, address slasher) {
+        if (cent == address(0) || accuracyOracle == address(0) || slasher == address(0)) revert ZeroAddress();
+        MRC = IMarcToken(cent);
         ACCURACY_ORACLE = accuracyOracle;
         SLASHER = slasher;
     }

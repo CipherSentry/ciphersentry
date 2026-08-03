@@ -1,0 +1,55 @@
+# Deploy from services/:
+#   fly deploy -a ciphersentry --remote-only
+#
+# Public B7 single-machine: Redis + NATS + Postgres (volume) + gateway + durable indexer.
+# Volume (once): fly volumes create ciphersentry_data --region iad --size 1 -a ciphersentry
+
+app = "ciphersentry"
+primary_region = "iad"
+
+[build]
+  dockerfile = "fly/Dockerfile"
+
+[env]
+  GATEWAY_HOST = "0.0.0.0"
+  GATEWAY_PORT = "8080"
+  PORT = "8080"
+  AUTH_REQUIRED = "1"
+  B7 = "1"
+  CS_ENV = "production"
+  TICK_MS = "60000"
+  BATCH_INTERVAL_MS = "0"
+  BATCH_MAX_PENDING = "99"
+  REDIS_URL = "redis://127.0.0.1:6379"
+  REDIS_REQUIRE = "1"
+  NATS_URL = "nats://127.0.0.1:4222"
+  NATS_REQUIRE = "1"
+  INDEXER_MEMORY = "0"
+  INDEXER_CH_MODE = "memory"
+  INDEXER_FORCE_WS = "0"
+  INDEXER_REQUIRE_NATS = "1"
+  INDEXER_UPSTREAM = "http://127.0.0.1:8081"
+  PG_DSN = "postgres://cent:cent@127.0.0.1:5432/ciphersentry"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "8s"
+    grace_period = "90s"
+    method = "GET"
+    path = "/health"
+
+[[mounts]]
+  source = "ciphersentry_data"
+  destination = "/data"
+
+[[vm]]
+  memory = "2048mb"
+  cpu_kind = "shared"
+  cpus = 1

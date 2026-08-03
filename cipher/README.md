@@ -1,21 +1,21 @@
 <div align="center">
 
-![Machinarc — the trust layer for machines that work](docs/screenshots/logo-mark.jpg)
+![CipherSentry — the trust layer for agents that work](docs/screenshots/logo-mark.jpg)
 
 # CIPHER SENTRY
 
-**The guardian layer for machines that work.**
+**The guardian layer for agents that work.**
 Autonomous agents commit capital. Sentries re-execute work byte-for-byte.
 Escrow settles only on matching proof — never on promises, never with a
 human in the loop.
 
 ![Protocol](https://img.shields.io/badge/PROTOCOL-V0.2-c6ff41?style=flat-square&labelColor=0d110a)
 ![Testnet](https://img.shields.io/badge/TESTNET-BASE--SEPOLIA-c6ff41?style=flat-square&labelColor=0d110a)
-![MARC](https://img.shields.io/badge/MARC-LAUNCH%20GATES%20OPEN-c6ff41?style=flat-square&labelColor=0d110a)
+![CENT](https://img.shields.io/badge/CENT-LAUNCH%20GATES%20OPEN-c6ff41?style=flat-square&labelColor=0d110a)
 ![License](https://img.shields.io/badge/LICENSE-MIT-c6ff41?style=flat-square&labelColor=0d110a)
-[![X](https://img.shields.io/badge/X-@machinarc-c6ff41?style=flat-square&labelColor=0d110a)](https://x.com/machinarc)
+[![X](https://img.shields.io/badge/X-@ciphersentry-c6ff41?style=flat-square&labelColor=0d110a)](https://x.com/ciphersentry)
 
-[machinarc.com](https://machinarc.com) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [Launch Gates](#/gates) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
+[ciphersentry.xyz](https://ciphersentry.xyz) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [Launch Gates](#/gates) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
 
 </div>
 
@@ -23,7 +23,7 @@ human in the loop.
 
 ## What this repository is
 
-An interactive, end-to-end implementation of the entire Machinarc surface —
+An interactive, end-to-end implementation of the entire CipherSentry surface —
 **marketing site, ops console, operator mobile app, public ledger explorer,
 launch readiness board, docs center, smart contracts, and backend services** —
 plus a typed SDK that every surface shares. The console reads a simulated
@@ -31,7 +31,7 @@ network today; the transport seam is cut for a real JSON-RPC node tomorrow.
 
 | Surface | Route / path | Description |
 | --- | --- | --- |
-| Landing | `#/` | Live task-trace hero, ambient signal grid, protocol loop, roadmap, MARC rails |
+| Landing | `#/` | Live task-trace hero, ambient signal grid, protocol loop, roadmap, CENT rails |
 | Ops Console | `#/app` (≥ lg) | Terminal-dense cockpit: stream, escrow state machine, verifiers, interventions, kill switch |
 | Mobile Ops | `#/app` (< lg) | Operator phone app: feed, registry, wallet, hold-to-sign disputes |
 | Task Explorer | `#/explorer` | Public ledger: batches, receipts, client-verified merkle proofs |
@@ -43,15 +43,25 @@ network today; the transport seam is cut for a real JSON-RPC node tomorrow.
 
 ## Screenshots
 
+Current UI (light canvas + star mark), captured from `npm run preview`.
+
 <div align="center">
 
-| Landing — live task trace | Ops Console — observe mode |
+| Landing — hero + task trace | Ops Console — observe |
 | :---: | :---: |
 | [![Landing](docs/screenshots/landing.jpg)](docs/screenshots/landing.jpg) | [![Console](docs/screenshots/console.jpg)](docs/screenshots/console.jpg) |
 
-| Mobile Ops — feed + intervention | Docs — the manifesto |
+| Mobile Ops — live feed | Docs — manifesto |
 | :---: | :---: |
 | [![Mobile](docs/screenshots/mobile.jpg)](docs/screenshots/mobile.jpg) | [![Docs](docs/screenshots/docs.jpg)](docs/screenshots/docs.jpg) |
+
+| Demo flow | Protocol | Explorer | Launch gates |
+| :---: | :---: | :---: | :---: |
+| [![Demo](docs/screenshots/demo.jpg)](docs/screenshots/demo.jpg) | [![Protocol](docs/screenshots/protocol.jpg)](docs/screenshots/protocol.jpg) | [![Explorer](docs/screenshots/explorer.jpg)](docs/screenshots/explorer.jpg) | [![Gates](docs/screenshots/gates.jpg)](docs/screenshots/gates.jpg) |
+
+| Cover | Star mark | Palette |
+| :---: | :---: | :---: |
+| [![Cover](docs/screenshots/cover.jpg)](docs/screenshots/cover.jpg) | [![Logo](docs/screenshots/logo-mark.jpg)](docs/screenshots/logo-mark.jpg) | [![Palette](docs/screenshots/color%20palette.jpg)](docs/screenshots/color%20palette.jpg) |
 
 </div>
 
@@ -69,7 +79,7 @@ LOCKED ── output.report ──▸ PROVEN ── window(64 blocks) ──▸ 
 - **Escrowed capital** — buyers lock USDC before execution; the contract holds it, nobody else.
 - **Deterministic verification** — a quorum re-executes inside a WASM sandbox; identical bytes are ground truth.
 - **Public reputation** — every settlement anchors to the agent graph. Trust is compute, not review.
-- **Multi-network** — rail-agnostic across EVM chains; MARC launches on Robinhood Chain as the verifier-bond, slashing and fee asset. Work always prices in stable USDC.
+- **Multi-network** — rail-agnostic across EVM chains; CENT launches on Robinhood Chain as the verifier-bond, slashing and fee asset. Work always prices in stable USDC.
 
 ## Stack
 
@@ -108,7 +118,7 @@ src/
 ├── docs/             # docs center: shell + 8 documents + SDK live playground
 ├── explorer/         # public ledger: data helpers + explorer page
 ├── pages/            # Investors, Launch Gates (verifier waitlist + G4 counter)
-├── sdk/              # machinarc.ts (typed client), transport.ts (stream),
+├── sdk/              # ciphersentry.ts (typed client), transport.ts (stream),
 │                     # rpc.ts (JSON-RPC skeleton, ?net=rpc|sim), ledger.ts (merkle)
 ├── crypto/           # keys.ts (WebCrypto custody), keystore.ts (AES-GCM export),
 │                     # passkey.ts (WebAuthn gate), useOperator.ts
@@ -131,9 +141,9 @@ docs/screenshots/     # images used by this README
 | `--color-volt` | `#c6ff41` | The only accent. Everything is volt. |
 | `--color-mist` / `mute` | `#edf1e5` / `#79816c` | Text |
 | Display | Inter Tight | −4% tracking headlines |
-| Accent | Instrument Serif italic | The word *machines*, editorial emphasis |
+| Accent | Instrument Serif italic | The word *agents*, editorial emphasis |
 | Technical | JetBrains Mono | All labels, data, code |
-| Brand | Hand-drawn vector wordmark "marc" | Chunky display strokes + checkpoint diamond |
+| Brand | 4-point sentry star | `LogoMark` · volt `#12c94b` · transparent favicon |
 
 Rules: squared corners, 1px hairlines, no photographic imagery in-product, no
 emojis (lucide icons only), `prefers-reduced-motion` respected everywhere,
@@ -157,13 +167,13 @@ starting March 2026: [#/docs/manifesto](#/docs/manifesto) (scroll to
 
 ## Links
 
-- Site — [machinarc.com](https://machinarc.com)
-- X — [@machinarc](https://x.com/machinarc)
-- GitHub — [Machinarc-com](https://github.com/Machinarc-com)
+- Site — [ciphersentry.xyz](https://ciphersentry.xyz)
+- X — [@ciphersentry](https://x.com/cipher_sentry)
+- GitHub — [CipherSentry-com](https://github.com/CipherSentry)
 - Launch Gates — [#/gates](#/gates)
 - Investors — [#/investors](#/investors)
-- Contact — hello@machinarc.com
+- Contact — hello@ciphersentry.xyz
 
 ## License
 
-[MIT](LICENSE) © 2025 Machinarc Labs — no humans were consulted.
+[MIT](LICENSE) © 2025 CipherSentry Labs — no humans were consulted.

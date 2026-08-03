@@ -13,6 +13,12 @@ const ROLES = ["DEVELOPER", "OPERATOR", "AGENT SUPPLIER", "TREASURY"];
 const RAILS = ["BASE MAINNET", "ROBINHOOD CHAIN"];
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+/** Public gateway (Fly). Override with VITE_GATEWAY_URL at build time. */
+const GATEWAY_URL = (
+  (import.meta as ImportMeta & { env?: { VITE_GATEWAY_URL?: string } }).env?.VITE_GATEWAY_URL ??
+  "https://ciphersentry.fly.dev"
+).replace(/\/$/, "");
+
 export default function AccessModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const op = useOperator();
   const [handle, setHandle] = useState("");
@@ -22,6 +28,8 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
   const [useCase, setUseCase] = useState("");
   const [phase, setPhase] = useState<"form" | "signing" | "done">("form");
   const [sig, setSig] = useState<SignedRuling | null>(null);
+  const [queue, setQueue] = useState<number | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const valid = handle.trim().length >= 2 && email.includes("@");
 
@@ -29,6 +37,8 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
     if (open) {
       setPhase("form");
       setSig(null);
+      setQueue(null);
+      setSubmitError(null);
     }
   }, [open]);
 
@@ -41,12 +51,50 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
   const submit = async () => {
     if (!valid || !op.key) return;
     setPhase("signing");
-    const signed = await signRuling(
-      { type: "access.request", handle: handle.trim(), role, rail, useCase: useCase.trim() || undefined },
-      op.key,
-    );
-    setSig(signed);
-    setPhase("done");
+    setSubmitError(null);
+    try {
+      const signed = await signRuling(
+        {
+          type: "access.request",
+          handle: handle.trim(),
+          role,
+          rail,
+          useCase: useCase.trim() || undefined,
+        },
+        op.key,
+      );
+      setSig(signed);
+
+      const res = await fetch(`${GATEWAY_URL}/access-requests`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({
+          kind: "access",
+          handle: handle.trim(),
+          email: email.trim(),
+          role,
+          rail,
+          use_case: useCase.trim() || undefined,
+          sig: signed.sig,
+          pubkey: signed.pubkey,
+          fp: signed.fp,
+          alg: signed.algLabel,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        queue?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `submit failed (${res.status})`);
+      }
+      setQueue(typeof data.queue === "number" ? data.queue : null);
+      setPhase("done");
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : String(e));
+      setPhase("form");
+    }
   };
 
   const inputCls =
@@ -149,8 +197,13 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                       </>
                     )}
                   </button>
+                  {submitError && (
+                    <p className="text-center font-mono text-[9px] tracking-[0.12em] text-red-400">
+                      {submitError}
+                    </p>
+                  )}
                   <p className="text-center font-mono text-[7.5px] tracking-[0.18em] text-mute/50">
-                    SIGNS WITH YOUR DEVICE KEY {op.key ? `· ${op.key.fp}` : ""} — NOTHING LEAVES THIS MACHINE
+                    SIGNS WITH YOUR DEVICE KEY {op.key ? `· ${op.key.fp}` : ""} · REQUEST ROUTES TO OPS QUEUE
                   </p>
                 </div>
               </div>
@@ -167,7 +220,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                 </motion.span>
                 <div className="mt-5 font-display text-[24px] font-semibold">In the queue.</div>
                 <div className="mt-2 font-mono text-[9.5px] leading-[1.9] tracking-[0.18em] text-mute">
-                  QUEUE #4,812 · NEXT BATCH OPENS IN 14 DAYS
+                  {queue != null ? `QUEUE #${queue.toLocaleString()}` : "QUEUED"} · OPS NOTIFIED ON NEXT BATCH
                   <br />
                   INVITES ROUTE TO OPERATORS WITH SETTLED WORK FIRST
                 </div>

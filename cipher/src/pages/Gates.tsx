@@ -21,6 +21,10 @@ const GATES = [
 ];
 
 const INFRA = ["FIRECRACKER VM", "BARE METAL", "SELF-HOST GPU", "CLOUD K8S"];
+const GATEWAY_URL = (
+  (import.meta as ImportMeta & { env?: { VITE_GATEWAY_URL?: string } }).env?.VITE_GATEWAY_URL ??
+  "https://ciphersentry.fly.dev"
+).replace(/\/$/, "");
 
 function dayCount(now: number): number {
   return Math.max(0, Math.floor((now - ACCRUAL_START_MS) / 86_400_000));
@@ -40,6 +44,8 @@ export default function Gates() {
   const [bond, setBond] = useState(50_000);
   const [phase, setPhase] = useState<"form" | "signing" | "done">("form");
   const [sig, setSig] = useState<SignedRuling | null>(null);
+  const [queueNumber, setQueueNumber] = useState<number | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -49,17 +55,44 @@ export default function Gates() {
   const days = dayCount(now);
   const pct = Math.min(100, Math.round((days / GATE4_DAYS) * 100));
   const valid = handle.trim().length >= 2;
-  const queueNumber = 349 + (handle.trim() ? handle.length : 0);
 
   const join = async () => {
     if (!valid || !key) return;
     setPhase("signing");
-    const signed = await signRuling(
-      { type: "verifier.waitlist", handle: handle.trim(), infra, bond, nonce: queueNumber },
-      key,
-    );
-    setSig(signed);
-    setPhase("done");
+    setJoinError(null);
+    try {
+      const signed = await signRuling(
+        { type: "verifier.waitlist", handle: handle.trim(), infra, bond },
+        key,
+      );
+      setSig(signed);
+      const res = await fetch(`${GATEWAY_URL}/access-requests`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({
+          kind: "verifier_waitlist",
+          handle: handle.trim(),
+          role: "VERIFIER",
+          rail: infra,
+          use_case: `bond=${bond}`,
+          sig: signed.sig,
+          pubkey: signed.pubkey,
+          fp: signed.fp,
+          alg: signed.algLabel,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        queue?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) throw new Error(data.error || `submit failed (${res.status})`);
+      setQueueNumber(typeof data.queue === "number" ? data.queue : null);
+      setPhase("done");
+    } catch (e) {
+      setJoinError(e instanceof Error ? e.message : String(e));
+      setPhase("form");
+    }
   };
 
   return (
@@ -260,8 +293,11 @@ export default function Gates() {
                       </>
                     )}
                   </button>
+                  {joinError && (
+                    <p className="text-center font-mono text-[8.5px] tracking-[0.12em] text-red-400">{joinError}</p>
+                  )}
                   <p className="text-center font-mono text-[7px] tracking-[0.16em] text-mute/50">
-                    SIGNS WITH YOUR DEVICE KEY{key ? ` · ${key.fp}` : ""} — ORDER IS BINDING
+                    SIGNS WITH YOUR DEVICE KEY{key ? ` · ${key.fp}` : ""} · ORDER ROUTES TO OPS QUEUE
                   </p>
                 </div>
               ) : (
@@ -271,7 +307,7 @@ export default function Gates() {
                   </span>
                   <div className="mt-4 font-display text-[18px] font-semibold">In the queue.</div>
                   <div className="mt-1.5 font-mono text-[9px] tracking-[0.18em] text-mute">
-                    POSITION #{queueNumber} · BOND {bond.toLocaleString()} MARC
+                    POSITION #{queueNumber ?? "—"} · BOND {bond.toLocaleString()} MARC
                   </div>
                   {sig && (
                     <div className="mt-4 w-full border border-volt/40 bg-volt/[0.05] p-3.5 text-left font-mono text-[8.5px] leading-[1.9]">

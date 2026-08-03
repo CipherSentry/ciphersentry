@@ -99,20 +99,36 @@ describe("decodeLog state machine", () => {
   });
 
   it("unknown events fall back only on legal transitions", () => {
-    const unknownEvent = decodeLog(L(t0("StayedCommitted(bytes32)"), "0xdeadbeef"), "VERIFYING", true);
-    expect(unknownEvent).toEqual({ state: "COMMITTED", taskId: "0xdeadbeef" }); // falls back to COMMITTED for a task never-started
+    const unknownFresh = decodeLog(L(t0("StayedCommitted(bytes32)"), "0xdeadbeef"), undefined, true);
+    expect(unknownFresh).toEqual({ state: "COMMITTED", taskId: "0xdeadbeef" });
+
+    const unknownMid = decodeLog(L(t0("StayedCommitted(bytes32)"), "0xdeadbeef"), "VERIFYING", true);
+    expect(unknownMid).toEqual({ state: "VERIFYING", taskId: "0xdeadbeef" });
 
     const unknownAfterSettled = decodeLog(L(t0("StayedCommitted(bytes32)"), "0xdeadbeef"), "SETTLED", true);
-    expect(unknownAfterSettled).toBeNull(); // settled can't re-commit — nothing legal forward
+    expect(unknownAfterSettled).toBeNull();
   });
 
   it("task state maps are isolated per task", () => {
-    const a = decodeLog(L(t0("Committed(bytes32,address,address,uint96,uint96,bytes32)"), "0x000a"), undefined as string | undefined, true) as { state: string; taskId: string };
-    const b = decodeLog(L(t0("Disputed(bytes32,bytes32,bytes32)"), "0xdead"), a.state as string | undefined, true) as { state: string };
+    const a = decodeLog(
+      L(t0("Committed(bytes32,address,address,uint96,uint96,bytes32)"), "0x000a"),
+      undefined,
+      true,
+    ) as { state: string; taskId: string };
+    expect(a.state).toBe("COMMITTED");
+
+    // correct prior for dispute is VERIFYING — not another task's COMMITTED
+    const b = decodeLog(L(t0("Disputed(bytes32,bytes32,bytes32)"), "0xdead"), "VERIFYING", true) as {
+      state: string;
+    };
     expect(b.state).toBe("DISPUTED");
 
-    // task A's legal flow doesn't leak into task B's wrong transition
-    const c = decodeLog(L(t0("Committed(bytes32,address,address,uint96,uint96,bytes32)"), "0x000b"), b.state as string | undefined, true);
-    expect(c).toBeNull(); // DISPUTED in B, COMMITTED-style entry on a different id can't reuse lastState
+    // DISPUTED cannot accept a fresh Committed transition
+    const c = decodeLog(
+      L(t0("Committed(bytes32,address,address,uint96,uint96,bytes32)"), "0x000b"),
+      "DISPUTED",
+      true,
+    );
+    expect(c).toBeNull();
   });
 });
