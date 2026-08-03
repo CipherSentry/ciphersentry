@@ -301,6 +301,12 @@ export class MemoryStore implements Querier {
       return out.slice(0, 25) as T[];
     }
 
+    // exact task by id
+    if (/FROM tasks WHERE task_id = \$1/i.test(sql) && !/ILIKE/i.test(sql)) {
+      const t = this.tasks.get(String(p[0]));
+      return (t ? [t] : []) as T[];
+    }
+
     if (/ILIKE/i.test(sql)) {
       const q = String(p[0]).replace(/%/g, "").toLowerCase();
       if (/FROM fraud_cases/i.test(sql)) {
@@ -313,6 +319,18 @@ export class MemoryStore implements Querier {
           )
           .slice(0, 5)
           .map((f) => ({ task_id: f.task_id, status: f.status, ruling: f.ruling })) as T[];
+      }
+      if (/FROM tasks/i.test(sql)) {
+        return [...this.tasks.values()]
+          .filter((t) => String(t.task_id).toLowerCase().includes(q))
+          .slice(0, 10)
+          .map((t) => ({
+            task_id: t.task_id,
+            state: t.state,
+            worker: t.worker,
+            buyer: t.buyer,
+            amount: t.amount,
+          })) as T[];
       }
       if (/FROM receipts/i.test(sql)) {
         return [...this.receipts.values()]

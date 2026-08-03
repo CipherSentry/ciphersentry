@@ -21,6 +21,42 @@ import { applyFraudStakeCut, seedStake, StakeCache } from "../src/stakes.ts";
 
 void trustScoreImport;
 
+describe("search pre-batch tasks", () => {
+  it("ILIKE tasks returns task_id before receipts exist", async () => {
+    const pg = new MemoryStore();
+    const ch = new MemoryClickHouse();
+    const writer = new LedgerWriter(pg, ch);
+    await writer.upsertTask({
+      task_id: "cent_prebatch1",
+      buyer: "agent:atlas-01",
+      worker: "agent:vector-7",
+      spec: "render.sequence.4k",
+      amount: "12.00",
+      state: "COMMITTED",
+      state_at_block: 1,
+    });
+    const hits = await pg.exec(
+      `SELECT task_id, state, worker, buyer, amount FROM tasks WHERE task_id ILIKE $1 LIMIT 10`,
+      ["%cent_prebatch%"],
+    );
+    assert.equal(hits.length, 1);
+    assert.equal((hits[0] as { task_id: string }).task_id, "cent_prebatch1");
+    const exact = await pg.exec(
+      `SELECT task_id, buyer, worker, spec, amount, state, reported_hash, state_at_block, state_at_ts
+       FROM tasks WHERE task_id = $1 LIMIT 1`,
+      ["cent_prebatch1"],
+    );
+    assert.equal(exact.length, 1);
+    assert.equal((exact[0] as { state: string }).state, "COMMITTED");
+    // receipts still empty — this is the lag fix
+    const rec = await pg.exec(
+      `SELECT receipt_id, batch_id FROM receipts WHERE receipt_id ILIKE $1 OR task_id ILIKE $1 OR leaf ILIKE $1 LIMIT 10`,
+      ["%cent_prebatch%"],
+    );
+    assert.equal(rec.length, 0);
+  });
+});
+
 describe("leafHash / merkleRoot (B4 parity)", () => {
   it("leafHash is deterministic 32-byte hex", () => {
     const a = leafHash("cent_abc", "0xdead");

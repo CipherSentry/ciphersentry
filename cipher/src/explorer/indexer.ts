@@ -99,11 +99,23 @@ export interface ProofResult {
   anchored_tx?: string | null;
 }
 
+export interface IndexerTaskHit {
+  task_id: string;
+  state: string;
+  worker?: string;
+  buyer?: string;
+  amount?: string | number;
+  spec?: string;
+  reported_hash?: string | null;
+}
+
 export interface IndexerSearch {
   receipts: { receipt_id: string; batch_id: string }[];
   batches: { batch_id: string; epoch: number }[];
   agents: { agent_id: string; tier?: string; trust?: number }[];
   fraud: { task_id: string; status: string; ruling?: string }[];
+  /** Pre-batch task rows (available as soon as task.event is indexed). */
+  tasks: IndexerTaskHit[];
 }
 
 /* ------------------------------ helpers ----------------------------------- */
@@ -261,13 +273,14 @@ export class IndexerClient {
 
   async search(q: string): Promise<IndexerSearch> {
     const res = await fetch(`${this.base}/search?q=${encodeURIComponent(q)}`);
-    if (!res.ok) return { receipts: [], batches: [], agents: [], fraud: [] };
+    if (!res.ok) return { receipts: [], batches: [], agents: [], fraud: [], tasks: [] };
     const body = (await res.json()) as {
       data: {
         receipts?: IndexerSearch["receipts"];
         batches?: IndexerSearch["batches"];
         agents?: IndexerSearch["agents"];
         fraud?: IndexerSearch["fraud"];
+        tasks?: IndexerSearch["tasks"];
       };
     };
     return {
@@ -275,7 +288,16 @@ export class IndexerClient {
       batches: body.data?.batches ?? [],
       agents: body.data?.agents ?? [],
       fraud: body.data?.fraud ?? [],
+      tasks: body.data?.tasks ?? [],
     };
+  }
+
+  async getTask(taskId: string): Promise<IndexerTaskHit | null> {
+    const res = await fetch(`${this.base}/tasks/${encodeURIComponent(taskId)}`);
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const body = (await res.json()) as { data: IndexerTaskHit };
+    return body.data ?? null;
   }
 
   /** Whitepaper §5 trust series — GET /trust/:agent */
