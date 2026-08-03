@@ -1,8 +1,8 @@
 # Deploy from services/:
 #   fly deploy -a ciphersentry --remote-only
 #
-# Public B7 single-machine: embedded Redis + NATS + gateway + memory indexer.
-# Dockerfile path is relative to this file's directory (services/).
+# Public B7 single-machine: Redis + NATS + Postgres (volume) + gateway + durable indexer.
+# Volume (once): fly volumes create ciphersentry_data --region iad --size 1 -a ciphersentry
 
 app = "ciphersentry"
 primary_region = "iad"
@@ -24,12 +24,12 @@ primary_region = "iad"
   REDIS_REQUIRE = "1"
   NATS_URL = "nats://127.0.0.1:4222"
   NATS_REQUIRE = "1"
-  INDEXER_MEMORY = "1"
+  INDEXER_MEMORY = "0"
+  INDEXER_CH_MODE = "memory"
   INDEXER_FORCE_WS = "0"
   INDEXER_REQUIRE_NATS = "1"
-  # default embedded memory indexer; override via secret for durable 2nd app:
-  #   fly secrets set -a ciphersentry INDEXER_UPSTREAM=http://ciphersentry-indexer.internal:8080
   INDEXER_UPSTREAM = "http://127.0.0.1:8081"
+  PG_DSN = "postgres://cent:cent@127.0.0.1:5432/ciphersentry"
 
 [http_service]
   internal_port = 8080
@@ -45,7 +45,11 @@ primary_region = "iad"
     method = "GET"
     path = "/health"
 
+[[mounts]]
+  source = "ciphersentry_data"
+  destination = "/data"
+
 [[vm]]
-  memory = "1024mb"
+  memory = "2048mb"
   cpu_kind = "shared"
   cpus = 1

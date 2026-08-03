@@ -1,12 +1,22 @@
 # Fly.io public node (fast path → NODE LIVE)
 
 **Public B7 (default `fly.toml` + `start-public-b7.sh`):** single machine embeds
-Redis + NATS + gateway + memory indexer. `/health` → `phase=B7 bus=nats kv=redis`.
+Redis + NATS + **Postgres on volume** + gateway + durable indexer (CH-memory).
 
-Not full hosted compose B7 (no PG/CH sidecars). Enough for:
-- `GET /health` → badge **NODE LIVE** + B7 session/bus surface
-- `?net=rpc` console + Sepolia mock writes (with secrets)
-- Explorer path proxy (`/search`, `/tasks`, …) via embedded memory indexer
+```
+/health              → phase=B7 bus=nats kv=redis
+/indexer/health      → durable=true storage=pg ch=memory
+```
+
+Volume (once):
+```bash
+fly volumes create ciphersentry_data --region iad --size 1 -a ciphersentry
+```
+
+Enough for:
+- B7 session/bus surface (Redis + NATS)
+- Durable tasks/receipts/batches across deploys (Postgres on `/data`)
+- Explorer path proxy (`/search`, `/tasks`, …) without a 2nd app
 
 ## Windows (PowerShell)
 
