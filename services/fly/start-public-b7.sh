@@ -83,12 +83,22 @@ curl -sf "http://127.0.0.1:${NATS_MON}/healthz" >/dev/null || {
 # --- postgres (durable SoR when /data is a volume) ---
 PG_PID=""
 USE_PG=0
-if [[ -d /data ]] && [[ "$REMOTE_IX" != "1" ]]; then
+# Debian packages put binaries under /usr/lib/postgresql/<ver>/bin (not on PATH).
+PG_BIN_DIR="$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -1 || true)"
+if [[ -n "${PG_BIN_DIR}" ]]; then
+  export PATH="${PG_BIN_DIR}:${PATH}"
+fi
+INITDB="$(command -v initdb || true)"
+POSTGRES_BIN="$(command -v postgres || true)"
+PG_ISREADY="$(command -v pg_isready || true)"
+PSQL="$(command -v psql || true)"
+
+if [[ -d /data ]] && [[ "$REMOTE_IX" != "1" ]] && [[ -n "$INITDB" ]] && [[ -n "$POSTGRES_BIN" ]]; then
   mkdir -p "$PGDATA" /var/run/postgresql
   chown -R postgres:postgres "$PGDATA" /var/run/postgresql 2>/dev/null || true
   if [[ ! -f "$PGDATA/PG_VERSION" ]]; then
-    echo "[start-public-b7] initdb $PGDATA"
-    gosu postgres initdb -D "$PGDATA" --auth-local=trust --auth-host=trust --username=postgres
+    echo "[start-public-b7] initdb $PGDATA ($INITDB)"
+    gosu postgres "$INITDB" -D "$PGDATA" --auth-local=trust --auth-host=trust --username=postgres
     {
       echo "listen_addresses = '127.0.0.1'"
       echo "port = 5432"
@@ -97,22 +107,22 @@ if [[ -d /data ]] && [[ "$REMOTE_IX" != "1" ]]; then
       echo "shared_buffers = 64MB"
     } >>"$PGDATA/postgresql.conf"
   fi
-  gosu postgres postgres -D "$PGDATA" >/tmp/postgres.log 2>&1 &
+  gosu postgres "$POSTGRES_BIN" -D "$PGDATA" >/tmp/postgres.log 2>&1 &
   PG_PID=$!
   for i in $(seq 1 60); do
-    if gosu postgres pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+    if gosu postgres "$PG_ISREADY" -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
       break
     fi
     sleep 0.5
   done
-  gosu postgres pg_isready -h 127.0.0.1 -p 5432 >/dev/null || {
+  gosu postgres "$PG_ISREADY" -h 127.0.0.1 -p 5432 >/dev/null || {
     echo "[start-public-b7] postgres failed" >&2
     cat /tmp/postgres.log >&2 || true
     exit 1
   }
   # role + db (idempotent)
-  gosu postgres psql -h 127.0.0.1 -v ON_ERROR_STOP=0 -c "CREATE USER ${PG_USER} WITH PASSWORD '${PG_PASSWORD}' SUPERUSER;" >/dev/null 2>&1 || true
-  gosu postgres psql -h 127.0.0.1 -v ON_ERROR_STOP=0 -c "CREATE DATABASE ${PG_DB} OWNER ${PG_USER};" >/dev/null 2>&1 || true
+  gosu postgres "$PSQL" -h 127.0.0.1 -v ON_ERROR_STOP=0 -c "CREATE USER ${PG_USER} WITH PASSWORD '${PG_PASSWORD}' SUPERUSER;" >/dev/null 2>&1 || true
+  gosu postgres "$PSQL" -h 127.0.0.1 -v ON_ERROR_STOP=0 -c "CREATE DATABASE ${PG_DB} OWNER ${PG_USER};" >/dev/null 2>&1 || true
   export PG_DSN="${PG_DSN:-postgres://${PG_USER}:${PG_PASSWORD}@127.0.0.1:5432/${PG_DB}}"
   export INDEXER_MEMORY=0
   export INDEXER_CH_MODE="${INDEXER_CH_MODE:-memory}"
@@ -120,7 +130,11 @@ if [[ -d /data ]] && [[ "$REMOTE_IX" != "1" ]]; then
   echo "[start-public-b7] postgres ready dsn=…@127.0.0.1:5432/${PG_DB}"
 else
   export INDEXER_MEMORY="${INDEXER_MEMORY:-1}"
-  echo "[start-public-b7] no /data volume (or remote indexer) — INDEXER_MEMORY=${INDEXER_MEMORY}"
+  if [[ -d /data ]] && [[ -z "$INITDB" ]]; then
+    echo "[start-public-b7] WARN postgres tools missing — INDEXER_MEMORY=${INDEXER_MEMORY}" >&2
+  else
+    echo "[start-public-b7] no /data volume (or remote indexer) — INDEXER_MEMORY=${INDEXER_MEMORY}"
+  fi
 fi
 
 # --- gateway ---
@@ -209,7 +223,7 @@ while kill -0 "$GW_PID" 2>/dev/null; do
   fi
   if [[ -n "${PG_PID}" ]] && ! kill -0 "$PG_PID" 2>/dev/null; then
     echo "[start-public-b7] postgres died — restarting" >&2
-    gosu postgres postgres -D "$PGDATA" >/tmp/postgres.log 2>&1 &
+    gosu postgres "$POSTGRES_BIN" -D "$PGDATA" >/tmp/postgres.log 2>&1 &
     PG_PID=$!
   fi
   sleep 3

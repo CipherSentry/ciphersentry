@@ -27,6 +27,11 @@ RUN chmod +x ./fly/start-public.sh ./fly/start-public-b7.sh \
   && curl -fsSL "https://github.com/nats-io/nats-server/releases/download/v${NATS_VERSION}/nats-server-v${NATS_VERSION}-linux-amd64.tar.gz" \
     | tar -xz -C /usr/local/bin --strip-components=1 "nats-server-v${NATS_VERSION}-linux-amd64/nats-server" \
   && chmod +x /usr/local/bin/nats-server \
+  && PG_BIN="$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)" \
+  && ln -sf "$PG_BIN/initdb" /usr/local/bin/initdb \
+  && ln -sf "$PG_BIN/postgres" /usr/local/bin/postgres \
+  && ln -sf "$PG_BIN/pg_isready" /usr/local/bin/pg_isready \
+  && ln -sf "$PG_BIN/psql" /usr/local/bin/psql \
   && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
