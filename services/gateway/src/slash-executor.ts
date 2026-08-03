@@ -13,6 +13,7 @@
 import { createWalletClient, http, keccak256, toBytes, type Hex, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, foundry } from "viem/chains";
+import { resolveSecret } from "./keys.ts";
 
 export interface SlashWriteConfig {
   rpcUrl: string;
@@ -92,12 +93,10 @@ async function ethRpc<T>(url: string, method: string, params: unknown[]): Promis
 }
 
 export function makeSlashConfigFromEnv(): SlashWriteConfig {
-  let key = process.env.PROTOCOL_KEY ?? process.env.PRIVATE_KEY ?? null;
-  if (key && !key.startsWith("0x")) key = `0x${key}`;
   return {
     rpcUrl: process.env.CHAIN_RPC ?? process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia.publicnode.com",
     slashExecutorAddress: process.env.SLASH_EXECUTOR_ADDRESS ?? null,
-    protocolKey: key,
+    protocolKey: resolveSecret("PROTOCOL_KEY", "PRIVATE_KEY"),
     fromAddress: process.env.PROTOCOL_FROM ?? process.env.OPERATOR_ADDRESS ?? null,
     chainId: Number(process.env.CHAIN_ID ?? 84532),
   };

@@ -46,7 +46,10 @@ cd services/gateway && npm install && npm run gateway
 | `GATEWAY_PORT` | Default `8080` |
 | `NATS_URL` | Event bus (default local compose NATS; memory fallback) |
 | `REDIS_URL` | Auth sessions + rate limits (default `redis://127.0.0.1:6379`; memory fallback) |
+| `REDIS_REQUIRE` | `1` = fail boot if Redis down (no memory) |
 | `AUTH_REQUIRED` | `1` = mutating RPC needs ed25519 session |
+| `CS_ENV=production` / `B7=1` | Force AUTH + Redis + NATS; no memory/WS fallbacks |
+| `PROTOCOL_KEY_FILE` | B7 key custody — file mount preferred over `PROTOCOL_KEY` env |
 | `ANON_RPM` | Unauthenticated rate limit (default `20`/min) |
 | `SLASH_EXECUTOR_ADDRESS` | Optional on-chain SlashExecutor for evidence posts |
 | `BATCHER_ADDRESS` | SettlementBatcher for Merkle root anchors |
@@ -117,6 +120,20 @@ RPC methods: `registry.query` · `registry.list` · `task.commit` · `task.repor
 `batch.pending` · `batch.info` · `batch.anchor` · `batch.markMissed` ·
 `fraud.list` · `fraud.of` · `fraud.challenge` · `fraud.rule` · `fraud.default` ·
 `fraud.info` · `auth.challenge` · `auth.session` · `auth.whoami` · `node.info`.
+
+### B7 ops (Redis sessions · managed NATS · key custody)
+
+```bash
+# local compose (valkey :6379 + nats :4222)
+docker compose -f cipher/docker-compose.yml up -d valkey nats
+export CS_ENV=production REDIS_URL=redis://127.0.0.1:6379 NATS_URL=nats://127.0.0.1:4222
+# keys from secret files (never commit):
+export PROTOCOL_KEY_FILE=/run/secrets/protocol_key
+# or see services/scripts/prod.env.example
+npm run gateway
+# /health → kv=redis bus=nats auth_required=true b7=true phase=B7
+npm run e2e:full   # now asserts Redis sessions + NATS-only
+```
 
 ### Auth (ed25519 + stake RPM)
 

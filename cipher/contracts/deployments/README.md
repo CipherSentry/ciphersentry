@@ -24,6 +24,13 @@ export BATCHER_ADDRESS=0x72b735E47983ACb9039bb1f1B757BF9c09f4bfca
 
 On-chain commit needs Circle USDC balance + `approve(escrow)`.
 
+```bash
+# real USDC path (not mock)
+# CIRCLE_KEY=0x… wallet with Base Sepolia USDC (faucet.circle.com)
+npm run e2e:sepolia:circle -w @ciphersentry/services
+# → Escrow.commit via gateway · basescan tx
+```
+
 ### Dev write path (MockUSDC)
 
 `base-sepolia-mockusdc.json` — mintable USDC for E2E commits without Circle faucet.

@@ -184,8 +184,18 @@ function tryParseResp(buf: Buffer): { value: string | null; err?: string; rest: 
 }
 
 export async function createKv(url?: string | null): Promise<Kv> {
+  const requireRedis =
+    process.env.REDIS_REQUIRE === "1" ||
+    process.env.B7 === "1" ||
+    process.env.B7_PROD === "1" ||
+    ["production", "prod"].includes((process.env.CS_ENV ?? "").toLowerCase());
   const u = (url ?? process.env.REDIS_URL ?? "").trim();
-  if (!u) return new MemoryKv();
+  if (!u) {
+    if (requireRedis) {
+      throw new Error("[kv] REDIS_REQUIRE/CS_ENV=production needs REDIS_URL (no memory fallback)");
+    }
+    return new MemoryKv();
+  }
   try {
     const kv = RedisKv.fromUrl(u);
     await kv.set("cs:kv:ping", "1", 5);
@@ -193,6 +203,11 @@ export async function createKv(url?: string | null): Promise<Kv> {
     if (v !== "1") throw new Error("ping mismatch");
     return kv;
   } catch (e) {
+    if (requireRedis) {
+      throw new Error(
+        `[kv] Redis required but unavailable (${u}): ${e instanceof Error ? e.message : e}`,
+      );
+    }
     console.warn(
       `[kv] Redis unavailable (${u}): ${e instanceof Error ? e.message : e} — using memory`,
     );

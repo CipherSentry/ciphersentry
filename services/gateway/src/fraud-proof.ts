@@ -33,6 +33,7 @@ import {
   type SlashApplyRow,
 } from "@ciphersentry/verifier-daemon";
 import type { SlashExecutorGateway } from "./slash-executor.ts";
+import { resolveSecret } from "./keys.ts";
 
 /* -------------------------------- types ----------------------------------- */
 
@@ -299,8 +300,7 @@ function normalizeKey(k: string | null | undefined): string | null {
 /* ------------------------------ config ------------------------------------ */
 
 export function makeFraudConfigFromEnv(): FraudConfig {
-  let key = process.env.RULER_KEY ?? process.env.PROTOCOL_KEY ?? process.env.PRIVATE_KEY ?? null;
-  key = normalizeKey(key);
+  const key = resolveSecret("RULER_KEY", "PROTOCOL_KEY", "PRIVATE_KEY");
   return {
     rpcUrl: process.env.CHAIN_RPC ?? process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia.publicnode.com",
     escrowAddress: process.env.ESCROW_ADDRESS ?? null,

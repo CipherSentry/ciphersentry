@@ -59,17 +59,17 @@ wait_ready() {
   return 1
 }
 
-echo "== compose pg + clickhouse + nats =="
+echo "== compose pg + clickhouse + nats + valkey =="
 # fresh volumes when FULL_CLEAN=1
 if [[ "${FULL_CLEAN:-0}" == "1" ]]; then
   docker compose -f "$COMPOSE" down -v >/dev/null 2>&1 || true
 fi
-# --wait honors compose healthchecks (pg/ch); nats has none → running is enough
-if docker compose -f "$COMPOSE" up -d --wait --wait-timeout 120 postgres clickhouse nats; then
+# --wait honors compose healthchecks (pg/ch); nats/valkey client ports checked below
+if docker compose -f "$COMPOSE" up -d --wait --wait-timeout 120 postgres clickhouse nats valkey; then
   STARTED_COMPOSE=1
 else
   # older compose without --wait
-  docker compose -f "$COMPOSE" up -d postgres clickhouse nats
+  docker compose -f "$COMPOSE" up -d postgres clickhouse nats valkey
   STARTED_COMPOSE=1
 fi
 
@@ -86,6 +86,9 @@ if curl -sf http://127.0.0.1:8222/healthz >/dev/null 2>&1; then
 else
   echo "  nats monitor optional — client :4222 only (compose should set -m 8222)"
 fi
+
+wait_ready valkey 40 0.25 bash -c 'echo >/dev/tcp/127.0.0.1/6379'
+echo "  valkey :6379 ok"
 
 echo "  infra up"
 
@@ -116,12 +119,15 @@ curl -sf "http://127.0.0.1:8123/?user=${CH_USER}&password=${CH_PASSWORD}" \
 
 cd "$ROOT/services"
 
-echo "== gateway :${GPORT} AUTH=1 NATS =="
+echo "== gateway :${GPORT} AUTH=1 NATS + Redis (B7) =="
 export GATEWAY_HOST=127.0.0.1 GATEWAY_PORT=$GPORT
 export BATCH_INTERVAL_MS=0 BATCH_MAX_PENDING=99 TICK_MS=60000
 export AUTH_REQUIRED=1
 export EVENT_SIGNING_SEED="$EVENT_SEED"
-export REDIS_URL=""
+# B7: real Redis sessions (not memory) + no silent NATS/Redis fallback
+export REDIS_URL="${REDIS_URL:-redis://127.0.0.1:6379}"
+export REDIS_REQUIRE="${REDIS_REQUIRE:-1}"
+export NATS_REQUIRE="${NATS_REQUIRE:-1}"
 npm run gateway -w gateway >"$GLOG" 2>&1 &
 GPID=$!
 for _ in $(seq 1 80); do
@@ -137,7 +143,8 @@ h=json.load(open("/tmp/cs-full-health.json"))
 assert h.get("auth_required") is True, h
 assert h.get("event_pubkey"), h
 assert h.get("bus") == "nats", f"gateway must use NATS bus, got {h.get('bus')}: {h}"
-print("  gateway auth_required=1 bus=%s pin=%s…" % (h.get("bus"), h["event_pubkey"][:12]))
+assert h.get("kv") == "redis", f"gateway must use Redis sessions, got kv={h.get('kv')}: {h}"
+print("  gateway auth_required=1 bus=%s kv=%s pin=%s…" % (h.get("bus"), h.get("kv"), h["event_pubkey"][:12]))
 PY
 
 echo "== indexer :${IPORT} pg+ch nats-only =="
