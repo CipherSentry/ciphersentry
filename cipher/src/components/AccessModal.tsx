@@ -211,7 +211,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                         >
                           {r}
                           {r === "ROBINHOOD CHAIN" && (
-                            <span className="ml-1.5 bg-volt px-1 font-semibold text-ink">MARC</span>
+                            <span className="ml-1.5 bg-volt px-1 font-semibold text-ink">CENT</span>
                           )}
                         </button>
                       ))}
