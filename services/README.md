@@ -123,17 +123,36 @@ RPC methods: `registry.query` · `registry.list` · `task.commit` · `task.repor
 
 ### B7 ops (Redis sessions · managed NATS · key custody)
 
+**Hosted (shared host / last gap before ops prod):**
+
 ```bash
-# local compose (valkey :6379 + nats :4222)
+# containerized stack (pg+ch+nats+valkey+gateway+indexer)
+npm run b7:init -w @ciphersentry/services   # secrets/ + prod.env
+# edit services/prod.env (CHAIN_RPC + contract addrs); replace anvil keys in secrets/
+npm run b7:compose -w @ciphersentry/services
+# /health → kv=redis bus=nats b7=true phase=B7
+
+# bare metal (Redis/NATS already on host):
+npm run b7:init && INDEXER=1 npm run b7:up
+```
+
+```bash
+# local infra only (valkey :6379 + nats :4222)
 docker compose -f cipher/docker-compose.yml up -d valkey nats
 export CS_ENV=production REDIS_URL=redis://127.0.0.1:6379 NATS_URL=nats://127.0.0.1:4222
-# keys from secret files (never commit):
-export PROTOCOL_KEY_FILE=/run/secrets/protocol_key
-# or see services/scripts/prod.env.example
+export PROTOCOL_KEY_FILE=services/secrets/protocol_key
 npm run gateway
-# /health → kv=redis bus=nats auth_required=true b7=true phase=B7
-npm run e2e:full   # now asserts Redis sessions + NATS-only
+npm run e2e:full   # CI services-full — asserts Redis + NATS-only
+# Sepolia (keys/faucet): gh workflow run e2e-sepolia.yml -f mode=full|circle
 ```
+
+### Mainnet prep (blocked until B7 hosted + CI stable)
+
+Do **not** start until 2–3 green `e2e:full` CI runs and hosted B7 health stays green:
+
+1. External audits (#1 escrow/batcher, #2 slash/fraud)
+2. Circle **mainnet** USDC + Base mainnet deploy
+3. Key ceremony (batcher 2-of-3 + ruler + protocol) — offline; only `*_FILE` mounts in prod
 
 ### Auth (ed25519 + stake RPM)
 

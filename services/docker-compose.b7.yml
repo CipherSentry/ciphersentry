@@ -1,0 +1,183 @@
+# B7 hosted ops — Redis sessions + NATS bus + *_FILE key custody.
+# Run from REPO ROOT:
+#   mkdir -p services/secrets && chmod 700 services/secrets
+#   # write hex keys (no 0x required) into services/secrets/{protocol_key,batcher_1,batcher_2,batcher_3,ruler_key}
+#   cp services/scripts/prod.env.example services/prod.env   # fill chain addrs / RPC
+#   docker compose -f services/docker-compose.b7.yml --env-file services/prod.env up -d
+# Health: curl -s localhost:8080/health → kv=redis bus=nats b7=true phase=B7
+#
+# Edge case: empty secret files fail boot (keys.ts) — never commit services/secrets/.
+
+name: ciphersentry-b7
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-cent}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-cent}
+      POSTGRES_DB: ${PG_DB:-ciphersentry}
+    volumes:
+      - b7_pg:/var/lib/postgresql/data
+      - ./indexer/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CH_DB:-ciphersentry}
+      CLICKHOUSE_USER: ${CH_USER:-cent}
+      CLICKHOUSE_PASSWORD: ${CH_PASSWORD:-cent}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - b7_ch:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:8123/ping' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    volumes:
+      - b7_nats:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - b7_redis:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  gateway:
+    image: node:22-bookworm-slim
+    restart: unless-stopped
+    working_dir: /app
+    depends_on:
+      nats:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    volumes:
+      - ./:/app
+      - ./secrets:/run/secrets:ro
+      - b7_npm:/app/node_modules
+    env_file:
+      - path: ./prod.env
+        required: false
+    environment:
+      CS_ENV: production
+      B7: "1"
+      AUTH_REQUIRED: "1"
+      GATEWAY_HOST: 0.0.0.0
+      GATEWAY_PORT: "8080"
+      REDIS_URL: redis://valkey:6379
+      REDIS_REQUIRE: "1"
+      NATS_URL: nats://nats:4222
+      NATS_REQUIRE: "1"
+      PROTOCOL_KEY_FILE: /run/secrets/protocol_key
+      BATCHER_KEY_1_FILE: /run/secrets/batcher_1
+      BATCHER_KEY_2_FILE: /run/secrets/batcher_2
+      BATCHER_KEY_3_FILE: /run/secrets/batcher_3
+      RULER_KEY_FILE: /run/secrets/ruler_key
+      # chain addrs / CHAIN_RPC from prod.env
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        if [ ! -d node_modules/@ciphersentry ]; then npm ci --omit=dev; fi
+        for f in protocol_key batcher_1 batcher_2 batcher_3; do
+          test -s "/run/secrets/$$f" || { echo "missing secret $$f"; exit 1; }
+        done
+        exec npm run gateway -w gateway
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:8080/health').then(r=>r.json()).then(h=>{if(!h.ok||h.kv!=='redis'||h.bus!=='nats'||!h.b7)process.exit(1)}).catch(()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  indexer:
+    image: node:22-bookworm-slim
+    restart: unless-stopped
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    ports:
+      - "${INDEXER_PORT:-8090}:8090"
+    volumes:
+      - ./:/app
+      - b7_npm:/app/node_modules
+    env_file:
+      - path: ./prod.env
+        required: false
+    environment:
+      CS_ENV: production
+      INDEXER_PORT: "8090"
+      PORT: "8090"
+      PG_DSN: postgres://${PG_USER:-cent}:${PG_PASSWORD:-cent}@postgres:5432/${PG_DB:-ciphersentry}
+      CH_URL: http://clickhouse:8123
+      CH_DB: ${CH_DB:-ciphersentry}
+      CH_USER: ${CH_USER:-cent}
+      CH_PASSWORD: ${CH_PASSWORD:-cent}
+      NATS_URL: nats://nats:4222
+      NATS_REQUIRE: "1"
+      INDEXER_REQUIRE_NATS: "1"
+      INDEXER_FORCE_WS: "0"
+      GATEWAY_URL: http://gateway:8080
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        if [ ! -d node_modules/@ciphersentry ]; then npm ci --omit=dev; fi
+        exec npm run indexer -w indexer
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:8090/health').then(r=>r.json()).then(h=>{if(!h.ok||h.bus!=='nats')process.exit(1)}).catch(()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+volumes:
+  b7_pg:
+  b7_ch:
+  b7_nats:
+  b7_redis:
+  b7_npm:
