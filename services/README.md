@@ -89,6 +89,10 @@ cp services/scripts/demo-kit.env.example services/scripts/demo-kit.env
 # set PRIVATE_KEY + CHAIN_RPC (Alchemy), WITH_COMPOSE=1 for live trust chart
 bash services/scripts/demo-sepolia.sh
 # → settle → prints explorer URL with agent panel open (#/explorer?q=agent:vector-7)
+
+# Full on-chain write path (commit + anchor + slash bond cut + trust):
+# demo-kit.env must hold deployer PRIVATE_KEY + Alchemy CHAIN_RPC
+npm run e2e:sepolia:full
 ```
 
 **B3 slash chain (anvil):** `deploy-local` approves watcher CENT for SlashExecutor and
