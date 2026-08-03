@@ -148,7 +148,8 @@ compose)
   load_env
   require_secrets
   docker compose -f "$SVC/docker-compose.b7.yml" --env-file "$ENV_FILE" up -d --wait
-  GATEWAY_PORT="${GATEWAY_PORT:-8080}" bash "$0" health
+  # compose always starts indexer :8090 — assert host-reachable bind
+  INDEXER=1 GATEWAY_PORT="${GATEWAY_PORT:-8080}" INDEXER_PORT="${INDEXER_PORT:-8090}" bash "$0" health
   ;;
 
 *)

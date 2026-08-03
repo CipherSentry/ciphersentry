@@ -42,6 +42,8 @@ const FORCE_WS = process.env.INDEXER_FORCE_WS === "1";
 const REQUIRE_NATS =
   process.env.INDEXER_REQUIRE_NATS === "1" || process.env.NATS_REQUIRE === "1";
 const PORT = Number(process.env.PORT ?? process.env.INDEXER_PORT ?? 8081);
+/** Bind address — 127.0.0.1 local; 0.0.0.0 for Docker published ports (B7 compose). */
+const HOST = process.env.INDEXER_HOST ?? process.env.HOST ?? "127.0.0.1";
 const MEMORY = process.env.INDEXER_MEMORY === "1";
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
 /** Set at boot — exposed on /health + /stats. */
@@ -368,9 +370,9 @@ export async function boot(): Promise<void> {
     }
   });
 
-  server.listen(PORT, "127.0.0.1", () => {
+  server.listen(PORT, HOST, () => {
     console.log(`ciphersentry-indexer  [B6]`);
-    console.log(`  api      → http://127.0.0.1:${PORT}`);
+    console.log(`  api      → http://${HOST}:${PORT}`);
     console.log(`  events   → ${eventSource}`);
     if (!MEMORY) console.log(`  analytics→ ${CH_URL}/${CH_DB}`);
   });
