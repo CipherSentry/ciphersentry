@@ -364,6 +364,22 @@ export default function ExplorerPage() {
             if (r) res = { kind: "receipt", batch: full, receipt: r, query: q };
           }
         }
+        // Pre-batch: task indexed on commit (no receipt yet)
+        if (res.kind === "none" && remote.tasks[0]) {
+          const t = (await client.getTask(remote.tasks[0].task_id)) ?? remote.tasks[0];
+          res = { kind: "task", task: t, query: q };
+        }
+        if (res.kind === "task" && res.task && remote.receipts[0]) {
+          const bid = remote.receipts[0].batch_id;
+          const full = await client.getBatch(bid);
+          if (full) {
+            setBatches((bs) => (bs.some((b) => b.id === full.id) ? bs : [...bs, full].slice(-16)));
+            const r = full.receipts.find(
+              (x) => x.id === remote.receipts[0]!.receipt_id || x.id === res.task!.task_id,
+            );
+            if (r) res = { kind: "receipt", batch: full, receipt: r, query: q };
+          }
+        }
       } catch {
         /* local only */
       }
@@ -384,6 +400,14 @@ export default function ExplorerPage() {
       setAgent(null);
       setSelReceiptId(null);
       setHint(`→ fraud ${res.fraud.task_id} · ${res.fraud.status} ${res.fraud.ruling ?? ""}`.trim());
+    } else if (res.kind === "task" && res.task) {
+      setAgent(null);
+      setSelReceiptId(null);
+      setSelFraudId(null);
+      const t = res.task;
+      setHint(
+        `→ ${t.task_id} · ${t.state}${t.worker ? ` · ${t.worker}` : ""}${t.amount != null ? ` · ${t.amount}` : ""} (pre-batch)`,
+      );
     } else if (res.kind === "agent" && res.agent) {
       setAgent(res.agent);
       setSelReceiptId(null);

@@ -2,7 +2,7 @@
 
 import type { ExBatch, Receipt } from "../sdk/ledger";
 import { AGENTS } from "../app/data";
-import type { FraudRow, IndexerSearch } from "./indexer";
+import type { FraudRow, IndexerSearch, IndexerTaskHit } from "./indexer";
 
 export type { ExBatch, Receipt, Vote } from "../sdk/ledger";
 export { VRF, sh } from "../sdk/ledger";
@@ -10,11 +10,13 @@ export { VRF, sh } from "../sdk/ledger";
 const NAMES = AGENTS.map((a) => a.name);
 
 export interface ExplorerSearch {
-  kind: "receipt" | "batch" | "agent" | "fraud" | "none";
+  kind: "receipt" | "batch" | "agent" | "fraud" | "task" | "none";
   batch?: ExBatch;
   receipt?: Receipt;
   agent?: string;
   fraud?: FraudRow;
+  /** Pre-batch task (indexed on commit, before receipt/batch). */
+  task?: IndexerTaskHit;
   query: string;
 }
 
@@ -89,6 +91,10 @@ export function searchFromIndexer(
       const r = b.receipts.find((x) => x.id === remote.receipts[0]!.receipt_id);
       if (r) return { kind: "receipt", batch: b, receipt: r, query: q0 };
     }
+  }
+  // Task row is enough for a hit before batch/receipt path solidifies
+  if (remote.tasks[0]) {
+    return { kind: "task", task: remote.tasks[0], query: q0 };
   }
   if (remote.agents[0]) {
     return { kind: "agent", agent: remote.agents[0].agent_id, query: q0 };

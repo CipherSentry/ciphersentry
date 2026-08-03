@@ -179,11 +179,23 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
     return { status: 200, body: { data: rows[0] } };
   }
 
+  // Pre-batch task lookup (search hits before receipts land)
+  const mtId = p.match(/^\/tasks\/([^/]+)$/);
+  if (mtId) {
+    const rows = await pg.exec(
+      `SELECT task_id, buyer, worker, spec, amount, state, reported_hash, state_at_block, state_at_ts
+       FROM tasks WHERE task_id = $1 LIMIT 1`,
+      [mtId[1]],
+    );
+    if (!rows.length) return { status: 404, body: { error: "task_not_found" } };
+    return { status: 200, body: { data: rows[0] } };
+  }
+
   if (p === "/search") {
     const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
     if (!q) return { status: 400, body: { error: "missing q" } };
     const like = `%${q}%`;
-    const [receipts, batches, agents, fraud] = await Promise.all([
+    const [receipts, batches, agents, fraud, tasks] = await Promise.all([
       pg.exec(
         `SELECT receipt_id, batch_id FROM receipts WHERE receipt_id ILIKE $1 OR task_id ILIKE $1 OR leaf ILIKE $1 LIMIT 10`,
         [like],
@@ -194,8 +206,13 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         `SELECT task_id, status, ruling FROM fraud_cases WHERE task_id ILIKE $1 OR worker ILIKE $1 OR buyer ILIKE $1 LIMIT 5`,
         [like],
       ).catch(() => [] as unknown[]),
+      // Task IDs live here on commit — do not wait for batch receipts
+      pg.exec(
+        `SELECT task_id, state, worker, buyer, amount FROM tasks WHERE task_id ILIKE $1 LIMIT 10`,
+        [like],
+      ).catch(() => [] as unknown[]),
     ]);
-    return { status: 200, body: { data: { receipts, batches, agents, fraud } } };
+    return { status: 200, body: { data: { receipts, batches, agents, fraud, tasks } } };
   }
 
   return { status: 404, body: { error: "not_found" } };
