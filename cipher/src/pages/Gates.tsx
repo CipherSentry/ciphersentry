@@ -15,7 +15,7 @@ const GATE4_DAYS = 60;
 const GATES = [
   { id: "G1", name: "Verifier network ≥ 400 bonded verifiers", status: "IN PROGRESS", metric: "349 ON WAITLIST", desc: "Names first, bonds after the B2 deploy. The waitlist below is the headcount that becomes this number." },
   { id: "G2", name: "Slashing live + publicly auditable", status: "PENDING", metric: "EXECUTOR SIM'D", desc: "Slash executor runs in the console today; real burns need the on-chain registry to exist first." },
-      { id: "G3", name: "Two independent audits closed", status: "RFP NEXT", metric: "PACK READY", desc: "DOC-07 shippable tomorrow from hello@ciphersentry.com. Both firms book 4–8 weeks out — the only calendar we can't compress." },
+      { id: "G3", name: "Two independent audits closed", status: "RFP NEXT", metric: "PACK READY", desc: "DOC-06 audit pack is live at #/docs/audit. Both firms book 4–8 weeks out — the only calendar we can't compress." },
     { id: "G4", name: "60 days of epoch accrual ahead of TGE", status: "COUNTING", metric: "MODE: CALENDAR — PENDING ANCHOR", desc: "The 60 visible days. Unrestartable. The clock runs on block-height anchors the moment the first merkle batch lands on a rail." },
   { id: "G5", name: "Robinhood Chain terms + legal complete", status: "PENDING", metric: "COUNSEL AFTER G3", desc: "Issuer terms and warrant structure go to counsel with audits booked and the waitlist sized, not before." },
 ];
@@ -221,10 +221,15 @@ export default function Gates() {
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-600/25 pt-4">
-                <a href="https://github.com/CipherSentry-com" target="_blank" rel="noreferrer" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
-                  AUDIT PACK — DOC-07 →
-                </a>
                 <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  AUDIT PACK — DOC-06 →
+                </a>
+                <a
+                  href="https://github.com/CipherSentry/ciphersentry/blob/main/cipher/contracts/README.md"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
+                >
                   /contracts/README.md →
                 </a>
               </div>
