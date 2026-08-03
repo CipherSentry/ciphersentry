@@ -89,12 +89,10 @@ body {
   from {
     opacity: 0;
     transform: translateY(24px) scale(0.985);
-    filter: blur(6px);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0px);
   }
 }
 .animate-shelf-in {
@@ -241,10 +239,10 @@ input {
   animation: dashspin 7.5s linear infinite;
 }
 
-/* ---- escrow flow droplets ---- */
+/* ---- escrow flow droplets (parent is h-6 / 24px) ---- */
 @keyframes drop {
   from {
-    top: 0;
+    transform: translateY(0);
     opacity: 0;
   }
   15% {
@@ -254,18 +252,20 @@ input {
     opacity: 1;
   }
   to {
-    top: calc(100% - 6px);
+    transform: translateY(18px);
     opacity: 0;
   }
 }
 .anim-drop {
   animation: drop 1.5s linear infinite;
+  will-change: transform, opacity;
 }
 
-/* ---- terminal scan beam ---- */
+/* ---- terminal scan beam (transform only — no layout thrash) ----
+   animate a full-height track so % is relative to the panel, not the 32px beam */
 @keyframes scan {
   0% {
-    top: -14%;
+    transform: translate3d(0, -14%, 0);
     opacity: 0;
   }
   14% {
@@ -275,10 +275,11 @@ input {
     opacity: 0.75;
   }
   100% {
-    top: 114%;
+    transform: translate3d(0, 114%, 0);
     opacity: 0;
   }
 }
 .animate-scan {
   animation: scan 6.5s ease-in-out infinite;
+  will-change: transform, opacity;
 }

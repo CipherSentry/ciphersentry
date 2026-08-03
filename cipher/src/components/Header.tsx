@@ -31,7 +31,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-edge bg-void pt-[env(safe-area-inset-top,0px)]">
       <div className="flex h-[60px] items-center justify-between px-4 sm:h-[68px] sm:px-6 md:px-10 lg:px-16">
         <a href="#/" aria-label="Cipher Sentry — ciphersentry.xyz" className="group flex shrink-0 items-center">
           <LogoMark size={17} className="text-volt transition-transform duration-300 group-hover:scale-105" />
@@ -87,7 +87,7 @@ export default function Header() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden border-t border-edge bg-void/95 backdrop-blur-md lg:hidden"
+            className="overflow-hidden border-t border-edge bg-void lg:hidden"
           >
             <div className="flex max-h-[min(70svh,520px)] flex-col gap-1 overflow-y-auto px-4 py-5 sm:px-6">
               {NAV.map((n, i) => (
