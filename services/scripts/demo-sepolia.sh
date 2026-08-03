@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# External Sepolia demo kit (NOT CI).
-# Settle → open explorer agent trust panel.
+# CipherSentry demo kit — one-command settle loop (S1.2).
 #
+# Zero keys (recommended first run):
+#   DEMO_LOCAL=1 DEMO_HOLD=0 bash services/scripts/demo-sepolia.sh
+#
+# Base Sepolia mock stack:
 #   cp services/scripts/demo-kit.env.example services/scripts/demo-kit.env
 #   # edit PRIVATE_KEY + CHAIN_RPC
 #   bash services/scripts/demo-sepolia.sh
 #
-# Optional: DEMO_KIT_ENV=/path/to.env bash services/scripts/demo-sepolia.sh
+# Docs: services/scripts/README.md
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 export PATH="${HOME}/.foundry/bin:${PATH}"
@@ -19,7 +22,7 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
   echo "  env ← $ENV_FILE"
 elif [[ -f "$ROOT/services/scripts/demo-kit.env.example" ]]; then
-  echo "  tip: copy demo-kit.env.example → demo-kit.env and set PRIVATE_KEY + CHAIN_RPC"
+  echo "  tip: DEMO_LOCAL=1 for zero-key, or copy demo-kit.env.example → demo-kit.env"
 fi
 
 : "${GATEWAY_PORT:=$((18080 + RANDOM % 400))}"
@@ -29,8 +32,9 @@ fi
 : "${CIPHER_URL:=http://127.0.0.1:5173}"
 : "${WORKER:=agent:vector-7}"
 : "${BUYER:=agent:atlas-01}"
+: "${PROOF_WAIT_TRIES:=50}"
 
-# DEMO_LOCAL=1 → anvil rails (no Alchemy key). External Sepolia otherwise.
+# DEMO_LOCAL=1 → anvil rails (no Alchemy / PRIVATE_KEY). Default for contributors.
 if [[ "${DEMO_LOCAL:-0}" == "1" ]]; then
   echo "== local anvil demo (DEMO_LOCAL=1) =="
   cd "$ROOT/cipher/contracts"
@@ -202,21 +206,96 @@ rpc() {
 echo "== settle $WORKER =="
 COMMIT=$(rpc task.commit "{\"spec\":\"render.sequence.4k\",\"worker\":\"$WORKER\",\"buyer\":\"$BUYER\",\"escrow\":{\"amount\":\"10.00\",\"asset\":\"USDC\"}}")
 echo "$COMMIT" | tee /tmp/cs-demo-commit.json >/dev/null
-TASK=$(python3 -c 'import json;print(json.load(open("/tmp/cs-demo-commit.json"))["task_id"])')
-HASH=$(python3 -c 'import json;print(json.load(open("/tmp/cs-demo-commit.json"))["expected_hash"])')
+TASK=$(python3 -c 'import json;print(json.load(open("/tmp/cs-demo-commit.json")).get("task_id",""))')
+HASH=$(python3 -c 'import json;print(json.load(open("/tmp/cs-demo-commit.json")).get("expected_hash",""))')
+TX_COMMIT=$(python3 - <<'PY'
+import json
+d=json.load(open("/tmp/cs-demo-commit.json"))
+# chain: { tx, mode, ... } or flat tx
+c=d.get("chain") or {}
+print(c.get("tx") or c.get("txHash") or d.get("tx") or "")
+PY
+)
 [[ -n "$TASK" && -n "$HASH" ]] || { echo "commit failed: $COMMIT"; tail -30 "$GLOG"; exit 1; }
+echo "  task=$TASK"
+echo "  tx_commit=${TX_COMMIT:-n/a}"
+
+# Serialize L2 writes — EIP-7702 delegated EOAs hit Alchemy in-flight limits
+sleep "${CHAIN_TX_GAP_SEC:-3}"
+
 rpc task.report "{\"task_id\":\"$TASK\",\"hash\":\"$HASH\"}" >/dev/null
 VERIFY=$(rpc verify "{\"task_id\":\"$TASK\"}")
+echo "$VERIFY" | tee /tmp/cs-demo-verify.json >/dev/null
 echo "$VERIFY" | grep -q 'SETTLED' || { echo "verify: $VERIFY"; exit 1; }
-echo "  settled $TASK"
+TX_SETTLE=$(python3 - <<'PY'
+import json
+d=json.load(open("/tmp/cs-demo-verify.json"))
+print(d.get("tx") or (d.get("chain") or {}).get("tx") or "")
+PY
+)
+echo "  settled $TASK  tx_settle=${TX_SETTLE:-n/a}"
 
-# optional anchor when batcher write-ready
+sleep "${CHAIN_TX_GAP_SEC:-3}"
+
+# anchor when batcher write-ready (required for merkle proofs)
 set +e
 ANCHOR=$(rpc batch.anchor '{}')
 set -e
-echo "  anchor: $(echo "$ANCHOR" | head -c 120)"
+echo "$ANCHOR" | tee /tmp/cs-demo-anchor.json >/dev/null
+echo "  anchor: $(echo "$ANCHOR" | head -c 160)"
+TX_ANCHOR=$(python3 - <<'PY'
+import json
+try:
+  d=json.load(open("/tmp/cs-demo-anchor.json"))
+except Exception:
+  d={}
+print(
+  d.get("txHash")
+  or d.get("tx")
+  or (d.get("chain") or {}).get("txHash")
+  or (d.get("chain") or {}).get("tx")
+  or ""
+)
+PY
+)
+ROOT=$(python3 - <<'PY'
+import json
+try:
+  d=json.load(open("/tmp/cs-demo-anchor.json"))
+except Exception:
+  d={}
+print(d.get("root") or "")
+PY
+)
+
+# wait indexer ingest + proof.valid
+echo "== wait proof /receipts/$TASK/proof =="
+PROOF_OK=0
+PROOF_JSON="{}"
+for _ in $(seq 1 "$PROOF_WAIT_TRIES"); do
+  PROOF_JSON=$(curl -sf "$IBASE/receipts/$TASK/proof" 2>/dev/null || echo '{}')
+  if echo "$PROOF_JSON" | grep -q '"valid"[[:space:]]*:[[:space:]]*true'; then
+    PROOF_OK=1
+    break
+  fi
+  # also accept nested valid
+  if python3 -c "import json,sys; d=json.loads(sys.argv[1]); sys.exit(0 if d.get('valid') is True or (d.get('proof') or {}).get('valid') is True else 1)" "$PROOF_JSON" 2>/dev/null; then
+    PROOF_OK=1
+    break
+  fi
+  sleep 0.4
+done
+if [[ "$PROOF_OK" != "1" ]]; then
+  echo "FATAL: proof not valid for task=$TASK" >&2
+  echo "  proof=$PROOF_JSON" >&2
+  echo "  batches=$(curl -sf "$IBASE/batches" 2>/dev/null | head -c 300)" >&2
+  echo "  stats=$(curl -sf "$IBASE/stats" 2>/dev/null)" >&2
+  exit 1
+fi
+echo "  proof valid"
 
 # wait trust series when CH present
+TRUST="{}"
 if [[ "$WITH_COMPOSE" == "1" ]]; then
   echo "== wait /trust/$WORKER =="
   for _ in $(seq 1 40); do
@@ -227,19 +306,40 @@ if [[ "$WITH_COMPOSE" == "1" ]]; then
   echo "  $TRUST"
 fi
 
-AGENT_Q=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$WORKER''', safe=''))")
-EXPLORER="${CIPHER_URL}/#/explorer?q=${AGENT_Q}&indexer=${IBASE}&node=${GBASE}"
-CONSOLE="${CIPHER_URL}/?net=rpc&node=${GBASE}&indexer=${IBASE}"
+# deep links — hash-router form (S1.1 livePath)
+eval "$(python3 - <<PY
+from urllib.parse import urlencode, quote
+cipher = """$CIPHER_URL""".rstrip("/")
+g = """$GBASE"""
+i = """$IBASE"""
+task = """$TASK"""
+worker = """$WORKER"""
+console = f"{cipher}/#/app?" + urlencode({"net": "rpc", "auth": "1", "node": g, "indexer": i})
+explorer = f"{cipher}/#/explorer?" + urlencode({"q": task, "indexer": i, "node": g})
+explorer_agent = f"{cipher}/#/explorer?" + urlencode({"q": worker, "indexer": i, "node": g})
+print(f"CONSOLE={console!r}")
+print(f"EXPLORER={explorer!r}")
+print(f"EXPLORER_AGENT={explorer_agent!r}")
+PY
+)"
 
 echo ""
-echo "DEMO OK"
-echo "  task=$TASK worker=$WORKER"
-echo "  health=$GBASE/health"
-echo "  trust=$IBASE/trust/$WORKER"
-echo "  explorer (agent panel + chart):"
-echo "    $EXPLORER"
-echo "  console:"
-echo "    $CONSOLE"
+echo "========================================"
+echo " DEMO OK"
+echo "========================================"
+echo "  TASK       $TASK"
+echo "  WORKER     $WORKER"
+echo "  ROOT       ${ROOT:-n/a}"
+echo "  TX_COMMIT  ${TX_COMMIT:-n/a}"
+echo "  TX_SETTLE  ${TX_SETTLE:-n/a}"
+echo "  TX_ANCHOR  ${TX_ANCHOR:-n/a}"
+echo ""
+echo "  GATEWAY    $GBASE"
+echo "  INDEXER    $IBASE"
+echo "  CONSOLE    $CONSOLE"
+echo "  EXPLORER   $EXPLORER"
+echo "  EXPLORER   $EXPLORER_AGENT   # agent trust"
+echo "========================================"
 echo ""
 if [[ "${DEMO_HOLD:-1}" == "0" ]]; then
   echo "DEMO_HOLD=0 — exiting (gateway/indexer stopped)."

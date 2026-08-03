@@ -37,6 +37,10 @@ jobs:
           cache-dependency-path: cipher/package-lock.json
 
       - name: Install & build
+        env:
+          # Public Fly gateway (S1.3) — badge + live console deep links
+          VITE_PUBLIC_NODE: https://ciphersentry.fly.dev
+          VITE_PUBLIC_INDEXER: https://ciphersentry.fly.dev
         run: |
           npm ci
           npm run build

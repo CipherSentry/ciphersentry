@@ -6,8 +6,12 @@ import { HashLine, HoldButton, Tag } from "../app/ui";
 import { signRuling } from "../crypto/keys";
 import type { SignedRuling } from "../crypto/keys";
 import { useOperator } from "../crypto/useOperator";
+import { CipherSentry } from "../sdk/ciphersentry";
+import { formatWireError, isRpcMode } from "../sdk/livePath";
 import { useDesk } from "./store";
 import { Panel } from "./widgets";
+
+const cent = CipherSentry.shared();
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -37,6 +41,16 @@ export default function Intervene() {
       },
       op.key,
     );
+
+    if (a.type === "DISPUTE" && isRpcMode(cent.transport)) {
+      try {
+        await cent.operator.rule(a.ref, ruling, signed.sig);
+      } catch (e) {
+        d.toast(formatWireError(e));
+        return;
+      }
+    }
+
     setSig(signed);
     setTimeout(() => {
       d.resolveApproval(a.id, `RULING SIGNED: ${ruling} · ${signed.fp}`, ruling);

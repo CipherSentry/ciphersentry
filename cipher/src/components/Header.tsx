@@ -3,6 +3,10 @@ import { ArrowUpRight, Menu, SquareTerminal, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import LogoMark from "./LogoMark";
 import { openAccessModal } from "./AccessModal";
+import NodeHealth from "./NodeHealth";
+import { liveConsoleHref } from "../sdk/livePath";
+
+const LIVE_APP = liveConsoleHref();
 
 const NAV = [
   { label: "THE PROTOCOL", href: "#/protocol" },
@@ -55,12 +59,14 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3 sm:gap-5 lg:gap-6">
+          <NodeHealth className="hidden lg:inline-flex" />
           <LiveBlock />
           <a
-            href="#/app"
+            href={LIVE_APP}
+            title="Live console · ?net=rpc&auth=1"
             className="group hidden items-center gap-2 border border-edge2 px-3 py-2 font-mono text-[10px] tracking-[0.2em] text-mute transition-colors duration-300 hover:border-volt/70 hover:text-volt lg:flex xl:px-4 xl:py-2.5"
           >
-            OPEN APP
+            LIVE CONSOLE
             <SquareTerminal size={12} strokeWidth={2} className="transition-colors duration-300 group-hover:text-volt" />
           </a>
           <button
@@ -112,11 +118,11 @@ export default function Header() {
                 <ArrowUpRight size={14} strokeWidth={2.5} />
               </button>
               <a
-                href="#/app"
+                href={LIVE_APP}
                 onClick={() => setOpen(false)}
                 className="mt-2 flex min-h-12 items-center justify-center gap-2 border border-edge2 px-4 py-3.5 font-mono text-[11px] tracking-[0.2em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
               >
-                OPEN APP
+                LIVE CONSOLE
                 <SquareTerminal size={14} strokeWidth={2} />
               </a>
             </div>

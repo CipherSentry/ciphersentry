@@ -32,6 +32,10 @@ if ! curl -sf -X POST "$RPC" -H 'content-type: application/json' \
 fi
 
 mkdir -p deployments
+if [[ ! -f lib/forge-std/src/Script.sol ]]; then
+  echo "installing forge-std…"
+  forge install foundry-rs/forge-std --no-git
+fi
 PRIVATE_KEY="$ANVIL_KEY" LOCAL=true forge script script/Deploy.s.sol:Deploy \
   --rpc-url "$RPC" \
   --broadcast \

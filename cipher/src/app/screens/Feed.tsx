@@ -4,26 +4,17 @@ import { timeAgo } from "../data";
 import { useApp } from "../store";
 import { SectionLabel, Stat, StateDot } from "../ui";
 import { CipherSentry } from "../../sdk/ciphersentry";
-import type { RpcTransport } from "../../sdk/rpc";
+import { describeTransport } from "../../sdk/livePath";
 
 const cent = CipherSentry.shared();
 
 export default function Feed() {
   const app = useApp();
   const { feed, approvals, now } = app;
-  const streamLabel = (() => {
-    if (cent.transport.kind !== "rpc") return "SYNCED";
-    const rpc = cent.transport as RpcTransport;
-    if (rpc.lastCapBreach) return "RATE / AUTH CAP";
-    if (rpc.eventRejectStats.pinMismatch > 0) return "KEY MISMATCH";
-    if (rpc.eventRejectStats.rejected > 0 && rpc.lastEventSigned === false) return "SIG REJECTED";
-    if (rpc.lastEventSigned === true) {
-      return rpc.sessionActive ? "SIGNED · AUTH" : "SIGNED AS THEY FIRE";
-    }
-    if (rpc.lastEventSigned === false) return "UNSIGNED STREAM";
-    if (rpc.pinnedPubkey) return "PINNED";
-    return "SYNCED";
-  })();
+  const hud = describeTransport(cent.transport);
+  const streamLabel = hud.sessionLine ?? hud.primary;
+  const dotTone =
+    hud.tone === "volt" ? "bg-volt" : hud.tone === "amber" ? "bg-amber-300" : hud.tone === "red" ? "bg-red-400" : "bg-mute";
 
   return (
     <div className="no-scrollbar h-full overflow-y-auto pb-28">
@@ -33,9 +24,15 @@ export default function Feed() {
           <div className="mt-1 font-display text-[22px] font-semibold tracking-[-0.02em]">
             Live trace
           </div>
+          {hud.kind === "rpc" && (
+            <div className="mt-1 font-mono text-[8px] tracking-[0.16em] text-mute/70" title={hud.node}>
+              {hud.secondary}
+              {hud.sessionLine ? ` · ${hud.sessionLine}` : ""}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 px-2 py-2 font-mono text-[8.5px] tracking-[0.2em] text-mute">
-          <span className="h-1.5 w-1.5 bg-volt" />
+          <span className={`h-1.5 w-1.5 ${dotTone}`} />
           {streamLabel}
         </div>
       </div>

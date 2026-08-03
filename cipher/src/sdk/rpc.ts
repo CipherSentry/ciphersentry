@@ -8,6 +8,7 @@
 
 import type { TaskEvent, TaskState } from "../app/data";
 import type { ExBatch, Receipt } from "./ledger";
+import { LOCAL_NODE, resolveDefaultNode } from "./publicEndpoints";
 import type { BatchCb, TickCb, Transport } from "./transport";
 
 /** Wire error — same codes as CenError; kept here to avoid import cycles. */
@@ -20,7 +21,13 @@ export class RpcWireError extends Error {
   }
 }
 
-export const DEFAULT_NODE = "http://127.0.0.1:8080";
+/** @deprecated prefer resolveDefaultNode() — kept for tests/imports */
+export const DEFAULT_NODE = LOCAL_NODE;
+
+/** Live default (localhost in dev, public DNS on product host). */
+export function defaultNodeUrl(): string {
+  return resolveDefaultNode();
+}
 
 /* ---------------- method map — docs/architecture.md §5 ---------------- */
 
@@ -149,7 +156,7 @@ export function resolveNodeEndpoints(raw: string): { httpBase: string; wsUrl: st
   try {
     u = new URL(raw.includes("://") ? raw : `http://${raw}`);
   } catch {
-    u = new URL(DEFAULT_NODE);
+    u = new URL(defaultNodeUrl());
   }
 
   const httpProto = u.protocol === "wss:" || u.protocol === "https:" ? "https:" : "http:";
@@ -346,6 +353,7 @@ export class RpcTransport implements Transport {
     this.sessionToken = sess.token;
     this.sessionExpires = Number(sess.expires_at) || Date.now() + 3_600_000;
     this.cfg.apiKey = sess.token;
+    this.cfg.session = s; // enable ensureSession re-auth after expiry
     this.sessionMeta = {
       agent_id: String(sess.agent_id),
       stake: Number(sess.stake) || 0,

@@ -37,8 +37,21 @@ const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
 const EPOCH = Number(process.env.EPOCH ?? 88421);
 const PROD = isProdOps();
 /** Default to local compose NATS; falls back to memory if unreachable (unless prod). */
-const NATS_URL = process.env.NATS_URL ?? "nats://127.0.0.1:4222";
-const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
+// Fly public demo has no sidecar NATS/Redis — empty URL → memory bus/kv.
+// Local defaults still point at compose ports when unset and not on Fly.
+const ON_FLY = Boolean(process.env.FLY_APP_NAME || process.env.FLY_MACHINE_ID);
+const NATS_URL =
+  process.env.NATS_URL !== undefined
+    ? process.env.NATS_URL
+    : ON_FLY
+      ? ""
+      : "nats://127.0.0.1:4222";
+const REDIS_URL =
+  process.env.REDIS_URL !== undefined
+    ? process.env.REDIS_URL
+    : ON_FLY
+      ? ""
+      : "redis://127.0.0.1:6379";
 /** B7 prod forces AUTH_REQUIRED. */
 const AUTH_REQUIRED = PROD || process.env.AUTH_REQUIRED === "1";
 const ANON_RPM = Number(process.env.ANON_RPM ?? 20);
