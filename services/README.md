@@ -164,7 +164,13 @@ auth.session   { challenge_id, pubkey, signature, agent_id? }
 # subsequent RPC: Authorization: Bearer <token>
 # rate limit = 30 + min(270, floor(stake/40)) RPM; anon = ANON_RPM
 
-# smoke (gateway must be running with AUTH_REQUIRED=1):
+# AUTH abuse e2e (boots its own gateway):
+npm run e2e:auth
+# Flip Fly public AUTH_REQUIRED=1 + live smoke (needs FLY_API_TOKEN):
+npm run flip:auth:public
+# Live-only smoke (node already auth-required):
+npm run e2e:auth:public
+# smoke against a running AUTH_REQUIRED=1 gateway:
 AUTH_REQUIRED=1 npm run gateway &
 npm run smoke:auth
 # SDK: RpcTransport.openSession({ pubkey, sign, agentId })

@@ -70,7 +70,9 @@ WS upgrade required on gateway (`/events`).
 ## Security
 
 - **Mock USDC stack only** for public demo — never Circle production key
-- `AUTH_REQUIRED=1` in B7 / `prod.env`
+- Gate: `npm run e2e:auth` then deploy Fly with `AUTH_REQUIRED=1` (fly.toml)
+- Live check: `npm run e2e:auth:public` (against `https://ciphersentry.fly.dev`)
+- `AUTH_REQUIRED=1` in B7 / `prod.env` / Fly public
 - Rate limits: stake RPM (gateway auth)
 - Rotate any key that was pasted in chat
 - Prefer `*_FILE` mounts under `services/secrets/`

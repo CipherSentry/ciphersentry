@@ -201,8 +201,8 @@ export class CipherSentry {
           ? new RpcTransport({ url: readNodeUrl() })
           : new SimTransport({ cap: 34, tickMs: 2800 });
       SHARED = new CipherSentry(opts ?? { key: "op:demo" }, transport);
-      // ?net=rpc&auth=1 → WebCrypto Ed25519 session on first paint
-      if (mode === "rpc" && readAuthMode() && transport.kind === "rpc") {
+      // rpc → open Ed25519 session (required when node AUTH_REQUIRED=1; harmless when optional)
+      if (mode === "rpc" && transport.kind === "rpc") {
         void SHARED.autoSession();
       }
     }
