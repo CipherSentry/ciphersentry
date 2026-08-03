@@ -27,6 +27,12 @@
     "e2e:rails:smoke": "bash scripts/e2e-rails-smoke.sh",
     "demo:sepolia": "bash scripts/demo-sepolia.sh",
     "e2e:sepolia:full": "bash scripts/e2e-sepolia-full.sh",
-    "e2e:sepolia:circle": "bash scripts/e2e-sepolia-circle.sh"
+    "e2e:sepolia:circle": "bash scripts/e2e-sepolia-circle.sh",
+    "b7:init": "bash scripts/b7-host.sh init",
+    "b7:up": "bash scripts/b7-host.sh up",
+    "b7:health": "bash scripts/b7-host.sh health",
+    "b7:compose": "bash scripts/b7-host.sh compose",
+    "b7:down": "bash scripts/b7-host.sh down"
   }
 }
+

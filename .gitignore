@@ -1,3 +1,5 @@
 node_modules
 node_modules
 services/scripts/demo-kit.env
+services/prod.env
+services/secrets/

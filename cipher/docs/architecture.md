@@ -91,5 +91,7 @@ Errors are the six `CEN_E_*` codes from the spec — nothing else escapes.
 > Principle: the chain is the slow, small truth. Everything fast and big —
 > streams, scores, receipts — is derived, reproducible, and disposable.
 >
-> **B7** (optional formalization): production auth/rate/ops already partially in gateway
-> (`AUTH_REQUIRED`, stake RPM, event signing). Not a greenfield letter phase — harden + glue.
+> **B7** (ops prod): `CS_ENV=production` → AUTH + Redis sessions + NATS-only + `*_FILE` key
+> custody. Hosted: `services/docker-compose.b7.yml` / `npm run b7:compose`. CI: `e2e:full` on
+> PR; Sepolia scripts `workflow_dispatch` only (`e2e-sepolia.yml`). Mainnet (audits, Circle
+> mainnet USDC, key ceremony) only after 2–3 stable B7 hosted + CI greens.
