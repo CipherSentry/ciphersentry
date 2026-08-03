@@ -33,7 +33,8 @@
     "b7:up": "bash scripts/b7-host.sh up",
     "b7:health": "bash scripts/b7-host.sh health",
     "b7:compose": "bash scripts/b7-host.sh compose",
-    "b7:down": "bash scripts/b7-host.sh down"
+    "b7:down": "bash scripts/b7-host.sh down",
+    "fly:indexer": "bash fly/deploy-indexer.sh"
   }
 }
 

@@ -10,10 +10,13 @@
  */
 
 /**
- * Live public demo (Fly). Custom DNS can CNAME later:
+ * Live public demo (Fly). Gateway + memory indexer co-located (path proxy).
+ * Custom DNS can CNAME later:
  *   node.base-sepolia.ciphersentry.xyz → ciphersentry.fly.dev
+ * Separate indexer app optional: ciphersentry-indexer.fly.dev
  */
 export const PUBLIC_NODE = "https://ciphersentry.fly.dev";
+/** Same origin when indexer is embedded; override via VITE_PUBLIC_INDEXER. */
 export const PUBLIC_INDEXER = "https://ciphersentry.fly.dev";
 
 export const LOCAL_NODE = "http://127.0.0.1:8080";
@@ -77,9 +80,13 @@ export function indexerFromNode(node: string): string {
     const u = new URL(node);
     if (
       u.hostname === "node.base-sepolia.ciphersentry.xyz" ||
-      u.hostname === "ciphersentry.fly.dev"
+      u.hostname === "ciphersentry.fly.dev" ||
+      u.hostname === "ciphersentry-node.fly.dev" ||
+      u.hostname === "ciphersentry-indexer.fly.dev"
     ) {
-      return PUBLIC_INDEXER;
+      // path mode: same origin (gateway proxies /batches …)
+      if (u.hostname === "ciphersentry-indexer.fly.dev") return PUBLIC_INDEXER;
+      return `${u.protocol}//${u.host}`;
     }
     if (u.port === "8080" || u.port === "") {
       u.port = "8081";
@@ -89,7 +96,8 @@ export function indexerFromNode(node: string): string {
       u.port = "18081";
       return u.origin;
     }
-    // same origin, path convention
+    // path convention: /indexer on same origin (optional reverse-proxy)
+    if (u.pathname.includes("indexer")) return u.origin + u.pathname.replace(/\/$/, "");
     return u.origin;
   } catch {
     return resolveDefaultIndexer();

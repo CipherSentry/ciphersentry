@@ -1,19 +1,31 @@
-# Public indexer (memory mode)
+# Public indexer (memory mode) — 2nd Fly app
 #   cd services
+#   fly apps create ciphersentry-indexer --org personal   # once
+#   fly secrets set -a ciphersentry-indexer \
+#     NODE_EVENTS=wss://ciphersentry.fly.dev/events \
+#     GATEWAY_URL=https://ciphersentry.fly.dev
 #   fly deploy -a ciphersentry-indexer -c fly/fly.indexer.toml --dockerfile fly/Dockerfile --remote-only \
 #     --command "npm run indexer -w indexer"
+#
+# Path alternative (single host reverse-proxy):
+#   indexer.base-sepolia.ciphersentry.xyz → :8081
+#   or same origin /indexer → indexer machine
 
 app = "ciphersentry-indexer"
 primary_region = "iad"
 
 [build]
-  dockerfile = "fly/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [env]
   PORT = "8080"
   INDEXER_PORT = "8080"
   INDEXER_MEMORY = "1"
   INDEXER_FORCE_WS = "1"
+  # WS fan-out from public gateway (override with fly secrets if host differs)
+  NODE_EVENTS = "wss://ciphersentry.fly.dev/events"
+  GATEWAY_URL = "https://ciphersentry.fly.dev"
+  NATS_URL = ""
 
 [http_service]
   internal_port = 8080

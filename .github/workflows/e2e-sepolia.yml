@@ -1,6 +1,7 @@
-# Base Sepolia e2e — manual only (keys + faucet). Never on push/PR.
+# Base Sepolia e2e — workflow_dispatch + weekly regression (S1.5).
 # Secrets: PRIVATE_KEY, BASE_SEPOLIA_RPC
 # Optional: CIRCLE_KEY (for mode=circle real USDC)
+# Never on push/PR (keys + faucet). Schedule uses mode=full only.
 name: e2e-sepolia
 
 on:
@@ -13,17 +14,20 @@ on:
           - full
           - circle
         default: full
+  schedule:
+    # Monday 06:15 UTC — keep Sepolia write path green
+    - cron: "15 6 * * 1"
 
 permissions:
   contents: read
 
 concurrency:
-  group: e2e-sepolia-${{ inputs.mode }}
+  group: e2e-sepolia-${{ github.event_name == 'schedule' && 'full' || inputs.mode }}
   cancel-in-progress: false
 
 jobs:
   sepolia:
-    name: e2e sepolia (${{ inputs.mode }})
+    name: e2e sepolia (${{ github.event_name == 'schedule' && 'full' || inputs.mode }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -50,6 +54,28 @@ jobs:
           fi
 
       - run: npm ci
+
+      - name: Guard — deployment JSON + scripts parse
+        run: |
+          set -euo pipefail
+          test -f ../cipher/contracts/deployments/base-sepolia-mockusdc.json
+          python3 - <<'PY'
+          import json, sys
+          p = "../cipher/contracts/deployments/base-sepolia-mockusdc.json"
+          d = json.load(open(p))
+          need = ["escrow", "batcher", "usdc", "cent", "registry", "slashExecutor"]
+          miss = [k for k in need if not d.get(k)]
+          if miss:
+              sys.exit(f"deployment missing keys: {miss}")
+          for k in need:
+              v = d[k]
+              if not isinstance(v, str) or not v.startswith("0x") or len(v) != 42:
+                  sys.exit(f"bad address {k}={v!r}")
+          print("deployment ok", d.get("network", "base-sepolia"))
+          PY
+          bash -n scripts/e2e-sepolia-full.sh
+          bash -n scripts/e2e-sepolia-circle.sh
+          bash -n scripts/demo-sepolia.sh
 
       - name: Write demo-kit.env from secrets
         env:
@@ -80,8 +106,25 @@ jobs:
           } > scripts/demo-kit.env
           chmod 600 scripts/demo-kit.env
 
-      - name: Run e2e:sepolia:${{ inputs.mode }}
+      - name: Balance preflight (regression guard)
         run: |
           set -euo pipefail
           set -a && source scripts/demo-kit.env && set +a
-          npm run "e2e:sepolia:${{ inputs.mode }}"
+          ADDR=$(cast wallet address --private-key "$PRIVATE_KEY")
+          BAL=$(cast balance "$ADDR" --rpc-url "$CHAIN_RPC")
+          echo "deployer=$ADDR bal_wei=$BAL"
+          python3 - <<PY
+          bal = int("$BAL")
+          # ~0.002 ETH floor for a full write path on Base Sepolia
+          if bal < 2_000_000_000_000_000:
+              raise SystemExit(f"deployer underfunded: {bal} wei (< 0.002 ETH)")
+          print("balance ok")
+          PY
+
+      - name: Run e2e:sepolia
+        env:
+          E2E_MODE: ${{ github.event_name == 'schedule' && 'full' || inputs.mode }}
+        run: |
+          set -euo pipefail
+          set -a && source scripts/demo-kit.env && set +a
+          npm run "e2e:sepolia:${E2E_MODE}"

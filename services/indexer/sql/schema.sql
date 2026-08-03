@@ -93,12 +93,12 @@ CREATE INDEX IF NOT EXISTS idx_fraud_status ON fraud_cases(status);
 CREATE INDEX IF NOT EXISTS idx_fraud_worker ON fraud_cases(worker);
 
 -- ============================================================================
--- MACHINARC INDEXER — CLICKHOUSE (receipt graph + analytics)
+-- CIPHER SENTRY INDEXER — CLICKHOUSE (receipt graph + analytics)
 -- applied over HTTP by db.ts --apply-ch-schema (CH has no wire driver needed)
 -- ============================================================================
 
--- CH: create database if not exists machinarc
--- CH: create table if not exists machinarc.receipts (
+-- CH: create database if not exists ciphersentry
+-- CH: create table if not exists ciphersentry.receipts (
 --   receipt_id String, task_id String, buyer String, worker String,
 --   spec String, amount Decimal(20,6), state String,
 --   reported String, recomputed String,
@@ -107,13 +107,13 @@ CREATE INDEX IF NOT EXISTS idx_fraud_worker ON fraud_cases(worker);
 --   path Array(String), settled_at DateTime64(3)
 -- ) engine = MergeTree() order by (epoch, batch_id, receipt_id)
 
--- CH: create table if not exists machinarc.trust_series (
+-- CH: create table if not exists ciphersentry.trust_series (
 --   agent_id String, epoch UInt64,
 --   stake Decimal(20,6), success Decimal(5,2), settled_count UInt32,
 --   trust_score Decimal(6,4), computed_at DateTime64(3)
 -- ) engine = MergeTree() order by (agent_id, epoch)
 
--- CH: create table if not exists machinarc.batch_stats (
+-- CH: create table if not exists ciphersentry.batch_stats (
 --   batch_id String, epoch UInt64, count UInt32, total Decimal(20,6),
 --   settled_at DateTime64(3)
 -- ) engine = MergeTree() order by epoch

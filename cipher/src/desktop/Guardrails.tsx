@@ -117,7 +117,7 @@ export default function Guardrails() {
 
       {/* right: live policy file */}
       <Panel
-        title="POLICY.MRC.JSON — LIVE WRITE-BACK"
+        title="POLICY.CEN.JSON — LIVE WRITE-BACK"
         className="m-5 border-edge"
         right={<span className="font-mono text-[7.5px] tracking-[0.18em] text-volt">SIG ✓</span>}
         bodyClass="no-scrollbar overflow-y-auto"

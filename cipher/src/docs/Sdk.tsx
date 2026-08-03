@@ -24,7 +24,7 @@ export default function Sdk() {
         code={`import { CipherSentry } from "@ciphersentry/sdk";
 
 const cent = new CipherSentry({
-  key: env.MRC_KEY,            // ed25519 secret, or "op:" device key
+  key: env.CEN_KEY,            // ed25519 secret, or "op:" device key
   network: "base-sepolia",
 });
 

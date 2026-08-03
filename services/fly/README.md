@@ -80,20 +80,33 @@ Then in Fly:
 fly certs add node.base-sepolia.ciphersentry.xyz -a ciphersentry-node
 ```
 
-## Indexer (optional second app)
+## Indexer (2nd app — explorer proofs / trust)
+
+One-shot:
+
+```bash
+bash services/fly/deploy-indexer.sh
+# override: GATEWAY_URL=https://ciphersentry.fly.dev FLY_INDEXER_APP=ciphersentry-indexer
+```
+
+Manual:
 
 ```bash
 fly apps create ciphersentry-indexer --org personal
 fly secrets set -a ciphersentry-indexer \
-  NODE_EVENTS=wss://ciphersentry-node.fly.dev/events \
-  GATEWAY_URL=https://ciphersentry-node.fly.dev
+  NODE_EVENTS=wss://ciphersentry.fly.dev/events \
+  GATEWAY_URL=https://ciphersentry.fly.dev \
+  NATS_URL=
 cd services
 fly deploy -a ciphersentry-indexer \
   --config fly/fly.indexer.toml \
   --dockerfile fly/Dockerfile \
   --remote-only \
   --command "npm run indexer -w indexer"
+curl -sf https://ciphersentry-indexer.fly.dev/health
 ```
+
+Frontend default: `PUBLIC_INDEXER=https://ciphersentry-indexer.fly.dev`.
 
 ## `fly launch` vs these files
 

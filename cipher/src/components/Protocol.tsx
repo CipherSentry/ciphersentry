@@ -73,7 +73,7 @@ function CodeBlock() {
         <span className={C.kw}>const</span> <span className={C.tx}>cent</span>{" "}
         <span className={C.pn}>=</span> <span className={C.kw}>new</span>{" "}
         <span className={C.fn}>CipherSentry</span>
-        <span className={C.pn}>({"{ key: env.MRC_KEY }"});</span>
+        <span className={C.pn}>({"{ key: env.CEN_KEY }"});</span>
       </div>
       <div className="whitespace-nowrap">&nbsp;</div>
       <div className="whitespace-nowrap">

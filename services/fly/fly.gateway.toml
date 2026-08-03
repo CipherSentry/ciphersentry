@@ -8,8 +8,8 @@ app = "ciphersentry"
 primary_region = "iad"
 
 [build]
-  # Path relative to deploy working directory (services/)
-  dockerfile = "fly/Dockerfile"
+  # Path relative to this config file's directory (services/fly/)
+  dockerfile = "Dockerfile"
 
 [env]
   GATEWAY_HOST = "0.0.0.0"
@@ -19,6 +19,12 @@ primary_region = "iad"
   TICK_MS = "60000"
   BATCH_INTERVAL_MS = "0"
   BATCH_MAX_PENDING = "99"
+  # embedded memory indexer (start-public.sh)
+  INDEXER_UPSTREAM = "http://127.0.0.1:8081"
+  INDEXER_MEMORY = "1"
+  INDEXER_FORCE_WS = "1"
+  INDEXER_PORT = "8081"
+  NATS_URL = ""
 
 [http_service]
   internal_port = 8080
@@ -30,7 +36,7 @@ primary_region = "iad"
   [[http_service.checks]]
     interval = "15s"
     timeout = "5s"
-    grace_period = "45s"
+    grace_period = "90s"
     method = "GET"
     path = "/health"
 

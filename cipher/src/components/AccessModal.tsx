@@ -81,7 +81,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                   <span className="h-2 w-2 bg-edge2" />
                   <span className="h-2 w-2 bg-edge2" />
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.24em] text-mute">MRC.ACCESS.REQUEST</span>
+                <span className="font-mono text-[9px] tracking-[0.24em] text-mute">CEN.ACCESS.REQUEST</span>
               </span>
               <button onClick={onClose} aria-label="Close" className="flex h-7 w-7 items-center justify-center border border-edge2 text-mute transition-colors hover:border-volt/60 hover:text-volt">
                 <X size={13} />
