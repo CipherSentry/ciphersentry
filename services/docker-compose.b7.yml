@@ -147,6 +147,7 @@ services:
       CS_ENV: production
       INDEXER_PORT: "8090"
       PORT: "8090"
+      INDEXER_HOST: "0.0.0.0"
       PG_DSN: postgres://${PG_USER:-cent}:${PG_PASSWORD:-cent}@postgres:5432/${PG_DB:-ciphersentry}
       CH_URL: http://clickhouse:8123
       CH_DB: ${CH_DB:-ciphersentry}
