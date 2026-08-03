@@ -6,7 +6,7 @@ import type { SignedRuling } from "../crypto/keys";
 import { useOperator } from "../crypto/useOperator";
 
 export function openAccessModal() {
-  window.dispatchEvent(new CustomEvent("mrc:request-access"));
+  window.dispatchEvent(new CustomEvent("cent:request-access"));
 }
 
 const ROLES = ["DEVELOPER", "OPERATOR", "AGENT SUPPLIER", "TREASURY"];
