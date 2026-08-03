@@ -1,41 +1,33 @@
 /**
- * Cipher Sentry mark — v1 ("cipher" wordform).
- * Hand-drawn chunky display letterforms for "cipher", round everywhere,
- * kissing tight. The trailing diamond at the registered position: the CENT
- * checkpoint. Horizontal lockup; svg sizes by height, width follows glyphs.
+ * Cipher Sentry mark — 4-point sentry star.
+ * Single-color via `currentColor` (use `text-volt`). Square aspect.
+ * Concave arms read as a spark/guard node at small sizes.
  */
-const ASPECT = 130 / 40;
-
 export default function LogoMark({
   size = 20,
   className = "",
-  accent = "#edf1e5",
+  // kept for call-site compat; mark is monochrome
+  accent: _accent,
 }: {
   size?: number;
   className?: string;
   accent?: string;
 }) {
+  void _accent;
   return (
-    <svg width={size * ASPECT} height={size} viewBox="0 0 130 40" fill="none" className={className} aria-hidden>
-      <g stroke="currentColor" strokeWidth="9.5" strokeLinecap="round" strokeLinejoin="round">
-        {/* c */}
-        <path d="M16.9 17.4A6.9 6.9 0 1 0 16.9 29.8" />
-        {/* i */}
-        <path d="M24.5 30V13.5" />
-        <path d="M24.5 9V8.2" strokeWidth="11" />
-        {/* p */}
-        <path d="M30.5 38V13.5H38A5 5 0 0 1 38 23H30.5" />
-        {/* h */}
-        <path d="M51.5 30V8.5" />
-        <path d="M51.5 18Q51.5 13 57 13Q64 13 64 18V30" />
-        {/* e */}
-        <path d="M70.5 22C70.5 15.5 82.5 15 82.5 21.5H70.5C70.5 26.7 74.5 30 80 30" />
-        {/* r */}
-        <path d="M88.5 30V13.5H95A4.9 4.9 0 0 1 95 23H88.5" />
-        <path d="M91.5 23L100 30" />
-      </g>
-      {/* the checkpoint diamond — registered position, CENT sentinel */}
-      <path d="M110.5 21.2L115.7 26.4L110.5 31.6L105.3 26.4Z" fill={accent} stroke="none" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      {/*
+        4-point star — sharp cardinal tips, deep concave flanks.
+        Tuned so 16–20px still reads as a star, not a plus.
+      */}
+      <path d="M32 2C33.1 23.2 40.8 30.9 62 32C40.8 33.1 33.1 40.8 32 62C30.9 40.8 23.2 33.1 2 32C23.2 30.9 30.9 23.2 32 2Z" />
     </svg>
   );
 }

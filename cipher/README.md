@@ -133,7 +133,7 @@ docs/screenshots/     # images used by this README
 | Display | Inter Tight | −4% tracking headlines |
 | Accent | Instrument Serif italic | The word *agents*, editorial emphasis |
 | Technical | JetBrains Mono | All labels, data, code |
-| Brand | Hand-drawn vector wordmark "cent" | Chunky display strokes + checkpoint diamond |
+| Brand | 4-point sentry star | `LogoMark` · volt `#12c94b` · transparent favicon |
 
 Rules: squared corners, 1px hairlines, no photographic imagery in-product, no
 emojis (lucide icons only), `prefers-reduced-motion` respected everywhere,
