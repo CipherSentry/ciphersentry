@@ -21,26 +21,26 @@ type Phase =
 /** Build a single timeline; one setState per event (no per-char timers). */
 function buildTimeline(): { at: number; phase: Phase }[] {
   const out: { at: number; phase: Phase }[] = [];
-  let at = 500;
-  // type in chunks of 3 — ~9 re-renders instead of 26
-  for (let i = 3; i < CMD.length; i += 3) {
+  let at = 450;
+  // larger chunks → fewer React commits
+  for (let i = 4; i < CMD.length; i += 4) {
     out.push({ at, phase: { k: "type", n: i } });
-    at += 70;
+    at += 90;
   }
   out.push({ at, phase: { k: "type", n: CMD.length } });
-  at += 260;
+  at += 280;
   for (let r = 1; r <= 4; r++) {
     out.push({ at, phase: { k: "rows", n: r } });
-    at += 145;
+    at += 180;
   }
   out.push({ at, phase: { k: "checking" } });
-  at += 950;
+  at += 800;
   out.push({ at, phase: { k: "check", n: 1 } });
-  at += 260;
+  at += 280;
   out.push({ at, phase: { k: "check", n: 2 } });
-  at += 300;
+  at += 320;
   out.push({ at, phase: { k: "settled" } });
-  at += 2600;
+  at += 2800;
   out.push({ at, phase: { k: "next" } });
   return out;
 }

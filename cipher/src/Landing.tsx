@@ -20,8 +20,10 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="relative isolate min-h-screen overflow-x-clip bg-void font-display text-mist">
-      <AccessModal open={accessOpen} onClose={() => setAccessOpen(false)} />
+    <div className="relative isolate min-h-screen overflow-x-clip bg-void font-display text-mist antialiased">
+      {accessOpen ? (
+        <AccessModal open={accessOpen} onClose={() => setAccessOpen(false)} />
+      ) : null}
       <Frame />
       <Header />
       <main className="pt-[calc(60px+env(safe-area-inset-top,0px))] sm:pt-[calc(68px+env(safe-area-inset-top,0px))]">

@@ -46,9 +46,15 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* smooth only on fine pointers; avoids janky scroll on touch + heavy paint */
+  scroll-behavior: auto;
   overflow-x: clip;
   max-width: 100%;
+}
+@media (prefers-reduced-motion: no-preference) and (pointer: fine) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 /* ---- hidden scrollbars (phone screens) ---- */
@@ -84,19 +90,53 @@ body {
   outline-offset: 2px;
 }
 
-/* ---- engineering shelf entrance (light-canvas animation) ---- */
+/* ---- engineering shelf entrance (opacity + y only, no scale/blur) ---- */
 @keyframes shelfIn {
   from {
     opacity: 0;
-    transform: translateY(24px) scale(0.985);
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 .animate-shelf-in {
-  animation: shelfIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: shelfIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes heroLine {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+.animate-hero-line {
+  animation: heroLine 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.animate-fade-up {
+  animation: fadeUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.contain-paint {
+  contain: layout paint style;
+}
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
 }
 
 button,
@@ -117,8 +157,17 @@ input {
   .animate-scan,
   .animate-ping,
   .animate-dashspin,
-  .animate-shelf-in {
+  .animate-shelf-in,
+  .animate-hero-line,
+  .animate-fade-up,
+  .animate-blink {
     animation: none !important;
+  }
+  .animate-shelf-in,
+  .animate-hero-line,
+  .animate-fade-up {
+    opacity: 1 !important;
+    transform: none !important;
   }
   .animate-pulse {
     animation-duration: 2.6s !important;
@@ -210,7 +259,9 @@ input {
   }
 }
 .animate-marquee {
-  animation: marquee 40s linear infinite;
+  animation: marquee 55s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 .animate-marquee:hover {
   animation-play-state: paused;

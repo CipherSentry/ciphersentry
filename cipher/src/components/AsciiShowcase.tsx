@@ -1,14 +1,37 @@
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import AsciiFigure from "./AsciiFigure";
 import Reveal from "./Reveal";
 import SectionHead from "./SectionHead";
 
 /**
- * 03 · THE SENTRY — image-driven ASCII figure (ascii motion work.jpg).
+ * 03 · THE SENTRY — live ASCII only mounts when near viewport.
  */
 export default function AsciiShowcase() {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    const el = hostRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setLive(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setLive(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "120px", threshold: 0.01 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section id="sentry" className="scroll-mt-[68px] border-b border-edge">
+    <section id="sentry" className="content-auto scroll-mt-[68px] border-b border-edge">
       <SectionHead
         index="03"
         kicker="THE SENTRY"
@@ -23,19 +46,19 @@ export default function AsciiShowcase() {
 
       <div className="section-x pb-12 sm:pb-16 md:pb-20 lg:pb-24">
         <div className="grid gap-px border border-edge bg-edge lg:grid-cols-[1.15fr_0.85fr]">
-          <Reveal className="relative min-h-[min(70vw,360px)] bg-void sm:min-h-[480px] lg:min-h-[640px]">
-            <div className="absolute inset-0">
-              <AsciiFigure />
+          <Reveal className="relative min-h-[min(70vw,360px)] bg-void sm:min-h-[480px] lg:min-h-[560px]">
+            <div ref={hostRef} className="absolute inset-0">
+              {live ? <AsciiFigure /> : null}
             </div>
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 sm:p-5 md:p-6">
               <div className="flex justify-end">
-                <span className="flex items-center gap-2 bg-void/85 px-2.5 py-1.5 font-mono text-[8.5px] tracking-[0.2em] text-volt backdrop-blur-sm">
-                  <span className="h-1.5 w-1.5 animate-pulse bg-volt" />
+                <span className="flex items-center gap-2 bg-void/90 px-2.5 py-1.5 font-mono text-[8.5px] tracking-[0.2em] text-volt">
+                  <span className="h-1.5 w-1.5 bg-volt" />
                   LIVE
                 </span>
               </div>
               <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-3">
-                <div className="border border-edge2/70 bg-void/90 px-2.5 py-1.5 font-mono text-[8.5px] tracking-[0.16em] text-mute backdrop-blur-sm sm:px-3 sm:py-2 sm:text-[9px] sm:tracking-[0.18em]">
+                <div className="border border-edge2/70 bg-void/95 px-2.5 py-1.5 font-mono text-[8.5px] tracking-[0.16em] text-mute sm:px-3 sm:py-2 sm:text-[9px] sm:tracking-[0.18em]">
                   <div className="text-mist/80">CEN-EPOCH · FIGURE_01</div>
                   <div className="mt-1 text-[7.5px] text-mute/70 sm:text-[8px]">
                     HUMANS: 0
