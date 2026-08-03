@@ -1,22 +1,8 @@
 # Fly.io public node (fast path → NODE LIVE)
 
-**Public B7 (default `fly.toml` + `start-public-b7.sh`):** single machine embeds
-Redis + NATS + **Postgres on volume** + gateway + durable indexer (CH-memory).
-
-```
-/health              → phase=B7 bus=nats kv=redis
-/indexer/health      → durable=true storage=pg ch=memory
-```
-
-Volume (once):
-```bash
-fly volumes create ciphersentry_data --region iad --size 1 -a ciphersentry
-```
-
-Enough for:
-- B7 session/bus surface (Redis + NATS)
-- Durable tasks/receipts/batches across deploys (Postgres on `/data`)
-- Explorer path proxy (`/search`, `/tasks`, …) without a 2nd app
+Not full B7 (no Redis/NATS/PG). Enough for:
+- `GET /health` → badge **NODE LIVE**
+- `?net=rpc` console + Sepolia mock writes (with secrets)
 
 ## Windows (PowerShell)
 
@@ -59,6 +45,27 @@ fly deploy -a ciphersentry-node `
 curl https://ciphersentry-node.fly.dev/health
 ```
 
+### Access requests (landing + waitlist)
+
+```bash
+# secret for listing (generate a long random string)
+fly secrets set -a ciphersentry ACCESS_OPS_TOKEN="$(openssl rand -hex 24)"
+
+# public submit (also from ciphersentry.com Request Access)
+curl -sS -X POST https://ciphersentry.fly.dev/access-requests \
+  -H 'content-type: application/json' \
+  -d '{"handle":"atlas-labs","email":"ops@example.com","role":"DEVELOPER","rail":"BASE MAINNET"}'
+
+# list (ops only)
+curl -sS https://ciphersentry.fly.dev/access-requests \
+  -H "Authorization: Bearer $ACCESS_OPS_TOKEN" | jq .
+
+# count also on /health → access_requests
+curl -sS https://ciphersentry.fly.dev/health | jq '{access_requests,access_ops}'
+```
+
+Storage is the gateway Kv (Redis when `REDIS_URL` is set, else in-memory — lost on machine restart).
+
 **Do not** paste private keys into chat/git. Set only via `fly secrets set`.
 
 ## Linux / macOS
@@ -94,27 +101,33 @@ Then in Fly:
 fly certs add node.base-sepolia.ciphersentry.xyz -a ciphersentry-node
 ```
 
-## Durable indexer (2nd app — Postgres SoR)
+## Indexer (2nd app — explorer proofs / trust)
 
-Creates `ciphersentry-db` (Fly Postgres) + `ciphersentry-indexer` with
-`INDEXER_MEMORY=0` and `INDEXER_CH_MODE=memory` (analytics ephemeral; tasks /
-receipts / batches durable in PG). Events fan-in over gateway WS.
+One-shot:
 
 ```bash
 bash services/fly/deploy-indexer.sh
-# override: GATEWAY_URL=https://ciphersentry.fly.dev FLY_INDEXER_APP=ciphersentry-indexer FLY_PG_APP=ciphersentry-db
-
-curl -sf https://ciphersentry-indexer.fly.dev/health
-# → durable=true storage=pg ch=memory
-
-# Point public gateway path-proxy at the durable app (private DNS):
-fly secrets set -a ciphersentry \
-  INDEXER_UPSTREAM=http://ciphersentry-indexer.internal:8080
-fly deploy -a ciphersentry --config fly.toml --remote-only
+# override: GATEWAY_URL=https://ciphersentry.fly.dev FLY_INDEXER_APP=ciphersentry-indexer
 ```
 
-Frontend: same-origin `/search` after proxy switch, or
-`VITE_PUBLIC_INDEXER=https://ciphersentry-indexer.fly.dev`.
+Manual:
+
+```bash
+fly apps create ciphersentry-indexer --org personal
+fly secrets set -a ciphersentry-indexer \
+  NODE_EVENTS=wss://ciphersentry.fly.dev/events \
+  GATEWAY_URL=https://ciphersentry.fly.dev \
+  NATS_URL=
+cd services
+fly deploy -a ciphersentry-indexer \
+  --config fly/fly.indexer.toml \
+  --dockerfile fly/Dockerfile \
+  --remote-only \
+  --command "npm run indexer -w indexer"
+curl -sf https://ciphersentry-indexer.fly.dev/health
+```
+
+Frontend default: `PUBLIC_INDEXER=https://ciphersentry-indexer.fly.dev`.
 
 ## `fly launch` vs these files
 

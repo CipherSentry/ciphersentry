@@ -4,6 +4,8 @@
  *   POST /rpc    — JSON-RPC 2.0 over the §5 method map (dispatch in rpc.ts)
  *   GET  /events — WebSocket hub (task.event / batch.event / fraud.event)
  *   GET  /health — liveness + escrow + batcher + fraud + bus + elected quorum
+ *   POST /access-requests — landing access + waitlist collector (public)
+ *   GET  /access-requests — list requests (Bearer ACCESS_OPS_TOKEN)
  *
  * Domain events publish on the EventBus (NATS when NATS_URL set). The WS hub
  * is a bus consumer for console fan-out — indexer and other services subscribe
@@ -31,6 +33,7 @@ import {
   rpmForStake,
 } from "./auth.ts";
 import { isProdOps } from "./keys.ts";
+import { AccessRequestStore, opsTokenOk } from "./access-requests.ts";
 
 const HOST = process.env.GATEWAY_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
@@ -110,6 +113,9 @@ async function boot(): Promise<void> {
   });
   const auth = new AuthService(kv, stakeOf);
   const rateLimit = new RateLimiter(kv);
+  const accessStore = new AccessRequestStore(kv);
+  const ACCESS_OPS_TOKEN = (process.env.ACCESS_OPS_TOKEN ?? "").trim();
+  const ACCESS_RPM = Number(process.env.ACCESS_RPM ?? 10);
 
   const hub = new SubscriptionHub();
   await hub.attachBus(bus);
@@ -163,7 +169,58 @@ async function boot(): Promise<void> {
       eligible: pool.registry.eligible().length,
       slash_dry_runs: pool.slash.all().length,
       accrual: pool.accrual.summary(),
+      access_requests: await accessStore.count(),
+      access_ops: Boolean(ACCESS_OPS_TOKEN),
     };
+  });
+
+  /** Landing "Request Access" + gates waitlist — public write, ops read. */
+  fastify.post("/access-requests", async (req, reply) => {
+    const ip =
+      req.ip ||
+      (typeof req.headers["x-forwarded-for"] === "string"
+        ? req.headers["x-forwarded-for"].split(",")[0]!.trim()
+        : "unknown");
+    const limited = await rateLimit.check({ key: `access:${ip}`, rpm: ACCESS_RPM });
+    if (limited) {
+      reply.code(429);
+      return { ok: false, error: limited };
+    }
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const row = await accessStore.submit(body, { ip });
+    if ("error" in row) {
+      reply.code(400);
+      return { ok: false, error: row.error };
+    }
+    reply.code(201);
+    return {
+      ok: true,
+      id: row.id,
+      queue: row.queue,
+      kind: row.kind,
+      at: row.at,
+    };
+  });
+
+  fastify.get("/access-requests", async (req, reply) => {
+    if (!ACCESS_OPS_TOKEN) {
+      reply.code(503);
+      return {
+        ok: false,
+        error: "ACCESS_OPS_TOKEN not configured — set fly secret / env to list requests",
+      };
+    }
+    const authz =
+      (typeof req.headers.authorization === "string" ? req.headers.authorization : null) ??
+      (typeof req.headers["x-ops-token"] === "string" ? `Bearer ${req.headers["x-ops-token"]}` : null);
+    if (!opsTokenOk(authz, ACCESS_OPS_TOKEN)) {
+      reply.code(401);
+      return { ok: false, error: "unauthorized — Authorization: Bearer $ACCESS_OPS_TOKEN" };
+    }
+    const q = req.query as { limit?: string };
+    const limit = q.limit ? Number(q.limit) : 100;
+    const items = await accessStore.list(Number.isFinite(limit) ? limit : 100);
+    return { ok: true, count: items.length, total: await accessStore.count(), items };
   });
 
   fastify.post("/rpc", async (req, reply) => {
@@ -294,6 +351,7 @@ async function boot(): Promise<void> {
   console.log(`  rpc      → http://${HOST}:${PORT}/rpc`);
   console.log(`  events   → ws://${HOST}:${PORT}/events`);
   console.log(`  health   → http://${HOST}:${PORT}/health`);
+  console.log(`  access   → POST/GET http://${HOST}:${PORT}/access-requests (ops=${ACCESS_OPS_TOKEN ? "token set" : "token MISSING"})`);
   if (INDEXER_UPSTREAM) {
     console.log(`  indexer  → proxy ${INDEXER_UPSTREAM} (/batches… /indexer/health)`);
   }
