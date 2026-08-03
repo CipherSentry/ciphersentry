@@ -234,6 +234,51 @@ async function boot(): Promise<void> {
     }
   });
 
+  // Optional path proxy → co-located memory indexer (Fly public node)
+  const INDEXER_UPSTREAM = (process.env.INDEXER_UPSTREAM ?? "").replace(/\/$/, "");
+  if (INDEXER_UPSTREAM) {
+    const prefixes = ["/batches", "/receipts", "/agents", "/trust", "/fraud", "/search", "/stats"];
+    const proxyIndexer = async (req: import("fastify").FastifyRequest, reply: import("fastify").FastifyReply) => {
+      try {
+        const target = `${INDEXER_UPSTREAM}${req.url}`;
+        const headers: Record<string, string> = { accept: "application/json" };
+        if (req.headers["content-type"]) headers["content-type"] = String(req.headers["content-type"]);
+        const init: RequestInit = { method: req.method, headers };
+        if (req.method !== "GET" && req.method !== "HEAD" && req.body != null) {
+          init.body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+        }
+        const res = await fetch(target, init);
+        const text = await res.text();
+        reply.code(res.status);
+        const ct = res.headers.get("content-type");
+        if (ct) reply.header("content-type", ct);
+        return reply.send(text);
+      } catch (e) {
+        reply.code(502);
+        return {
+          error: "indexer_upstream",
+          message: e instanceof Error ? e.message : String(e),
+        };
+      }
+    };
+    for (const p of prefixes) {
+      fastify.all(p, proxyIndexer);
+      fastify.all(`${p}/*`, proxyIndexer);
+    }
+    // dedicated indexer health (gateway keeps /health)
+    fastify.get("/indexer/health", async (_req, reply) => {
+      try {
+        const res = await fetch(`${INDEXER_UPSTREAM}/health`);
+        const body = await res.json();
+        reply.code(res.status);
+        return body;
+      } catch (e) {
+        reply.code(502);
+        return { ok: false, error: e instanceof Error ? e.message : String(e) };
+      }
+    });
+  }
+
   fastify.setNotFoundHandler((_req, reply) => {
     reply.code(404).send({
       jsonrpc: "2.0",
@@ -249,6 +294,9 @@ async function boot(): Promise<void> {
   console.log(`  rpc      → http://${HOST}:${PORT}/rpc`);
   console.log(`  events   → ws://${HOST}:${PORT}/events`);
   console.log(`  health   → http://${HOST}:${PORT}/health`);
+  if (INDEXER_UPSTREAM) {
+    console.log(`  indexer  → proxy ${INDEXER_UPSTREAM} (/batches… /indexer/health)`);
+  }
   console.log(`  bus      → ${bus.mode}${bus.mode === "nats" ? ` (${NATS_URL})` : ""}`);
   console.log(`  kv       → ${kv.mode}${kv.mode === "redis" ? ` (${REDIS_URL})` : ""}`);
   console.log(`  auth     → ${AUTH_REQUIRED ? "REQUIRED" : "optional"} (ed25519 · stake rpm base=${rpmForStake(0)} anon=${ANON_RPM})`);

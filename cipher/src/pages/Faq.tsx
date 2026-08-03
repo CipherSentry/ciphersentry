@@ -30,7 +30,7 @@ const QA = [
   },
   {
     q: "What does the demo do?",
-    a: "It's a 45-second escrow speedrun (#/demo) — from a 100-USDC demo wallet you lock escrow, watch workers execute, verifiers vote, escrow release — then replay with one deliberate mistake and rule on the dispute yourself, signing locally with your device key. Your ruling is real cryptography.",
+    a: "It's a live-wire speedrun (#/demo) against the public gateway — task.commit → report → quorum verify → settle on the real JSON-RPC surface. Replay with a deliberate hash fault and rule the dispute with your device key. Demo amounts; live hashes.",
   },
   {
     q: "Where does every fee go?",

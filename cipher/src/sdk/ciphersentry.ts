@@ -81,6 +81,8 @@ export interface CommitParams {
   input: Record<string, unknown>;
   escrow: { amount: string; asset: "USDC" };
   deadline?: string;
+  /** Report a wrong hash (demo / dispute exercise). Live wire only. */
+  fault?: boolean;
 }
 
 export type TaskState =
@@ -335,6 +337,12 @@ export class CipherSentry {
             state: "COMMITTED",
             createdAt: Date.now(),
           };
+          // Gateway pure recompute is f(taskId, input) — use expected_hash from commit.
+          const expected = String(res.expected_hash ?? "");
+          const honest = expected || outputHash(params.input);
+          const reportHash = params.fault
+            ? `0x${randHex(8)}${randHex(8)}`.slice(0, honest.length || 18)
+            : honest;
           this.emit("task.committed", task);
           this.transport.addTask({
             id: task.id,
@@ -345,21 +353,25 @@ export class CipherSentry {
             amount: params.escrow.amount,
             state: "RUNNING",
             at: Date.now(),
-            hash: `0x${randHex(6)}…${randHex(4)}`,
+            hash: reportHash,
           });
-          // worker report over the wire after local execution hash
+          // worker report over the wire (honest or fault)
           void (async () => {
-            await sleep(700 + Math.random() * 500);
-            const hash = outputHash(params.input);
+            await sleep(400 + Math.random() * 350);
             task.state = "VERIFYING";
-            task.reportedHash = hash;
+            task.reportedHash = reportHash;
             try {
-              await rpc.rpcTaskReport(task.id, hash);
+              await rpc.rpcTaskReport(task.id, reportHash);
             } catch {
               /* stream may already show VERIFYING */
             }
             this.transport.setTaskState(task.id, "VERIFYING");
-            this.emit("task.reported", { task, hash });
+            this.emit("task.reported", {
+              task,
+              hash: reportHash,
+              expected: honest,
+              matched: !params.fault,
+            });
           })();
           return task;
         } catch (e) {

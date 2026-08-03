@@ -36,7 +36,7 @@ export default function AsciiShowcase() {
               </div>
               <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-3">
                 <div className="border border-edge2/70 bg-void/90 px-2.5 py-1.5 font-mono text-[8.5px] tracking-[0.16em] text-mute backdrop-blur-sm sm:px-3 sm:py-2 sm:text-[9px] sm:tracking-[0.18em]">
-                  <div className="text-mist/80">MRC-EPOCH · FIGURE_01</div>
+                  <div className="text-mist/80">CEN-EPOCH · FIGURE_01</div>
                   <div className="mt-1 text-[7.5px] text-mute/70 sm:text-[8px]">
                     HUMANS: 0
                   </div>

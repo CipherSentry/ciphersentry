@@ -1,15 +1,17 @@
-# S1.3 Hosting — public demo node
+# S1.3–S1.4 Hosting — public demo node + indexer
 
 **Fastest path (Fly.io):** see [`../fly/README.md`](../fly/README.md).
 
-Code defaults (frontend) already point product hosts at:
+Code defaults (frontend) on product hosts:
 
-| Service | URL |
-|---------|-----|
-| Gateway | `https://node.base-sepolia.ciphersentry.xyz` |
-| Indexer | `https://indexer.base-sepolia.ciphersentry.xyz` |
+| Service | Default (no DNS) | Custom DNS (optional) |
+|---------|------------------|------------------------|
+| Gateway | `https://ciphersentry.fly.dev` | `https://node.base-sepolia.ciphersentry.xyz` |
+| Indexer | `https://ciphersentry-indexer.fly.dev` | `https://indexer.base-sepolia.ciphersentry.xyz` |
 
 Localhost / `127.0.0.1` still use `:8080` / `:8081`.
+
+`#/demo` always uses the live gateway (RPC), not the old setTimeout fixture.
 
 Build overrides:
 
@@ -17,6 +19,14 @@ Build overrides:
 VITE_PUBLIC_NODE=https://your-gw.example \
 VITE_PUBLIC_INDEXER=https://your-ix.example \
 npm run build
+```
+
+## Indexer on Fly (2nd app)
+
+```bash
+bash services/fly/deploy-indexer.sh
+# or path proxy: same host reverse_proxy 127.0.0.1:8081 on / or indexer.*
+curl -sf https://ciphersentry-indexer.fly.dev/health
 ```
 
 ## Deploy (one box + Docker)

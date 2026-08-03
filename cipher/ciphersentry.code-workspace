@@ -10,7 +10,7 @@
     }
   ],
   "settings": {
-    "typescript.tsdk": "machinarc/node_modules/typescript/lib",
+    "typescript.tsdk": "cipher/node_modules/typescript/lib",
     "search.exclude": {
       "**/dist": true,
       "**/out": true,

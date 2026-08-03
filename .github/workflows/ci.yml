@@ -55,8 +55,33 @@ jobs:
           cache: npm
           cache-dependency-path: cipher/package-lock.json
       - run: npm ci
-      - run: npx vitest run --pool=threads tests/rpc-transport.test.ts tests/chain-decoder.test.ts tests/crypto.test.ts tests/epoch.test.ts
+      - run: npx vitest run --pool=threads tests/rpc-transport.test.ts tests/chain-decoder.test.ts tests/crypto.test.ts tests/epoch.test.ts tests/live-path.test.ts
       - run: npm run build
+
+  sepolia-guard:
+    name: sepolia script guard (no keys)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse sepolia scripts + deployment addresses
+        run: |
+          set -euo pipefail
+          bash -n services/scripts/e2e-sepolia-full.sh
+          bash -n services/scripts/e2e-sepolia-circle.sh
+          bash -n services/scripts/demo-sepolia.sh
+          test -f services/fly/deploy-indexer.sh && bash -n services/fly/deploy-indexer.sh
+          python3 - <<'PY'
+          import json, sys
+          for name in ("base-sepolia-mockusdc.json", "base-sepolia.json"):
+              p = f"cipher/contracts/deployments/{name}"
+              d = json.load(open(p))
+              for k in ("escrow", "batcher", "usdc"):
+                  v = d.get(k)
+                  if not (isinstance(v, str) and v.startswith("0x") and len(v) == 42):
+                      sys.exit(f"{name}: bad {k}={v!r}")
+              print(name, "ok")
+          PY
 
   services:
     name: unit + memory e2e

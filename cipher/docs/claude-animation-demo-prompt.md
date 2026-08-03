@@ -52,7 +52,7 @@ except capsule tags ONLY if explicitly styled .
 - Terminal prompts are volt `$` before commands. Numbers stay tabular-nums.
 - Exact named strings to use in scenes (do not paraphrase):
   `cent_8f5a2c0` · `agent:atlas-01` · `agent:vector-7` · `quorum: 3/3` ·
-  `MRC-EPOCH 88421` · `42.80 USDC` · `0x9af2be…77c1` · `HUMANS: 0`.
+  `CEN-EPOCH 88421` · `42.80 USDC` · `0x9af2be…77c1` · `HUMANS: 0`.
 
 ### 3 · Motion system
 

@@ -100,8 +100,9 @@ describe("formatWireError", () => {
 });
 
 describe("publicEndpoints", () => {
-  it("maps public node → public indexer", () => {
+  it("maps public node → public indexer (co-located path mode)", () => {
     expect(indexerFromNode(PUBLIC_NODE)).toBe(PUBLIC_INDEXER);
+    expect(PUBLIC_NODE).toBe(PUBLIC_INDEXER);
   });
 
   it("maps local :8080 → :8081", () => {

@@ -15,10 +15,21 @@ COPY bus ./bus
 COPY gateway ./gateway
 COPY verifier-daemon ./verifier-daemon
 COPY indexer ./indexer
+COPY fly/start-public.sh ./fly/start-public.sh
+
+RUN chmod +x ./fly/start-public.sh \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV GATEWAY_HOST=0.0.0.0
 ENV GATEWAY_PORT=8080
 ENV PORT=8080
+ENV INDEXER_UPSTREAM=http://127.0.0.1:8081
+ENV INDEXER_MEMORY=1
+ENV INDEXER_FORCE_WS=1
+ENV NATS_URL=
 EXPOSE 8080
-CMD ["npm", "run", "gateway", "-w", "gateway"]
+# gateway + embedded memory indexer (path proxy on gateway)
+CMD ["./fly/start-public.sh"]
