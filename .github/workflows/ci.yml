@@ -110,6 +110,8 @@ jobs:
           done
           npm run smoke
           kill $GATEWAY_PID
+      - name: AUTH abuse e2e (AUTH_REQUIRED=1)
+        run: npm run e2e:auth
       - name: Indexer B6 smoke
         run: npm run smoke:indexer
       - name: Indexer B6 e2e (gateway WS → proof API)
