@@ -31,7 +31,14 @@ REDIS_PORT="${REDIS_PORT:-6379}"
 NATS_PORT="${NATS_PORT:-4222}"
 NATS_MON="${NATS_MON:-8222}"
 
-echo "[start-public-b7] redis :${REDIS_PORT} + nats :${NATS_PORT} + gateway :${GATEWAY_PORT} + indexer :${INDEXER_PORT}"
+# When INDEXER_UPSTREAM is not loopback, skip embedded indexer (durable 2nd app).
+REMOTE_IX=0
+case "${INDEXER_UPSTREAM}" in
+http://127.0.0.1:*|http://localhost:*|http://[::1]:*) REMOTE_IX=0 ;;
+*) REMOTE_IX=1 ;;
+esac
+
+echo "[start-public-b7] redis :${REDIS_PORT} + nats :${NATS_PORT} + gateway :${GATEWAY_PORT} + indexer ${REMOTE_IX:+remote }${INDEXER_UPSTREAM}"
 
 # --- redis (sessions / RPM) ---
 redis-server \
@@ -96,26 +103,40 @@ if ! echo "$H" | grep -qE '"b7":\s*true|"phase":\s*"B7"'; then
 fi
 echo "[start-public-b7] gateway up: $H"
 
-# --- indexer (memory + NATS) ---
-(
-  export PORT="${INDEXER_PORT}"
-  export INDEXER_PORT INDEXER_HOST INDEXER_MEMORY INDEXER_FORCE_WS INDEXER_REQUIRE_NATS
-  export NATS_URL NATS_REQUIRE GATEWAY_URL NODE_EVENTS
-  exec npm run indexer -w indexer
-) &
-IX_PID=$!
+IX_PID=""
+if [[ "$REMOTE_IX" == "1" ]]; then
+  echo "[start-public-b7] using remote durable indexer ${INDEXER_UPSTREAM}"
+  # best-effort wait (do not fail boot if indexer rolls)
+  for i in $(seq 1 30); do
+    if curl -sf "${INDEXER_UPSTREAM}/health" >/dev/null 2>&1; then
+      echo "[start-public-b7] remote indexer healthy"
+      break
+    fi
+    sleep 1
+  done
+else
+  # --- local indexer (memory + NATS) ---
+  (
+    export PORT="${INDEXER_PORT}"
+    export INDEXER_PORT INDEXER_HOST INDEXER_MEMORY INDEXER_FORCE_WS INDEXER_REQUIRE_NATS
+    export NATS_URL NATS_REQUIRE GATEWAY_URL NODE_EVENTS
+    exec npm run indexer -w indexer
+  ) &
+  IX_PID=$!
+fi
 
 term() {
-  kill "$GW_PID" "$IX_PID" "$NATS_PID" 2>/dev/null || true
+  [[ -n "${IX_PID}" ]] && kill "$IX_PID" 2>/dev/null || true
+  kill "$GW_PID" "$NATS_PID" 2>/dev/null || true
   redis-cli -p "$REDIS_PORT" shutdown nosave 2>/dev/null || true
   wait "$GW_PID" 2>/dev/null || true
-  wait "$IX_PID" 2>/dev/null || true
+  [[ -n "${IX_PID}" ]] && wait "$IX_PID" 2>/dev/null || true
   wait "$NATS_PID" 2>/dev/null || true
 }
 trap term EXIT INT TERM
 
 while kill -0 "$GW_PID" 2>/dev/null; do
-  if ! kill -0 "$IX_PID" 2>/dev/null; then
+  if [[ -n "${IX_PID}" ]] && ! kill -0 "$IX_PID" 2>/dev/null; then
     echo "[start-public-b7] indexer died — restarting" >&2
     (
       export PORT="${INDEXER_PORT}"

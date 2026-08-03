@@ -27,6 +27,8 @@ primary_region = "iad"
   INDEXER_MEMORY = "1"
   INDEXER_FORCE_WS = "0"
   INDEXER_REQUIRE_NATS = "1"
+  # default embedded memory indexer; override via secret for durable 2nd app:
+  #   fly secrets set -a ciphersentry INDEXER_UPSTREAM=http://ciphersentry-indexer.internal:8080
   INDEXER_UPSTREAM = "http://127.0.0.1:8081"
 
 [http_service]

@@ -1,15 +1,9 @@
-# Public indexer (memory mode) — 2nd Fly app
-#   cd services
-#   fly apps create ciphersentry-indexer --org personal   # once
-#   fly secrets set -a ciphersentry-indexer \
-#     NODE_EVENTS=wss://ciphersentry.fly.dev/events \
-#     GATEWAY_URL=https://ciphersentry.fly.dev
+# Public durable indexer — Postgres SoR + CH-memory analytics + gateway WS fan-in.
+# Deploy from services/:
+#   bash fly/deploy-indexer.sh
+#   # or:
 #   fly deploy -a ciphersentry-indexer -c fly/fly.indexer.toml --dockerfile fly/Dockerfile --remote-only \
 #     --command "npm run indexer -w indexer"
-#
-# Path alternative (single host reverse-proxy):
-#   indexer.base-sepolia.ciphersentry.xyz → :8081
-#   or same origin /indexer → indexer machine
 
 app = "ciphersentry-indexer"
 primary_region = "iad"
@@ -20,12 +14,16 @@ primary_region = "iad"
 [env]
   PORT = "8080"
   INDEXER_PORT = "8080"
-  INDEXER_MEMORY = "1"
+  INDEXER_HOST = "0.0.0.0"
+  # durable SoR
+  INDEXER_MEMORY = "0"
+  INDEXER_CH_MODE = "memory"
+  # gateway NATS is process-local — external indexer uses WS events
   INDEXER_FORCE_WS = "1"
-  # WS fan-out from public gateway (override with fly secrets if host differs)
+  INDEXER_REQUIRE_NATS = "0"
+  NATS_URL = ""
   NODE_EVENTS = "wss://ciphersentry.fly.dev/events"
   GATEWAY_URL = "https://ciphersentry.fly.dev"
-  NATS_URL = ""
 
 [http_service]
   internal_port = 8080
@@ -36,8 +34,8 @@ primary_region = "iad"
 
   [[http_service.checks]]
     interval = "15s"
-    timeout = "5s"
-    grace_period = "45s"
+    timeout = "8s"
+    grace_period = "60s"
     method = "GET"
     path = "/health"
 

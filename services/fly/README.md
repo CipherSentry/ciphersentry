@@ -84,33 +84,27 @@ Then in Fly:
 fly certs add node.base-sepolia.ciphersentry.xyz -a ciphersentry-node
 ```
 
-## Indexer (2nd app — explorer proofs / trust)
+## Durable indexer (2nd app — Postgres SoR)
 
-One-shot:
+Creates `ciphersentry-db` (Fly Postgres) + `ciphersentry-indexer` with
+`INDEXER_MEMORY=0` and `INDEXER_CH_MODE=memory` (analytics ephemeral; tasks /
+receipts / batches durable in PG). Events fan-in over gateway WS.
 
 ```bash
 bash services/fly/deploy-indexer.sh
-# override: GATEWAY_URL=https://ciphersentry.fly.dev FLY_INDEXER_APP=ciphersentry-indexer
-```
+# override: GATEWAY_URL=https://ciphersentry.fly.dev FLY_INDEXER_APP=ciphersentry-indexer FLY_PG_APP=ciphersentry-db
 
-Manual:
-
-```bash
-fly apps create ciphersentry-indexer --org personal
-fly secrets set -a ciphersentry-indexer \
-  NODE_EVENTS=wss://ciphersentry.fly.dev/events \
-  GATEWAY_URL=https://ciphersentry.fly.dev \
-  NATS_URL=
-cd services
-fly deploy -a ciphersentry-indexer \
-  --config fly/fly.indexer.toml \
-  --dockerfile fly/Dockerfile \
-  --remote-only \
-  --command "npm run indexer -w indexer"
 curl -sf https://ciphersentry-indexer.fly.dev/health
+# → durable=true storage=pg ch=memory
+
+# Point public gateway path-proxy at the durable app (private DNS):
+fly secrets set -a ciphersentry \
+  INDEXER_UPSTREAM=http://ciphersentry-indexer.internal:8080
+fly deploy -a ciphersentry --config fly.toml --remote-only
 ```
 
-Frontend default: `PUBLIC_INDEXER=https://ciphersentry-indexer.fly.dev`.
+Frontend: same-origin `/search` after proxy switch, or
+`VITE_PUBLIC_INDEXER=https://ciphersentry-indexer.fly.dev`.
 
 ## `fly launch` vs these files
 
