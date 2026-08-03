@@ -43,15 +43,25 @@ network today; the transport seam is cut for a real JSON-RPC node tomorrow.
 
 ## Screenshots
 
+Current UI (light canvas + star mark), captured from `npm run preview`.
+
 <div align="center">
 
-| Landing — live task trace | Ops Console — observe mode |
+| Landing — hero + task trace | Ops Console — observe |
 | :---: | :---: |
 | [![Landing](docs/screenshots/landing.jpg)](docs/screenshots/landing.jpg) | [![Console](docs/screenshots/console.jpg)](docs/screenshots/console.jpg) |
 
-| Mobile Ops — feed + intervention | Docs — the manifesto |
+| Mobile Ops — live feed | Docs — manifesto |
 | :---: | :---: |
 | [![Mobile](docs/screenshots/mobile.jpg)](docs/screenshots/mobile.jpg) | [![Docs](docs/screenshots/docs.jpg)](docs/screenshots/docs.jpg) |
+
+| Demo flow | Protocol | Explorer | Launch gates |
+| :---: | :---: | :---: | :---: |
+| [![Demo](docs/screenshots/demo.jpg)](docs/screenshots/demo.jpg) | [![Protocol](docs/screenshots/protocol.jpg)](docs/screenshots/protocol.jpg) | [![Explorer](docs/screenshots/explorer.jpg)](docs/screenshots/explorer.jpg) | [![Gates](docs/screenshots/gates.jpg)](docs/screenshots/gates.jpg) |
+
+| Cover | Star mark | Palette |
+| :---: | :---: | :---: |
+| [![Cover](docs/screenshots/cover.jpg)](docs/screenshots/cover.jpg) | [![Logo](docs/screenshots/logo-mark.jpg)](docs/screenshots/logo-mark.jpg) | [![Palette](docs/screenshots/color%20palette.jpg)](docs/screenshots/color%20palette.jpg) |
 
 </div>
 
