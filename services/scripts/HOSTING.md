@@ -7,7 +7,7 @@ Code defaults (frontend) on product hosts:
 | Service | Default (no DNS) | Custom DNS (optional) |
 |---------|------------------|------------------------|
 | Gateway | `https://ciphersentry.fly.dev` | `https://node.base-sepolia.ciphersentry.xyz` |
-| Indexer | `https://ciphersentry-indexer.fly.dev` | `https://indexer.base-sepolia.ciphersentry.xyz` |
+| Indexer | `https://ciphersentry.fly.dev` (path proxy) | `https://indexer.base-sepolia.ciphersentry.xyz` |
 
 Localhost / `127.0.0.1` still use `:8080` / `:8081`.
 
@@ -21,13 +21,18 @@ VITE_PUBLIC_INDEXER=https://your-ix.example \
 npm run build
 ```
 
-## Indexer on Fly (2nd app)
+## Indexer on Fly (embedded path mode)
+
+Public deploy runs gateway + memory indexer in one machine (`fly/start-public.sh`).
+Indexer HTTP is proxied on the same origin (`/batches`, `/fraud`, `/indexer/health`).
 
 ```bash
-bash services/fly/deploy-indexer.sh
-# or path proxy: same host reverse_proxy 127.0.0.1:8081 on / or indexer.*
-curl -sf https://ciphersentry-indexer.fly.dev/health
+curl -sf https://ciphersentry.fly.dev/health
+curl -sf https://ciphersentry.fly.dev/indexer/health
+curl -sf https://ciphersentry.fly.dev/batches
 ```
+
+Optional 2nd app: `bash services/fly/deploy-indexer.sh` (needs app-create token).
 
 ## Deploy (one box + Docker)
 
@@ -82,7 +87,7 @@ curl -sf https://indexer.base-sepolia.ciphersentry.xyz/health
 
 ## Until DNS is live
 
-Health badge shows **NODE OFFLINE** on the marketing site. Local demo still works:
+Health badge uses Fly default `https://ciphersentry.fly.dev`. Local demo still works:
 
 ```bash
 DEMO_LOCAL=1 DEMO_HOLD=0 bash services/scripts/demo-sepolia.sh
