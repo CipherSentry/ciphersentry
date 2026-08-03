@@ -1,8 +1,12 @@
 # Fly.io public node (fast path → NODE LIVE)
 
-Not full B7 (no Redis/NATS/PG). Enough for:
-- `GET /health` → badge **NODE LIVE**
+**Public B7 (default `fly.toml` + `start-public-b7.sh`):** single machine embeds
+Redis + NATS + gateway + memory indexer. `/health` → `phase=B7 bus=nats kv=redis`.
+
+Not full hosted compose B7 (no PG/CH sidecars). Enough for:
+- `GET /health` → badge **NODE LIVE** + B7 session/bus surface
 - `?net=rpc` console + Sepolia mock writes (with secrets)
+- Explorer path proxy (`/search`, `/tasks`, …) via embedded memory indexer
 
 ## Windows (PowerShell)
 
