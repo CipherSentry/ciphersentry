@@ -13,6 +13,7 @@
 import { createWalletClient, http, type Hex, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, foundry } from "viem/chains";
+import { resolveSecret } from "./keys.ts";
 
 export interface EscrowWriteConfig {
   rpcUrl: string;
@@ -106,8 +107,8 @@ function pickChain(chainId: number) {
 }
 
 export function makeEscrowConfigFromEnv(): EscrowWriteConfig {
-  let key = process.env.PROTOCOL_KEY ?? process.env.PRIVATE_KEY ?? null;
-  if (key && !key.startsWith("0x")) key = `0x${key}`;
+  // B7: PROTOCOL_KEY_FILE / PRIVATE_KEY_FILE preferred over env plaintext
+  const key = resolveSecret("PROTOCOL_KEY", "PRIVATE_KEY");
   return {
     rpcUrl: process.env.CHAIN_RPC ?? process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia.publicnode.com",
     escrowAddress: process.env.ESCROW_ADDRESS ?? null,

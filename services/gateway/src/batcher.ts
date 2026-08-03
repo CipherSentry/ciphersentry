@@ -30,6 +30,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia, foundry } from "viem/chains";
+import { resolveSecret, normalizeKey as normKey } from "./keys.ts";
 
 /* -------------------------------- types ----------------------------------- */
 
@@ -284,7 +285,7 @@ function pickChain(chainId: number) {
 
 function normalizeKey(k: string | null | undefined): string | null {
   if (!k) return null;
-  return k.startsWith("0x") ? k : `0x${k}`;
+  return normKey(k);
 }
 
 /* ------------------------------ config ------------------------------------ */
@@ -292,18 +293,18 @@ function normalizeKey(k: string | null | undefined): string | null {
 export function makeBatcherConfigFromEnv(): BatcherConfig {
   const keys: string[] = [];
   for (const name of ["BATCHER_KEY_1", "BATCHER_KEY_2", "BATCHER_KEY_3", "BATCHER_KEY"]) {
-    const k = normalizeKey(process.env[name]);
+    const k = resolveSecret(name);
     if (k && !keys.includes(k)) keys.push(k);
   }
   // PROTOCOL_KEY may double as signer #1 when only one batcher key is set
-  const protocol = normalizeKey(process.env.PROTOCOL_KEY ?? process.env.PRIVATE_KEY);
+  const protocol = resolveSecret("PROTOCOL_KEY", "PRIVATE_KEY");
   if (protocol && !keys.includes(protocol)) keys.unshift(protocol);
 
   return {
     rpcUrl: process.env.CHAIN_RPC ?? process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia.publicnode.com",
     batcherAddress: process.env.BATCHER_ADDRESS ?? null,
     signerKeys: keys,
-    submitKey: normalizeKey(process.env.BATCHER_SUBMIT_KEY) ?? keys[0] ?? protocol,
+    submitKey: resolveSecret("BATCHER_SUBMIT_KEY") ?? keys[0] ?? protocol,
     fromAddress: process.env.PROTOCOL_FROM ?? process.env.OPERATOR_ADDRESS ?? null,
     chainId: Number(process.env.CHAIN_ID ?? 84532),
     intervalMs: Number(process.env.BATCH_INTERVAL_MS ?? 30_000),

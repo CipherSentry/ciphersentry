@@ -30,14 +30,17 @@ import {
   makeStakeLookup,
   rpmForStake,
 } from "./auth.ts";
+import { isProdOps } from "./keys.ts";
 
 const HOST = process.env.GATEWAY_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.GATEWAY_PORT ?? process.env.PORT ?? 8080);
 const EPOCH = Number(process.env.EPOCH ?? 88421);
-/** Default to local compose NATS; falls back to memory if unreachable. */
+const PROD = isProdOps();
+/** Default to local compose NATS; falls back to memory if unreachable (unless prod). */
 const NATS_URL = process.env.NATS_URL ?? "nats://127.0.0.1:4222";
 const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
-const AUTH_REQUIRED = process.env.AUTH_REQUIRED === "1";
+/** B7 prod forces AUTH_REQUIRED. */
+const AUTH_REQUIRED = PROD || process.env.AUTH_REQUIRED === "1";
 const ANON_RPM = Number(process.env.ANON_RPM ?? 20);
 
 async function boot(): Promise<void> {
@@ -56,7 +59,12 @@ async function boot(): Promise<void> {
     options: { maxPayload: 1 << 20 },
   });
 
-  const REQUIRE_NATS = process.env.NATS_REQUIRE === "1";
+  const REQUIRE_NATS =
+    PROD || process.env.NATS_REQUIRE === "1" || process.env.B7 === "1";
+  if (PROD) {
+    process.env.REDIS_REQUIRE = process.env.REDIS_REQUIRE ?? "1";
+    process.env.NATS_REQUIRE = "1";
+  }
   const bus = await createEventBus({
     url: NATS_URL,
     name: "gateway",
@@ -64,6 +72,15 @@ async function boot(): Promise<void> {
   });
   const publish = (topic: Topic, data: unknown) => void bus.publish(topic, data);
   const kv = await createKv(REDIS_URL);
+
+  if (PROD) {
+    if (bus.mode !== "nats") {
+      throw new Error("[B7] CS_ENV=production requires NATS bus (set NATS_URL, NATS_REQUIRE=1)");
+    }
+    if (kv.mode !== "redis") {
+      throw new Error("[B7] CS_ENV=production requires Redis sessions (set REDIS_URL, REDIS_REQUIRE=1)");
+    }
+  }
 
   const sim = new SimDriver({ tickMs: Number(process.env.TICK_MS ?? 2800) });
   const ledger = new TaskLedger();
@@ -125,9 +142,10 @@ async function boot(): Promise<void> {
       bus: bus.mode,
       kv: kv.mode,
       auth_required: AUTH_REQUIRED,
+      b7: PROD,
       clients: hub.clientCount,
       event_pubkey: hub.eventPubkey,
-      phase: "B5",
+      phase: PROD ? "B7" : "B5",
       verifiers: el.members,
       eligible: pool.registry.eligible().length,
       slash_dry_runs: pool.slash.all().length,
@@ -214,13 +232,14 @@ async function boot(): Promise<void> {
   await fastify.listen({ host: HOST, port: PORT });
 
   const el = pool.ensureElection();
-  console.log("ciphersentry-gateway  [B5]");
+  console.log(`ciphersentry-gateway  [${PROD ? "B7" : "B5"}]`);
   console.log(`  rpc      → http://${HOST}:${PORT}/rpc`);
   console.log(`  events   → ws://${HOST}:${PORT}/events`);
   console.log(`  health   → http://${HOST}:${PORT}/health`);
   console.log(`  bus      → ${bus.mode}${bus.mode === "nats" ? ` (${NATS_URL})` : ""}`);
   console.log(`  kv       → ${kv.mode}${kv.mode === "redis" ? ` (${REDIS_URL})` : ""}`);
   console.log(`  auth     → ${AUTH_REQUIRED ? "REQUIRED" : "optional"} (ed25519 · stake rpm base=${rpmForStake(0)} anon=${ANON_RPM})`);
+  if (PROD) console.log(`  ops      → prod (redis+nats+auth; keys via *_FILE or env)`);
   console.log(`  eventsig → ${hub.eventPubkey.slice(0, 16)}… (cent.event.v1)`);
   console.log(`  epoch    → ${pool.currentEpoch}`);
   console.log(`  quorum   → ${el.members.join(", ")}`);

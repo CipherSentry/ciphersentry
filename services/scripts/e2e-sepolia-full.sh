@@ -48,9 +48,9 @@ u256() { awk '{print $1}'; }
 # serialize L2 sends — Alchemy rejects underpriced replacements on same nonce
 send() {
   cast send "$@" --rpc-url "$CHAIN_RPC" \
-    --priority-gas-price "${PRIORITY_GAS:-1.5gwei}" \
-    --gas-price "${GAS_PRICE:-4gwei}" >/dev/null
-  sleep 1.2
+    --priority-gas-price "${PRIORITY_GAS:-2gwei}" \
+    --gas-price "${GAS_PRICE:-10gwei}" >/dev/null
+  sleep 1.5
 }
 
 echo "== Sepolia full e2e =="
@@ -82,9 +82,32 @@ BAL1=$(cast balance "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
 if [[ "${BAL1:-0}" -lt 1000000000000000 ]]; then
   send "$ADDR1" --value 0.005ether --private-key "$PRIVATE_KEY"
 fi
-# seed + stake target if under floor
+# seed + stake target if under floor (jailed seats cannot stake/topUp)
+# uint256 bonds exceed bash int — compare in python
 CUR=$(cast call "$REGISTRY" "bondOf(address)(uint256)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
-if [[ "${CUR:-0}" -lt "$BOND" ]]; then
+ST=$(cast call "$REGISTRY" "statusOf(address)(uint8)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
+# Status: None=0 Bonded=1 Unbonding=2 Jailed=3
+NEED_STAKE=$(python3 -c "print(1 if int('${ST:-0}')!=3 and int('${CUR:-0}')<int('$BOND') else 0)")
+if [[ "$ST" == "3" ]]; then
+  HAS_BOND=$(python3 -c "print(1 if int('${CUR:-0}')>0 else 0)")
+  if [[ "$HAS_BOND" == "1" ]]; then
+    echo "  target jailed with residual bond=$CUR — reusing for slash"
+  else
+    KEY1="$KEY2"
+    ADDR1=$(cast wallet address --private-key "$KEY1")
+    echo "  target rotated to $ADDR1 (prior jailed empty)"
+    CUR=$(cast call "$REGISTRY" "bondOf(address)(uint256)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
+    ST=$(cast call "$REGISTRY" "statusOf(address)(uint8)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
+    NEED_STAKE=$(python3 -c "print(1 if int('${ST:-0}')!=3 and int('${CUR:-0}')<int('$BOND') else 0)")
+  fi
+fi
+if [[ "$NEED_STAKE" == "1" ]]; then
+  # gas for target
+  BAL1=$(cast balance "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
+  NEED_ETH=$(python3 -c "print(1 if int('${BAL1:-0}')<10**15 else 0)")
+  if [[ "$NEED_ETH" == "1" ]]; then
+    send "$ADDR1" --value 0.005ether --private-key "$PRIVATE_KEY"
+  fi
   send "$CENT" "transfer(address,uint256)" "$ADDR1" "$SEED" --private-key "$PRIVATE_KEY"
   send "$CENT" "approve(address,uint256)" "$REGISTRY" "$MAX" --private-key "$KEY1"
   send "$REGISTRY" "stake(uint256)" "$BOND" --private-key "$KEY1"
@@ -222,11 +245,15 @@ STX=$(cast send "$SLASH" "submitEvidence(bytes32,address,uint8)" \
 echo "$STX" | tee /tmp/cs-sep-slash-tx.txt >/dev/null
 cast receipt "$STX" --rpc-url "$CHAIN_RPC" >/dev/null
 echo "  slash $STX"
-# drain queue
-for _ in $(seq 1 5); do
+# drain queue (do not swallow reverts — gas must clear L2 mempool)
+for i in $(seq 1 8); do
   Q=$(cast call "$SLASH" "challengeCount()(uint256)" --rpc-url "$CHAIN_RPC" | u256)
   [[ "$Q" == "0" ]] && break
-  send "$SLASH" "processNext()" --private-key "$PRIVATE_KEY" || true
+  echo "  processNext try=$i queue=$Q"
+  cast send "$SLASH" "processNext()" \
+    --rpc-url "$CHAIN_RPC" --private-key "$PRIVATE_KEY" \
+    --priority-gas-price "${PRIORITY_GAS:-2gwei}" --gas-price "${GAS_PRICE:-10gwei}" >/dev/null
+  sleep 2
 done
 AFTER=$(cast call "$REGISTRY" "bondOf(address)(uint256)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
 python3 - <<PY
