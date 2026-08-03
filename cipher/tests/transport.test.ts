@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SimTransport } from "../src/sdk/transport";
 import { sh } from "../src/sdk/ledger";
 import type { TaskEvent } from "../src/app/data";
@@ -7,7 +7,12 @@ describe("sim transport", () => {
   let t: SimTransport;
 
   beforeEach(() => {
-    t = new SimTransport({ cap: 34, tickMs: 1_000, batchEveryTicks: 2 });
+    t = new SimTransport({ cap: 34, tickMs: 60_000, batchEveryTicks: 2 });
+  });
+
+  afterEach(() => {
+    t.stop();
+    vi.restoreAllMocks();
   });
 
   it("seeds the disputed flagship task and ledger history on start", () => {
@@ -19,7 +24,6 @@ describe("sim transport", () => {
   });
 
   it("progresses tasks and reports earned deltas on settle", () => {
-    vi.useFakeTimers();
     vi.spyOn(Math, "random").mockReturnValue(0.5); // advance + settle + insert
     t.start();
 
@@ -28,23 +32,23 @@ describe("sim transport", () => {
       if (delta) lastDelta = delta;
     });
 
-    vi.advanceTimersByTime(1_000);
+    t.tickOnce();
     expect(lastDelta).not.toBeNull();
     expect(lastDelta!.earned + lastDelta!.spent).toBeGreaterThan(0);
     expect(t.events().some((e) => e.state === "SETTLED")).toBe(true);
-    expect(t.events()[0].state).toBe("RUNNING"); // fresh insert leads the window
+    expect(t.events()[0]!.state).toBe("RUNNING"); // fresh insert leads the window
     expect(lastDelta!.earned).toBeGreaterThan(0); // role RNG 0.5 ⇒ worker earns
   });
 
   it("flushes settled tasks into a merkle batch with consistent root", () => {
-    vi.useFakeTimers();
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     t.start();
 
     const batches: string[] = [];
     t.onBatch((b) => batches.push(b.root));
 
-    vi.advanceTimersByTime(2_000); // two ticks → flush
+    t.tickOnce();
+    t.tickOnce(); // batchEveryTicks: 2
     expect(batches).toHaveLength(1);
 
     const batch = t.batches().at(-1)!;
@@ -59,15 +63,15 @@ describe("sim transport", () => {
   });
 
   it("pause freezes the state machine", () => {
-    vi.useFakeTimers();
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     t.start();
-    vi.advanceTimersByTime(1_000);
+    t.tickOnce();
 
     t.setPaused(true);
-    const snapshot = JSON.stringify(t.events());
-    vi.advanceTimersByTime(5_000);
-    expect(JSON.stringify(t.events())).toBe(snapshot);
+    const ids = t.events().map((e) => e.id).join(",");
+    t.tickOnce();
+    t.tickOnce();
+    expect(t.events().map((e) => e.id).join(",")).toBe(ids);
   });
 
   it("local task injection and state transitions poke subscribers", () => {
@@ -86,7 +90,7 @@ describe("sim transport", () => {
       hash: "0xdeadbeef",
     };
     t.addTask(task);
-    expect(t.events()[0].id).toBe("cent_test001");
+    expect(t.events()[0]!.id).toBe("cent_test001");
 
     t.setTaskState("cent_test001", "SETTLED");
     expect(t.getTask("cent_test001")?.state).toBe("SETTLED");

@@ -58,8 +58,12 @@ export function makeReceipt(at: number): Receipt {
   const disputed = Math.random() < 0.08;
   const spec = pick(SPECS);
   const buyer = pick(NAMES);
+  // Avoid infinite loop if Math.random is mocked to a constant (tests / fuzz).
   let worker = pick(NAMES);
-  while (worker === buyer) worker = pick(NAMES);
+  if (worker === buyer) {
+    const i = Math.max(0, NAMES.indexOf(buyer));
+    worker = NAMES[(i + 1) % NAMES.length]!;
+  }
   const amount = (3 + Math.random() * 300).toFixed(2);
   const honest = sh(`${id}:${spec}:${amount}`);
   return {

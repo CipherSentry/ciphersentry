@@ -241,7 +241,19 @@ export class MemoryStore implements Querier {
       return [] as T[];
     }
 
-    // INSERT receipts
+    // DELETE stale receipts for a batch rewrite
+    if (/^DELETE FROM receipts WHERE batch_id/i.test(sql)) {
+      const batchId = String(p[0]);
+      const keep = p[1] as string[] | undefined;
+      for (const [id, row] of [...this.receipts.entries()]) {
+        if (String(row.batch_id) !== batchId) continue;
+        if (Array.isArray(keep) && keep.includes(String(row.receipt_id))) continue;
+        this.receipts.delete(id);
+      }
+      return [] as T[];
+    }
+
+    // INSERT receipts (upsert path/leaf/batch on conflict)
     if (/^INSERT INTO receipts/i.test(sql)) {
       const [
         receipt_id,
@@ -255,20 +267,23 @@ export class MemoryStore implements Querier {
         leaf,
         path,
       ] = p as unknown[];
-      if (!this.receipts.has(String(receipt_id))) {
-        this.receipts.set(String(receipt_id), {
-          receipt_id,
-          task_id,
-          reported,
-          recomputed,
-          votes: typeof votes === "string" ? JSON.parse(votes) : votes,
-          ms,
-          epoch,
-          batch_id,
-          leaf,
-          path: typeof path === "string" ? JSON.parse(path) : path,
-          settled_at: new Date().toISOString(),
-        });
+      const id = String(receipt_id);
+      const prev = this.receipts.get(id);
+      const row = {
+        receipt_id: id,
+        task_id,
+        reported,
+        recomputed,
+        votes: typeof votes === "string" ? JSON.parse(votes as string) : votes,
+        ms,
+        epoch,
+        batch_id,
+        leaf,
+        path: typeof path === "string" ? JSON.parse(path as string) : path,
+        settled_at: prev?.settled_at ?? new Date().toISOString(),
+      };
+      if (!prev || /ON CONFLICT/i.test(sql)) {
+        this.receipts.set(id, row);
       }
       return [] as T[];
     }

@@ -205,6 +205,11 @@ export class SimTransport implements Transport {
     this.emit(null);
   }
 
+  /** Test / debug: run one sim cadence step without waiting on the timer. */
+  tickOnce(): void {
+    this.tick();
+  }
+
   /** convenience for legacy consoles */
   currentHash(): string {
     return randHash();
