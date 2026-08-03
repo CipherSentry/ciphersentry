@@ -531,3 +531,40 @@ describe("fraud cases", () => {
     assert.ok((ch.tables.get("fraud_cases")?.length ?? 0) >= 1);
   });
 });
+
+describe("trust_series durable PG dual-write", () => {
+  it("writes PG series readable via SELECT agent_id = $1", async () => {
+    const { MemoryStore, MemoryClickHouse } = await import("../src/memory.ts");
+    const pg = new MemoryStore();
+    const ch = new MemoryClickHouse();
+    await pg.exec(
+      `INSERT INTO agents (agent_id, tier, trust, stake, success, status) VALUES ($1,$2,$3,$4,$5,$6)`,
+      ["agent:atlas-01", "SEAT", 50, 12000, 1, "ONLINE"],
+    );
+    const w = new TrustSeriesWriter(pg, ch);
+    const pts = await w.writeForBatch(88421, [
+      {
+        receipt_id: "cent_t1",
+        task_id: "cent_t1",
+        buyer: "agent:atlas-01",
+        worker: "agent:vector-7",
+        reported: "0x1",
+        recomputed: "0x1",
+        votes: [],
+        ms: 1,
+        epoch: 88421,
+        batch_id: "batch_t",
+        leaf: "0xleaf",
+        path: [],
+      } as import("../src/ledger.ts").ReceiptRow,
+    ]);
+    assert.ok(pts.length >= 1);
+    const rows = await pg.exec<{ agent_id: string; epoch: number; trust_score: number }>(
+      `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = $1 ORDER BY epoch DESC LIMIT 32`,
+      ["agent:atlas-01"],
+    );
+    assert.ok(rows.length >= 1, "expected PG trust_series row");
+    assert.equal(Number(rows[0]!.epoch), 88421);
+    assert.ok(Number(rows[0]!.trust_score) > 0);
+  });
+});

@@ -94,22 +94,7 @@ export class TrustSeriesWriter {
       });
     }
 
-    try {
-      await this.ch.insert(
-        "trust_series",
-        points.map((p) => ({
-          agent_id: p.agent_id,
-          epoch: p.epoch,
-          stake: p.stake,
-          success: Number(p.success.toFixed(4)),
-          settled_count: p.settled_count,
-          trust_score: Number(p.trust_score.toFixed(4)),
-          computed_at: p.computed_at,
-        })),
-      );
-    } catch (e) {
-      console.warn(`[ch] trust_series insert skipped: ${e instanceof Error ? e.message : e}`);
-    }
+    await this.persistSeries(points);
     return points;
   }
 
@@ -138,22 +123,53 @@ export class TrustSeriesWriter {
       trust_score: scoreAfter,
       computed_at: Date.now(),
     };
-    try {
-      await this.ch.insert("trust_series", [
-        {
-          agent_id: point.agent_id,
-          epoch: point.epoch,
-          stake: point.stake,
-          success: Number(point.success.toFixed(4)),
-          settled_count: point.settled_count,
-          trust_score: Number(point.trust_score.toFixed(4)),
-          computed_at: point.computed_at,
-        },
-      ]);
-    } catch (e) {
-      console.warn(`[ch] fraud trust_series skipped: ${e instanceof Error ? e.message : e}`);
-    }
+    await this.persistSeries([point]);
     return point;
+  }
+
+  /** Dual-write CH (analytics) + PG (durable SoR for Fly CH-memory path). */
+  private async persistSeries(points: TrustPoint[]): Promise<void> {
+    if (!points.length) return;
+    const rows = points.map((p) => ({
+      agent_id: p.agent_id,
+      epoch: p.epoch,
+      stake: p.stake,
+      success: Number(p.success.toFixed(4)),
+      settled_count: p.settled_count,
+      trust_score: Number(p.trust_score.toFixed(4)),
+      computed_at: p.computed_at,
+    }));
+    try {
+      await this.ch.insert("trust_series", rows);
+    } catch (e) {
+      console.warn(`[ch] trust_series insert skipped: ${e instanceof Error ? e.message : e}`);
+    }
+    for (const p of rows) {
+      try {
+        await this.pg.exec(
+          `INSERT INTO trust_series (agent_id, epoch, stake, success, settled_count, trust_score, computed_at)
+           VALUES ($1,$2,$3,$4,$5,$6,to_timestamp($7::double precision / 1000.0))
+           ON CONFLICT (agent_id, epoch) DO UPDATE
+           SET stake = EXCLUDED.stake,
+               success = EXCLUDED.success,
+               settled_count = EXCLUDED.settled_count,
+               trust_score = EXCLUDED.trust_score,
+               computed_at = EXCLUDED.computed_at`,
+          [
+            p.agent_id,
+            p.epoch,
+            p.stake,
+            p.success,
+            p.settled_count,
+            p.trust_score,
+            p.computed_at,
+          ],
+        );
+      } catch (e) {
+        // MemoryStore / older schema may not support PG trust_series yet
+        console.warn(`[pg] trust_series insert skipped: ${e instanceof Error ? e.message : e}`);
+      }
+    }
   }
 
   async statsOf(agent_id: string): Promise<AgentStats> {

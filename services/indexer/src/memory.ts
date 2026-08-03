@@ -12,11 +12,40 @@ export class MemoryStore implements Querier {
   batches = new Map<string, Row>();
   agents = new Map<string, Row>();
   fraud = new Map<string, Row>();
+  /** key = agent_id::epoch */
+  trustSeries = new Map<string, Row>();
   votes: Row[] = [];
 
   async exec<T = unknown>(text: string, params: unknown[] = []): Promise<T[]> {
     const sql = text.replace(/\s+/g, " ").trim();
     const p = params as unknown[];
+
+    // trust_series upsert (durable dual-write)
+    if (/^INSERT INTO trust_series/i.test(sql)) {
+      const [agent_id, epoch, stake, success, settled_count, trust_score, computed_at] = p as unknown[];
+      const key = `${agent_id}::${epoch}`;
+      this.trustSeries.set(key, {
+        agent_id: String(agent_id),
+        epoch: Number(epoch),
+        stake: Number(stake) || 0,
+        success: Number(success) || 0,
+        settled_count: Number(settled_count) || 0,
+        trust_score: Number(trust_score) || 0,
+        computed_at:
+          typeof computed_at === "number"
+            ? new Date(computed_at).toISOString()
+            : computed_at ?? new Date().toISOString(),
+      });
+      return [] as T[];
+    }
+
+    if (/FROM trust_series WHERE agent_id = \$1/i.test(sql)) {
+      const agent = String(p[0]);
+      return [...this.trustSeries.values()]
+        .filter((r) => String(r.agent_id) === agent)
+        .sort((a, b) => Number(b.epoch) - Number(a.epoch))
+        .slice(0, 32) as T[];
+    }
 
     // fraud_cases upsert
     if (/^INSERT INTO fraud_cases/i.test(sql)) {
