@@ -27,6 +27,10 @@ export SLASH_EXECUTOR_ADDRESS="${SLASH_EXECUTOR_ADDRESS:-}"
 export CENT_ADDRESS="${CENT_ADDRESS:-}"
 export REGISTRY_ADDRESS="${REGISTRY_ADDRESS:-}"
 export SLASH_TARGET="${SLASH_TARGET:-0x70997970C51812dc3A010C7d01b50e0d17dc79C8}"
+export ESCROW_WORKER_KEY="${ESCROW_WORKER_KEY:-}"
+export ESCROW_VERIFIER_KEY_1="${ESCROW_VERIFIER_KEY_1:-}"
+export ESCROW_VERIFIER_KEY_2="${ESCROW_VERIFIER_KEY_2:-}"
+export FRAUD_AUTO_RULE="${FRAUD_AUTO_RULE:-1}"
 
 echo "  escrow=$ESCROW_ADDRESS"
 echo "  batcher=$BATCHER_ADDRESS"
@@ -117,22 +121,77 @@ assert int("$AFTER") == int("$BEFORE") + 1, ("$BEFORE", "$AFTER")
 print("  nextBatchId advanced")
 PY
 
-echo "== fraud offline resolve (ruler key present for chain path) =="
+echo "== fraud on-chain resolve (dispute drive + Escrow.rule) =="
 BAD=$(rpc task.commit '{"spec":"embed.docs.batch","worker":"agent:forge-11","buyer":"agent:orbit-2","escrow":{"amount":"2.00","asset":"USDC"}}')
+echo "$BAD" | tee /tmp/cs-rails-bad-commit.json
 BAD_ID=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["task_id"])' <<<"$BAD")
-rpc task.report "{\"task_id\":\"$BAD_ID\",\"hash\":\"0xdeadbeef\"}" >/dev/null
+python3 - <<'PY'
+import json
+c=json.load(open("/tmp/cs-rails-bad-commit.json"))
+ch=c.get("chain") or {}
+assert ch.get("mode")=="submitted", c
+assert ch.get("chain_task_id"), f"missing chain_task_id: {c}"
+open("/tmp/cs-rails-chain-tid.txt","w").write(ch["chain_task_id"])
+print("  chain_task_id", ch["chain_task_id"][:18])
+PY
+rpc task.report "{\"task_id\":\"$BAD_ID\",\"hash\":\"0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef\"}" >/dev/null
 set +e
-rpc verify "{\"task_id\":\"$BAD_ID\"}" >/dev/null
+VERIFY_ERR=$(rpc verify "{\"task_id\":\"$BAD_ID\"}" 2>&1 || true)
 set -e
+echo "$VERIFY_ERR" | tee /tmp/cs-rails-verify-err.json
 # fraud.list should show resolved Refund
-for _ in $(seq 1 30); do
+for _ in $(seq 1 40); do
   LIST=$(rpc fraud.list '{}')
   echo "$LIST" | grep -q "$BAD_ID" && echo "$LIST" | grep -qi Refund && break
-  sleep 0.2
+  sleep 0.25
 done
 LIST=$(rpc fraud.list '{}')
 echo "$LIST" | grep -q "$BAD_ID" || { echo "fraud case missing: $LIST"; exit 1; }
-echo "  fraud case present (ruling path live; on-chain rule optional)"
+echo "  fraud case present (ruling path live)"
+# auto-rule may already have submitted
+python3 - <<'PY'
+import json,re
+raw=open("/tmp/cs-rails-verify-err.json").read()
+# may be JSON-RPC error envelope
+try:
+    e=json.loads(raw)
+    msg=(e.get("error") or {}).get("message","")
+    print("  verify:", msg[:80])
+    if "rule:submitted" in msg:
+        print("  auto-rule submitted on verify")
+except Exception:
+    print("  verify raw", raw[:120])
+PY
+
+# On-chain Escrow.rule must submit (dispute drive + real chain_task_id)
+echo "== fraud.rule on-chain (require submitted) =="
+RULE=$(rpc fraud.rule "{\"task_id\":\"$BAD_ID\"}" || true)
+echo "$RULE" | tee /tmp/cs-rails-fraud-rule.json
+python3 - <<'PY'
+import json
+r=json.load(open("/tmp/cs-rails-fraud-rule.json"))
+mode = r.get("mode")
+tx = r.get("txHash")
+if not mode and isinstance(r.get("chain"), dict):
+    mode = r["chain"].get("mode")
+    tx = tx or r["chain"].get("txHash")
+assert mode == "submitted", f"expected Escrow.rule mode=submitted, got {json.dumps(r)[:500]}"
+assert tx, r
+print("  fraud.rule submitted", str(tx)[:18])
+print("  fraud.rule path OK")
+PY
+CHAIN_TID=$(cat /tmp/cs-rails-chain-tid.txt 2>/dev/null || true)
+if [[ -z "$CHAIN_TID" ]]; then
+  CHAIN_TID=$(python3 -c 'import json;print(json.load(open("/tmp/cs-rails-fraud-rule.json")).get("chain_task_id") or "")')
+fi
+if [[ "$CHAIN_TID" == 0x* && ${#CHAIN_TID} -eq 66 ]]; then
+  # state is 7th return of tasks() — cast prints multi-line
+  ST=$(cast call "$ESCROW_ADDRESS" \
+    "tasks(bytes32)(address,address,uint96,uint96,bytes32,bytes32,uint8,uint32,uint64,uint8,uint8,uint64)" \
+    "$CHAIN_TID" --rpc-url "$CHAIN_RPC" | sed -n '7p' | awk '{print $1}')
+  echo "  on-chain state=$ST (4=Settled)"
+  python3 -c "assert int('$ST')==4, 'expected Settled(4), got $ST'"
+fi
 
 # cast uint256 often prints "123 [1.23e2]" — keep first token only
 u256() { awk '{print $1}'; }

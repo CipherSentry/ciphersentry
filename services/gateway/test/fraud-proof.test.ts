@@ -81,6 +81,18 @@ describe("normalizeRuling", () => {
   });
 });
 
+describe("autoRule flag", () => {
+  it("info exposes auto_rule", () => {
+    const w = FraudProofWorker.forTest({ autoChallenge: true, autoRule: true });
+    assert.equal(w.info().auto_rule, true);
+  });
+
+  it("defaults autoRule off in forTest", () => {
+    const w = FraudProofWorker.forTest({});
+    assert.equal(w.info().auto_rule, false);
+  });
+});
+
 describe("FraudProofWorker offline", () => {
   it("auto-challenges bad report to Refund", async () => {
     const w = FraudProofWorker.forTest({ autoChallenge: true, fraudWindowMs: 60_000 });

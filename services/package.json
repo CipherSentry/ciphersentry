@@ -26,6 +26,7 @@
     "e2e:batcher": "bash gateway/scripts/e2e-batcher.sh",
     "e2e:compose": "bash scripts/e2e-compose.sh",
     "e2e:full": "bash scripts/e2e-full.sh",
+    "e2e:b7:smoke": "bash scripts/e2e-b7-smoke.sh",
     "e2e:rails": "bash scripts/e2e-rails.sh",
     "e2e:rails:smoke": "bash scripts/e2e-rails-smoke.sh",
     "demo:sepolia": "bash scripts/demo-sepolia.sh",

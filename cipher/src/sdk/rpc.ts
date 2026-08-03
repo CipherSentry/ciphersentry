@@ -36,6 +36,7 @@ export const RPC_METHODS = {
   AUTH_SESSION: "auth.session",
   AUTH_WHOAMI: "auth.whoami",
   REGISTRY_QUERY: "registry.query",
+  REGISTRY_LIST: "registry.list",
   TASK_COMMIT: "task.commit",
   TASK_REPORT: "task.report",
   VERIFY: "verify",
@@ -43,6 +44,11 @@ export const RPC_METHODS = {
   DISPUTE_OPEN: "dispute.open",
   OPERATOR_RULE: "operator.rule",
   STAKE: "stake",
+  EPOCH_INFO: "epoch.info",
+  ACCRUAL_SUMMARY: "accrual.summary",
+  BATCH_PENDING: "batch.pending",
+  BATCH_INFO: "batch.info",
+  NODE_INFO: "node.info",
   EVENTS_SUBSCRIBE: "events.subscribe",
 } as const;
 
@@ -391,8 +397,15 @@ export class RpcTransport implements Transport {
     this.emit(null);
   }
 
-  setPaused(_on: boolean): void {
-    /* protocol-side halt via operator.rule — not a transport toggle */
+  private paused = false;
+
+  setPaused(on: boolean): void {
+    // Soft halt: drop tick emissions while paused (kill-switch UX on live path)
+    this.paused = on;
+  }
+
+  get isPaused(): boolean {
+    return this.paused;
   }
 
   /* ===== stream subscription ===== */
@@ -628,6 +641,13 @@ export class RpcTransport implements Transport {
   rpcOperatorRule = (taskId: string, ruling: string, sig: string) =>
     this.send<unknown>(RPC_METHODS.OPERATOR_RULE, { task_id: taskId, ruling, sig });
   rpcStake = (amount: string, tier: string) => this.send<Record<string, unknown>>(RPC_METHODS.STAKE, { amount, tier });
+  rpcEpochInfo = (epoch?: number) =>
+    this.send<Record<string, unknown>>(RPC_METHODS.EPOCH_INFO, epoch != null ? { epoch } : {});
+  rpcAccrualSummary = () => this.send<Record<string, unknown>>(RPC_METHODS.ACCRUAL_SUMMARY, {});
+  rpcBatchPending = () => this.send<Record<string, unknown>>(RPC_METHODS.BATCH_PENDING, {});
+  rpcBatchInfo = () => this.send<Record<string, unknown>>(RPC_METHODS.BATCH_INFO, {});
+  rpcNodeInfo = () => this.send<Record<string, unknown>>(RPC_METHODS.NODE_INFO, {});
+  rpcRegistryList = () => this.send<unknown>(RPC_METHODS.REGISTRY_LIST, {});
   rpcEventsSubscribe = (topics: string[]) => this.send<unknown>(RPC_METHODS.EVENTS_SUBSCRIBE, { topics });
 
   /* ---------------- Transport surface ---------------- */
@@ -666,6 +686,7 @@ export class RpcTransport implements Transport {
   }
 
   private emit(delta: Parameters<TickCb>[1]): void {
+    if (this.paused) return;
     this.tickCbs.forEach((cb) => cb([...this.tasks], delta));
   }
 }

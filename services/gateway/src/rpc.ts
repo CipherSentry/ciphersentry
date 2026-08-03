@@ -69,6 +69,9 @@ export type LedgerTask = TaskRow & {
   reportedHash?: string;
   buyer?: string;
   input?: Record<string, unknown>;
+  /** On-chain Escrow taskId (Committed event) — not the ledger cent_* id */
+  chainTaskId?: string;
+  chainWorker?: string;
 };
 
 /** B0/B1 ledger — committed tasks keyed by id (system of record for RPC path). */
@@ -257,6 +260,13 @@ export function makeDispatcher(ctx: RpcContext) {
           amountUsdc: amount,
           spec: params.spec,
         });
+        if (chain.chainTaskId) {
+          ledger.put({
+            ...t,
+            chainTaskId: chain.chainTaskId,
+            chainWorker: chain.workerAddress,
+          });
+        }
 
         return ok({
           task_id: t.id,
@@ -268,6 +278,7 @@ export function makeDispatcher(ctx: RpcContext) {
           chain: {
             mode: chain.mode,
             tx: chain.txHash ?? null,
+            chain_task_id: chain.chainTaskId ?? null,
             error: chain.error ?? null,
             escrow: escrow.mode,
           },
@@ -310,9 +321,40 @@ export function makeDispatcher(ctx: RpcContext) {
           t.state = "DISPUTED";
           ledger.put(t);
           ctx.emitTask({ ...t });
+
+          // On-chain: drive commit→Disputed so Escrow.rule can move capital
+          let chainTaskId = t.chainTaskId;
+          if (escrow.mode === "write-ready" && !chainTaskId) {
+            // no prior commit — full drive creates chain task
+            const driven = await escrow.driveToDisputed({
+              amountUsdc: t.amount,
+              spec: t.spec,
+              reportedHash: reported.startsWith("0x")
+                ? (reported as `0x${string}`)
+                : undefined,
+            });
+            if (driven.chainTaskId) {
+              chainTaskId = driven.chainTaskId;
+              t.chainTaskId = chainTaskId;
+              ledger.put(t);
+            }
+          } else if (escrow.mode === "write-ready" && chainTaskId) {
+            const driven = await escrow.driveToDisputed({
+              chainTaskId,
+              reportedHash: reported.startsWith("0x")
+                ? (reported as `0x${string}`)
+                : undefined,
+            });
+            if (driven.mode !== "submitted" && driven.error) {
+              // keep off-chain fraud path; surface drive error on case later
+              t.chainTaskId = chainTaskId;
+            }
+          }
+
           // B5: open fraud case (auto-challenge when FRAUD_AUTO≠0); slash posts inside worker
-          const fraudCase = await fraud.open({
+          let fraudCase = await fraud.open({
             taskId: t.id,
+            chainTaskId,
             reported,
             inputJson: input,
             buyer: t.buyer ?? t.counterparty,
@@ -322,6 +364,20 @@ export function makeDispatcher(ctx: RpcContext) {
             evidence: outcome.evidence,
             slashes: outcome.slashes,
           });
+          // Retry on-chain rule if auto-rule soft-failed (drive race / first attempt)
+          if (
+            fraudCase.status === "RESOLVED" &&
+            fraudCase.chainTaskId &&
+            escrow.mode === "write-ready" &&
+            fraudCase.chain?.mode !== "submitted"
+          ) {
+            try {
+              await fraud.submitRule(t.id);
+              fraudCase = fraud.of(t.id) ?? fraudCase;
+            } catch {
+              /* keep soft mode */
+            }
+          }
           // Terminal ledger state when auto-challenge already ruled
           if (fraudCase.status === "RESOLVED" && fraudCase.ruling) {
             if (fraudCase.ruling === "Refund") t.state = "FAILED";
@@ -329,7 +385,14 @@ export function makeDispatcher(ctx: RpcContext) {
             ledger.put(t);
             ctx.emitTask({ ...t });
           }
-          return err(M.HASH_MISMATCH, "quorum rejected the reported output hash");
+          // Surface chain rule mode on mismatch (auto-rule may have submitted)
+          const chainMode = fraudCase.chain?.mode;
+          return err(
+            M.HASH_MISMATCH,
+            chainMode
+              ? `quorum rejected the reported output hash (rule:${chainMode})`
+              : "quorum rejected the reported output hash",
+          );
         }
 
         const recomputed = outcome.votes[0]?.recomputed ?? reported;
@@ -562,16 +625,30 @@ export function makeDispatcher(ctx: RpcContext) {
         const { task_id, ruling } = p as { task_id?: string; ruling?: string };
         if (!task_id) return err(M.SCHEMA, "fraud.rule requires task_id");
         try {
+          const t = findTask(task_id) as LedgerTask | undefined;
+          const existing = fraud.of(task_id);
+          // attach ledger chainTaskId if fraud case opened before drive finished
+          if (existing && t?.chainTaskId && !existing.chainTaskId) {
+            existing.chainTaskId = t.chainTaskId;
+          }
           if (ruling) await fraud.manualRule(task_id, ruling);
           const chain = await fraud.submitRule(task_id, ruling ? undefined : undefined);
           const c = fraud.of(task_id)!;
-          const t = findTask(task_id);
           if (t && c.ruling) {
             t.state = c.ruling === "Refund" ? "FAILED" : "SETTLED";
             ledger.put(t);
             ctx.emitTask({ ...t });
           }
-          return ok({ task_id, ruling: c.ruling, reason: c.reason, chain, status: c.status });
+          return ok({
+            task_id,
+            chain_task_id: c.chainTaskId ?? t?.chainTaskId ?? null,
+            ruling: c.ruling,
+            reason: c.reason,
+            mode: chain.mode,
+            txHash: chain.txHash ?? null,
+            chain,
+            status: c.status,
+          });
         } catch (e) {
           return err(M.QUORUM_SLOW, (e as Error).message);
         }

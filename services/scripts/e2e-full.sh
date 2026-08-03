@@ -144,7 +144,10 @@ assert h.get("auth_required") is True, h
 assert h.get("event_pubkey"), h
 assert h.get("bus") == "nats", f"gateway must use NATS bus, got {h.get('bus')}: {h}"
 assert h.get("kv") == "redis", f"gateway must use Redis sessions, got kv={h.get('kv')}: {h}"
-print("  gateway auth_required=1 bus=%s kv=%s pin=%s…" % (h.get("bus"), h.get("kv"), h["event_pubkey"][:12]))
+# B7 ops: production-shaped stack (Redis + NATS + AUTH). b7 flag when CS_ENV/B7 set.
+assert h.get("phase") in ("B5", "B7") or h.get("b7") in (True, False, None), h
+print("  gateway auth_required=1 bus=%s kv=%s phase=%s pin=%s…" % (
+  h.get("bus"), h.get("kv"), h.get("phase"), h["event_pubkey"][:12]))
 PY
 
 echo "== indexer :${IPORT} pg+ch nats-only =="
@@ -169,7 +172,9 @@ python3 - <<'PY'
 import json
 h=json.load(open("/tmp/cs-full-ix-health.json"))
 assert h.get("bus") == "nats", f"indexer must use NATS (no WS fallback), got bus={h.get('bus')}: {h}"
-print("  indexer bus=nats ok")
+assert h.get("phase") in ("B6", "B7"), h
+assert h.get("b7") is True or h.get("phase") == "B7", f"indexer B7 expected under REQUIRE_NATS: {h}"
+print("  indexer bus=nats phase=%s b7=%s ok" % (h.get("phase"), h.get("b7")))
 PY
 # CH schema applied on boot
 sleep 0.8

@@ -107,7 +107,7 @@ services:
       - |
         set -euo pipefail
         if [ ! -d node_modules/@ciphersentry ]; then npm ci --omit=dev; fi
-        for f in protocol_key batcher_1 batcher_2 batcher_3; do
+        for f in protocol_key batcher_1 batcher_2 batcher_3 ruler_key; do
           test -s "/run/secrets/$$f" || { echo "missing secret $$f"; exit 1; }
         done
         exec npm run gateway -w gateway
@@ -115,7 +115,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:8080/health').then(r=>r.json()).then(h=>{if(!h.ok||h.kv!=='redis'||h.bus!=='nats'||!h.b7)process.exit(1)}).catch(()=>process.exit(1))\"",
+          "node -e \"fetch('http://127.0.0.1:8080/health').then(r=>r.json()).then(h=>{if(!h.ok||h.kv!=='redis'||h.bus!=='nats'||!h.b7||h.fraud_store!=='redis')process.exit(1)}).catch(()=>process.exit(1))\"",
         ]
       interval: 15s
       timeout: 5s

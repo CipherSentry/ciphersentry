@@ -95,8 +95,21 @@ export interface ProofResult {
   path: string[];
   root: string;
   valid: boolean;
+  reconciled?: boolean;
+  receipt_id?: string;
+  task_id?: string;
+  batch_id?: string;
   anchored_block?: number | null;
   anchored_tx?: string | null;
+}
+
+export interface BatchProofsSummary {
+  batch_id: string;
+  root: string;
+  count: number;
+  all_valid: boolean;
+  valid_count: number;
+  proofs: Array<{ receipt_id: string; task_id: string; leaf: string; valid: boolean }>;
 }
 
 export interface IndexerTaskHit {
@@ -241,7 +254,15 @@ export class IndexerClient {
         leaf: string;
         path: string[] | string;
         valid: boolean;
-        anchor: { root?: string; anchored_block?: number | null; anchored_tx?: string | null } | null;
+        reconciled?: boolean;
+        receipt_id?: string;
+        task_id?: string;
+        batch_id?: string;
+        anchor: {
+          root?: string;
+          anchored_block?: number | null;
+          anchored_tx?: string | null;
+        } | null;
       };
     };
     const d = body.data;
@@ -249,11 +270,23 @@ export class IndexerClient {
     return {
       leaf: d.leaf,
       path: parseJsonField(d.path, []),
-      root: d.anchor?.root ?? "",
+      root: (d.anchor as { root?: string } | null)?.root ?? "",
       valid: Boolean(d.valid),
+      reconciled: d.reconciled ?? Boolean(d.valid),
+      receipt_id: d.receipt_id,
+      task_id: d.task_id,
+      batch_id: d.batch_id,
       anchored_block: d.anchor?.anchored_block ?? null,
       anchored_tx: d.anchor?.anchored_tx ?? null,
     };
+  }
+
+  async batchProofs(batchId: string): Promise<BatchProofsSummary | null> {
+    const res = await fetch(`${this.base}/batches/${encodeURIComponent(batchId)}/proofs`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`batch proofs ${res.status}`);
+    const body = (await res.json()) as { data: BatchProofsSummary };
+    return body.data ?? null;
   }
 
   async listFraud(limit = 20): Promise<FraudRow[]> {
@@ -300,9 +333,18 @@ export class IndexerClient {
     return body.data ?? null;
   }
 
-  /** Whitepaper §5 trust series — GET /trust/:agent */
-  async getTrust(agentId: string): Promise<TrustPoint[]> {
-    const res = await fetch(`${this.base}/trust/${encodeURIComponent(agentId)}`);
+  /** Whitepaper §5 trust series — GET /trust/:agent?limit=&since_epoch= */
+  async getTrust(
+    agentId: string,
+    opts?: { limit?: number; sinceEpoch?: number },
+  ): Promise<TrustPoint[]> {
+    const q = new URLSearchParams();
+    if (opts?.limit != null) q.set("limit", String(opts.limit));
+    if (opts?.sinceEpoch != null) q.set("since_epoch", String(opts.sinceEpoch));
+    const qs = q.toString();
+    const res = await fetch(
+      `${this.base}/trust/${encodeURIComponent(agentId)}${qs ? `?${qs}` : ""}`,
+    );
     if (!res.ok) return [];
     const body = (await res.json()) as { data: TrustPoint[] };
     const rows = body.data ?? [];

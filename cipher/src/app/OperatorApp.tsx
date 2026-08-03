@@ -9,10 +9,18 @@ import {
 } from "./data";
 import type { Agent, Approval, TaskEvent } from "./data";
 import { CipherSentry } from "../sdk/ciphersentry"; /* brand pivot: protocol client renames in deploy kit; class stays for now */
+import {
+  batchesFromLedger,
+  batchesFromPending,
+  mergeRegistryAgents,
+  stakeFromRegistry,
+  walletFromFeed,
+} from "../sdk/liveHydrate";
 import { AppCtx } from "./store";
 
 const cent = CipherSentry.shared();
 import type { AppValue, Overlay, Tab, Toast } from "./store";
+import type { Batch } from "./data";
 import AgentDetail from "./screens/AgentDetail";
 import Alerts from "./screens/Alerts";
 import DisputeFlow from "./screens/DisputeFlow";
@@ -36,10 +44,11 @@ export default function OperatorApp() {
   const [feed, setFeed] = useState<TaskEvent[]>(() => cent.stream.state().slice(0, 16));
   const [agents, setAgents] = useState<Agent[]>(AGENTS);
   const [approvals, setApprovals] = useState<Approval[]>(() => seedApprovals(SIM_START));
-  const [batches] = useState(() => seedBatches(SIM_START));
+  const [batches, setBatches] = useState<Batch[]>(() => seedBatches(SIM_START));
   const [alerts] = useState(() => seedAlerts(SIM_START));
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [wallet, setWallet] = useState({ avail: 2481.1, escrow: 512.3, earned: 388.2, spent: 142.55, stake: 4050 });
+  const liveWallet = cent.transport.kind === "rpc";
   const [limits, setLimits] = useState({
     global: 1000,
     perAgent: { "vector-7": 400, "probe-9": 250, "forge-11": 300 },
@@ -61,7 +70,31 @@ export default function OperatorApp() {
     if (!connected) return;
     return cent.stream.onTick((events, delta) => {
       setFeed([...events.slice(0, 16)]);
-      if (delta && (delta.earned || delta.spent || delta.escrowDelta)) {
+      // DISPUTED → exception inbox (live RPC + sim)
+      setApprovals((prev) => {
+        const have = new Set(prev.map((a) => a.ref));
+        const add: Approval[] = [];
+        for (const e of events) {
+          if (e.state !== "DISPUTED" || have.has(e.id)) continue;
+          have.add(e.id);
+          add.push({
+            id: `ap_${e.id}`,
+            type: "DISPUTE",
+            ref: e.id,
+            agent: e.agent,
+            counterparty: e.counterparty,
+            amount: e.amount,
+            summary: "QUORUM MISMATCH — HOLD TO RULE",
+            at: e.at,
+            expected: e.hash,
+            reported: e.hash,
+          });
+        }
+        return add.length ? [...add, ...prev].slice(0, 24) : prev;
+      });
+      if (liveWallet) {
+        setWallet((w) => ({ ...walletFromFeed(events, w.stake) }));
+      } else if (delta && (delta.earned || delta.spent || delta.escrowDelta)) {
         setWallet((w) => ({
           ...w,
           earned: w.earned + delta.earned,
@@ -71,6 +104,74 @@ export default function OperatorApp() {
         }));
       }
     });
+  }, [connected, liveWallet]);
+
+  /* ledger batches (sim stream or rpc batch.event) */
+  useEffect(() => {
+    if (!connected) return;
+    return cent.ledger.onBatch((b) => {
+      setBatches((prev) => {
+        const row = { id: b.id, count: b.count, total: b.total, at: b.at, state: b.state === "SETTLED" ? "SETTLED" as const : "SETTLING" as const };
+        const rest = prev.filter((x) => x.id !== row.id);
+        return [row, ...rest].slice(0, 12);
+      });
+    });
+  }, [connected]);
+
+  /* RPC hydration: registry + batches + wallet stake */
+  useEffect(() => {
+    if (!connected || cent.transport.kind !== "rpc") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await cent.registry.query({ limit: 32 });
+        if (cancelled) return;
+        if (rows.length) {
+          setAgents((prev) => mergeRegistryAgents(prev, rows));
+          const stake = stakeFromRegistry(rows);
+          if (stake > 0) setWallet((w) => ({ ...w, stake }));
+        }
+      } catch {
+        /* keep seed */
+      }
+      try {
+        const [pending, info, ledger] = await Promise.all([
+          cent.batchPending(),
+          cent.batchInfo(),
+          Promise.resolve(cent.ledger.batches()),
+        ]);
+        if (cancelled) return;
+        if (ledger.length) {
+          setBatches(batchesFromLedger(ledger));
+        } else {
+          const pb = batchesFromPending(
+            pending as { count?: number; leaves?: Array<{ task_id?: string; amount?: string; at?: number }> },
+            info as { last_batch_id?: number | string; pending?: number },
+          );
+          if (pb.length) setBatches(pb);
+        }
+      } catch {
+        /* keep seed batches */
+      }
+    })();
+    const poll = setInterval(() => {
+      void (async () => {
+        try {
+          const pending = await cent.batchPending();
+          if (cancelled) return;
+          const pb = batchesFromPending(
+            pending as { count?: number; leaves?: Array<{ task_id?: string; amount?: string; at?: number }> },
+          );
+          if (pb.length) setBatches((prev) => (prev[0]?.state === "SETTLING" && prev[0]?.id.startsWith("batch_pending") ? pb : prev));
+        } catch {
+          /* ignore */
+        }
+      })();
+    }, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(poll);
+    };
   }, [connected]);
 
   const value = useMemo<AppValue>(() => {

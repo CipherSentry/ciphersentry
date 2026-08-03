@@ -50,6 +50,7 @@ cd services/gateway && npm install && npm run gateway
 | `AUTH_REQUIRED` | `1` = mutating RPC needs ed25519 session |
 | `CS_ENV=production` / `B7=1` | Force AUTH + Redis + NATS; no memory/WS fallbacks |
 | `PROTOCOL_KEY_FILE` | B7 key custody — file mount preferred over `PROTOCOL_KEY` env |
+| fraud store | Redis keys `fraud:v1:*` when kv=redis — survives gateway restart |
 | `ANON_RPM` | Unauthenticated rate limit (default `20`/min) |
 | `SLASH_EXECUTOR_ADDRESS` | Optional on-chain SlashExecutor for evidence posts |
 | `BATCHER_ADDRESS` | SettlementBatcher for Merkle root anchors |
@@ -143,7 +144,9 @@ export CS_ENV=production REDIS_URL=redis://127.0.0.1:6379 NATS_URL=nats://127.0.
 export PROTOCOL_KEY_FILE=services/secrets/protocol_key
 npm run gateway
 npm run e2e:full   # CI services-full — asserts Redis + NATS-only
+npm run e2e:b7:smoke  # CI b7-smoke — AUTH + Redis + NATS + fraud hydrate after restart
 # Sepolia (keys/faucet): gh workflow run e2e-sepolia.yml -f mode=full|circle
+# Gate: 2–3 green e2e:full + hosted B7 before Sepolia dispatch
 ```
 
 ### Mainnet prep (blocked until B7 hosted + CI stable)

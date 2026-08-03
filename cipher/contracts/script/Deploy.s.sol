@@ -146,7 +146,18 @@ contract Deploy is Script {
         console.log("SlashExecutor        ", address(slash));
         console.log("broadcaster          ", env.broadcaster);
 
-        string memory path = env.local ? "deployments/local.json" : "deployments/base-sepolia.json";
+        // DEPLOY_OUT overrides; else LOCAL → local.json;
+        // MOCK_USDC / mock USDC (non-Circle) on sepolia → base-sepolia-mockusdc.json
+        string memory path = vm.envOr("DEPLOY_OUT", string(""));
+        if (bytes(path).length == 0) {
+            if (env.local) {
+                // LOCAL=true on non-anvil (e.g. sepolia mock) still writes mock book when chain ≠ 31337
+                if (block.chainid == 31337) path = "deployments/local.json";
+                else path = "deployments/base-sepolia-mockusdc.json";
+            } else {
+                path = "deployments/base-sepolia.json";
+            }
+        }
         _writeDeployment(
             path,
             env.local,

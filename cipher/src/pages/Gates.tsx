@@ -7,23 +7,18 @@ import { Stepper, Tag } from "../app/ui";
 import { signRuling } from "../crypto/keys";
 import type { SignedRuling } from "../crypto/keys";
 import { useOperator } from "../crypto/useOperator";
+import { liveConsoleHref } from "../sdk/livePath";
+import { resolveDefaultIndexer, resolveDefaultNode } from "../sdk/publicEndpoints";
 
 /* anchor: the day accrual counting began — public, immutable, block-height dated */
 const ACCRUAL_START_MS = 1_760_500_000_000; // genesis count
 const GATE4_DAYS = 60;
-
-const GATES = [
-  { id: "G1", name: "Verifier network ≥ 400 bonded verifiers", status: "IN PROGRESS", metric: "349 ON WAITLIST", desc: "Names first, bonds after the B2 deploy. The waitlist below is the headcount that becomes this number." },
-  { id: "G2", name: "Slashing live + publicly auditable", status: "PENDING", metric: "EXECUTOR SIM'D", desc: "Slash executor runs in the console today; real burns need the on-chain registry to exist first." },
-      { id: "G3", name: "Two independent audits closed", status: "RFP NEXT", metric: "PACK READY", desc: "DOC-07 shippable tomorrow from hello@ciphersentry.com. Both firms book 4–8 weeks out — the only calendar we can't compress." },
-    { id: "G4", name: "60 days of epoch accrual ahead of TGE", status: "COUNTING", metric: "MODE: CALENDAR — PENDING ANCHOR", desc: "The 60 visible days. Unrestartable. The clock runs on block-height anchors the moment the first merkle batch lands on a rail." },
-  { id: "G5", name: "Robinhood Chain terms + legal complete", status: "PENDING", metric: "COUNSEL AFTER G3", desc: "Issuer terms and warrant structure go to counsel with audits booked and the waitlist sized, not before." },
-];
+const WAITLIST_FLOOR = 349;
 
 const INFRA = ["FIRECRACKER VM", "BARE METAL", "SELF-HOST GPU", "CLOUD K8S"];
 const GATEWAY_URL = (
   (import.meta as ImportMeta & { env?: { VITE_GATEWAY_URL?: string } }).env?.VITE_GATEWAY_URL ??
-  "https://ciphersentry.fly.dev"
+  resolveDefaultNode()
 ).replace(/\/$/, "");
 
 function dayCount(now: number): number {
@@ -46,15 +41,106 @@ export default function Gates() {
   const [sig, setSig] = useState<SignedRuling | null>(null);
   const [queueNumber, setQueueNumber] = useState<number | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [waitlistCount, setWaitlistCount] = useState(WAITLIST_FLOOR);
+  const [nodeLive, setNodeLive] = useState(false);
+  const [anchorBlock, setAnchorBlock] = useState<number | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
+  /* live waitlist count + health + optional first batch anchor */
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const h = await fetch(`${GATEWAY_URL}/health`).then((r) => r.json()) as {
+          ok?: boolean;
+          access_requests?: number;
+        };
+        if (cancelled) return;
+        if (h.ok) setNodeLive(true);
+        if (typeof h.access_requests === "number" && h.access_requests > 0) {
+          setWaitlistCount(Math.max(WAITLIST_FLOOR, h.access_requests));
+        }
+      } catch {
+        /* keep floor */
+      }
+      try {
+        const s = await fetch(`${GATEWAY_URL}/access-requests/stats`).then((r) => r.json()) as {
+          ok?: boolean;
+          count?: number;
+          waitlist?: number;
+        };
+        if (cancelled) return;
+        const n = s.waitlist ?? s.count;
+        if (s.ok && typeof n === "number") setWaitlistCount(Math.max(WAITLIST_FLOOR, n));
+      } catch {
+        /* optional route */
+      }
+      try {
+        const idx = resolveDefaultIndexer();
+        const batches = await fetch(`${idx}/batches`).then((r) => r.json()) as {
+          data?: { anchored_block?: number | null }[];
+        };
+        if (cancelled) return;
+        const blk = (batches.data ?? [])
+          .map((b) => b.anchored_block)
+          .find((b) => typeof b === "number" && b > 0);
+        if (typeof blk === "number") setAnchorBlock(blk);
+      } catch {
+        /* sim / offline */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const days = dayCount(now);
   const pct = Math.min(100, Math.round((days / GATE4_DAYS) * 100));
   const valid = handle.trim().length >= 2;
+
+  const GATES = [
+    {
+      id: "G1",
+      name: "Verifier network ≥ 400 bonded verifiers",
+      status: "IN PROGRESS",
+      metric: `${waitlistCount.toLocaleString()} ON WAITLIST`,
+      desc: "Names first, bonds after the B2 deploy. The waitlist below is the headcount that becomes this number.",
+    },
+    {
+      id: "G2",
+      name: "Slashing live + publicly auditable",
+      status: nodeLive ? "LIVE PATH" : "PENDING",
+      metric: nodeLive ? "NODE REACHABLE" : "EXECUTOR SIM'D",
+      desc: "Slash executor runs in the console today; real burns need the on-chain registry to exist first.",
+    },
+    {
+      id: "G3",
+      name: "Two independent audits closed",
+      status: "RFP NEXT",
+      metric: "PACK READY",
+      desc: "DOC-07 shippable tomorrow from hello@ciphersentry.com. Both firms book 4–8 weeks out — the only calendar we can't compress.",
+    },
+    {
+      id: "G4",
+      name: "60 days of epoch accrual ahead of TGE",
+      status: "COUNTING",
+      metric: anchorBlock
+        ? `MODE: CHAIN · BLK ${anchorBlock.toLocaleString()}`
+        : "MODE: CALENDAR — PENDING ANCHOR",
+      desc: "The 60 visible days. Unrestartable. The clock runs on block-height anchors the moment the first merkle batch lands on a rail.",
+    },
+    {
+      id: "G5",
+      name: "Robinhood Chain terms + legal complete",
+      status: "PENDING",
+      metric: "COUNSEL AFTER G3",
+      desc: "Issuer terms and warrant structure go to counsel with audits booked and the waitlist sized, not before.",
+    },
+  ];
 
   const join = async () => {
     if (!valid || !key) return;
@@ -88,6 +174,7 @@ export default function Gates() {
       };
       if (!res.ok || !data.ok) throw new Error(data.error || `submit failed (${res.status})`);
       setQueueNumber(typeof data.queue === "number" ? data.queue : null);
+      if (typeof data.queue === "number") setWaitlistCount((c) => Math.max(c, data.queue!));
       setPhase("done");
     } catch (e) {
       setJoinError(e instanceof Error ? e.message : String(e));
@@ -121,7 +208,7 @@ export default function Gates() {
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
               <XIcon size={13} />
             </a>
-            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
+            <a href={liveConsoleHref({ node: GATEWAY_URL })} className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -238,7 +325,7 @@ export default function Gates() {
                 <span className="flex items-center gap-2 font-mono text-[9px] tracking-[0.24em] text-volt">
                   <Server size={11} /> VERIFIER WAITLIST
                 </span>
-                <span className="font-mono text-[8px] tracking-[0.2em] text-mute">349 JOINED</span>
+                <span className="font-mono text-[8px] tracking-[0.2em] text-mute">{waitlistCount.toLocaleString()} JOINED</span>
               </div>
 
               {phase !== "done" ? (
