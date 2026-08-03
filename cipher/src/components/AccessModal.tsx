@@ -6,12 +6,18 @@ import type { SignedRuling } from "../crypto/keys";
 import { useOperator } from "../crypto/useOperator";
 
 export function openAccessModal() {
-  window.dispatchEvent(new CustomEvent("cent:request-access"));
+  window.dispatchEvent(new CustomEvent("mrc:request-access"));
 }
 
 const ROLES = ["DEVELOPER", "OPERATOR", "AGENT SUPPLIER", "TREASURY"];
 const RAILS = ["BASE MAINNET", "ROBINHOOD CHAIN"];
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+/** Public gateway (Fly). Override with VITE_GATEWAY_URL at build time. */
+const GATEWAY_URL = (
+  (import.meta as ImportMeta & { env?: { VITE_GATEWAY_URL?: string } }).env?.VITE_GATEWAY_URL ??
+  "https://ciphersentry.fly.dev"
+).replace(/\/$/, "");
 
 export default function AccessModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const op = useOperator();
@@ -22,6 +28,8 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
   const [useCase, setUseCase] = useState("");
   const [phase, setPhase] = useState<"form" | "signing" | "done">("form");
   const [sig, setSig] = useState<SignedRuling | null>(null);
+  const [queue, setQueue] = useState<number | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const valid = handle.trim().length >= 2 && email.includes("@");
 
@@ -29,6 +37,8 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
     if (open) {
       setPhase("form");
       setSig(null);
+      setQueue(null);
+      setSubmitError(null);
     }
   }, [open]);
 
@@ -41,16 +51,54 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
   const submit = async () => {
     if (!valid || !op.key) return;
     setPhase("signing");
-    const signed = await signRuling(
-      { type: "access.request", handle: handle.trim(), role, rail, useCase: useCase.trim() || undefined },
-      op.key,
-    );
-    setSig(signed);
-    setPhase("done");
+    setSubmitError(null);
+    try {
+      const signed = await signRuling(
+        {
+          type: "access.request",
+          handle: handle.trim(),
+          role,
+          rail,
+          useCase: useCase.trim() || undefined,
+        },
+        op.key,
+      );
+      setSig(signed);
+
+      const res = await fetch(`${GATEWAY_URL}/access-requests`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({
+          kind: "access",
+          handle: handle.trim(),
+          email: email.trim(),
+          role,
+          rail,
+          use_case: useCase.trim() || undefined,
+          sig: signed.sig,
+          pubkey: signed.pubkey,
+          fp: signed.fp,
+          alg: signed.algLabel,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        queue?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `submit failed (${res.status})`);
+      }
+      setQueue(typeof data.queue === "number" ? data.queue : null);
+      setPhase("done");
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : String(e));
+      setPhase("form");
+    }
   };
 
   const inputCls =
-    "w-full border border-edge2 bg-panel px-3.5 py-3 font-mono text-[12px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none";
+    "w-full border border-edge2 bg-ink px-3.5 py-3 font-mono text-[12px] text-[#fff1e6] placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none";
 
   return (
     <AnimatePresence>
@@ -60,7 +108,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[90] flex items-end justify-center bg-void/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-void/80 p-4 backdrop-blur-sm sm:items-center"
           onClick={onClose}
         >
           <motion.div
@@ -71,7 +119,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label="Request access"
-            className="max-h-[min(92svh,calc(100svh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem))] w-full max-w-[440px] overflow-y-auto border border-edge2 bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.8)]"
+            className="max-h-[92svh] w-full max-w-[440px] overflow-y-auto border border-edge2 bg-panel shadow-[0_40px_120px_rgba(0,0,0,0.8)]"
           >
             {/* header */}
             <div className="flex items-center justify-between border-b border-edge px-5 py-3.5">
@@ -81,7 +129,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                   <span className="h-2 w-2 bg-edge2" />
                   <span className="h-2 w-2 bg-edge2" />
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.24em] text-mute">CEN.ACCESS.REQUEST</span>
+                <span className="font-mono text-[9px] tracking-[0.24em] text-mute">MRC.ACCESS.REQUEST</span>
               </span>
               <button onClick={onClose} aria-label="Close" className="flex h-7 w-7 items-center justify-center border border-edge2 text-mute transition-colors hover:border-volt/60 hover:text-volt">
                 <X size={13} />
@@ -99,11 +147,11 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
 
                 <div className="mt-6 space-y-4">
                   <div>
-                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-mute">HANDLE</label>
+                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">HANDLE</label>
                     <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="atlas-labs" spellCheck={false} className={inputCls} />
                   </div>
                   <div>
-                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-mute">EMAIL</label>
+                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">EMAIL</label>
                     <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="ops@yourdomain.xyz" spellCheck={false} className={inputCls} />
                   </div>
                   <div>
@@ -122,13 +170,13 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                       {RAILS.map((r) => (
                         <button key={r} type="button" onClick={() => setRail(r)} className={`border px-2.5 py-2 font-mono text-[8.5px] tracking-[0.16em] transition-colors ${rail === r ? "border-volt/70 bg-volt/10 text-volt" : "border-edge2 text-mute hover:text-mist"}`}>
                           {r}
-                          {r === "ROBINHOOD CHAIN" && <span className="ml-1.5 bg-volt px-1 font-semibold text-void">CENT</span>}
+                          {r === "ROBINHOOD CHAIN" && <span className="ml-1.5 bg-volt px-1 font-semibold text-void">MARC</span>}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-mute">USE CASE</label>
+                    <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">USE CASE</label>
                     <textarea value={useCase} onChange={(e) => setUseCase(e.target.value)} rows={3} placeholder="what are your agents buying or selling…" spellCheck={false} className={`${inputCls} resize-none`} />
                   </div>
 
@@ -149,8 +197,13 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                       </>
                     )}
                   </button>
+                  {submitError && (
+                    <p className="text-center font-mono text-[9px] tracking-[0.12em] text-red-400">
+                      {submitError}
+                    </p>
+                  )}
                   <p className="text-center font-mono text-[7.5px] tracking-[0.18em] text-mute/50">
-                    SIGNS WITH YOUR DEVICE KEY {op.key ? `· ${op.key.fp}` : ""} — NOTHING LEAVES THIS MACHINE
+                    SIGNS WITH YOUR DEVICE KEY {op.key ? `· ${op.key.fp}` : ""} · REQUEST ROUTES TO OPS QUEUE
                   </p>
                 </div>
               </div>
@@ -167,15 +220,15 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                 </motion.span>
                 <div className="mt-5 font-display text-[24px] font-semibold">In the queue.</div>
                 <div className="mt-2 font-mono text-[9.5px] leading-[1.9] tracking-[0.18em] text-mute">
-                  QUEUE #4,812 · NEXT BATCH OPENS IN 14 DAYS
+                  {queue != null ? `QUEUE #${queue.toLocaleString()}` : "QUEUED"} · OPS NOTIFIED ON NEXT BATCH
                   <br />
                   INVITES ROUTE TO OPERATORS WITH SETTLED WORK FIRST
                 </div>
                 {sig && (
                   <div className="mt-5 w-full border border-volt/40 bg-deepgreen p-3.5 text-left font-mono text-[9px] leading-[1.9]">
-                    <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-mist">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-mute">SIG</span><span className="truncate text-[#fff1e6]">{sig.sig.slice(0, 18)}…{sig.sig.slice(-6)}</span></div>
                     <div className="flex justify-between gap-4"><span className="text-mute">KEY</span><span className="text-volt">{sig.fp}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-mute">RAIL</span><span className="text-mist">{rail}</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-mute">RAIL</span><span className="text-[#fff1e6]">{rail}</span></div>
                     <div className="mt-1.5 flex items-center justify-between border-t border-volt/25 pt-1.5">
                       <span className="text-mute">LOCAL VERIFY</span>
                       <span className="flex items-center gap-1 text-volt"><Check size={10} strokeWidth={3} /> VALID</span>

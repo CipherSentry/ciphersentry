@@ -2,13 +2,11 @@ import { ArrowUpRight, Check, KeyRound, Loader2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import Frame from "../components/Frame";
 import LogoMark from "../components/LogoMark";
-import NodeHealth from "../components/NodeHealth";
 import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
 import { Stepper, Tag } from "../app/ui";
 import { signRuling } from "../crypto/keys";
 import type { SignedRuling } from "../crypto/keys";
 import { useOperator } from "../crypto/useOperator";
-import { liveConsoleHref } from "../sdk/livePath";
 
 /* anchor: the day accrual counting began — public, immutable, block-height dated */
 const ACCRUAL_START_MS = 1_760_500_000_000; // genesis count
@@ -17,12 +15,16 @@ const GATE4_DAYS = 60;
 const GATES = [
   { id: "G1", name: "Verifier network ≥ 400 bonded verifiers", status: "IN PROGRESS", metric: "349 ON WAITLIST", desc: "Names first, bonds after the B2 deploy. The waitlist below is the headcount that becomes this number." },
   { id: "G2", name: "Slashing live + publicly auditable", status: "PENDING", metric: "EXECUTOR SIM'D", desc: "Slash executor runs in the console today; real burns need the on-chain registry to exist first." },
-      { id: "G3", name: "Two independent audits closed", status: "RFP NEXT", metric: "PACK READY", desc: "DOC-07 shippable tomorrow from hello@ciphersentry.xyz. Both firms book 4–8 weeks out — the only calendar we can't compress." },
+      { id: "G3", name: "Two independent audits closed", status: "RFP NEXT", metric: "PACK READY", desc: "DOC-07 shippable tomorrow from hello@ciphersentry.com. Both firms book 4–8 weeks out — the only calendar we can't compress." },
     { id: "G4", name: "60 days of epoch accrual ahead of TGE", status: "COUNTING", metric: "MODE: CALENDAR — PENDING ANCHOR", desc: "The 60 visible days. Unrestartable. The clock runs on block-height anchors the moment the first merkle batch lands on a rail." },
   { id: "G5", name: "Robinhood Chain terms + legal complete", status: "PENDING", metric: "COUNSEL AFTER G3", desc: "Issuer terms and warrant structure go to counsel with audits booked and the waitlist sized, not before." },
 ];
 
 const INFRA = ["FIRECRACKER VM", "BARE METAL", "SELF-HOST GPU", "CLOUD K8S"];
+const GATEWAY_URL = (
+  (import.meta as ImportMeta & { env?: { VITE_GATEWAY_URL?: string } }).env?.VITE_GATEWAY_URL ??
+  "https://ciphersentry.fly.dev"
+).replace(/\/$/, "");
 
 function dayCount(now: number): number {
   return Math.max(0, Math.floor((now - ACCRUAL_START_MS) / 86_400_000));
@@ -42,6 +44,8 @@ export default function Gates() {
   const [bond, setBond] = useState(50_000);
   const [phase, setPhase] = useState<"form" | "signing" | "done">("form");
   const [sig, setSig] = useState<SignedRuling | null>(null);
+  const [queueNumber, setQueueNumber] = useState<number | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -51,17 +55,44 @@ export default function Gates() {
   const days = dayCount(now);
   const pct = Math.min(100, Math.round((days / GATE4_DAYS) * 100));
   const valid = handle.trim().length >= 2;
-  const queueNumber = 349 + (handle.trim() ? handle.length : 0);
 
   const join = async () => {
     if (!valid || !key) return;
     setPhase("signing");
-    const signed = await signRuling(
-      { type: "verifier.waitlist", handle: handle.trim(), infra, bond, nonce: queueNumber },
-      key,
-    );
-    setSig(signed);
-    setPhase("done");
+    setJoinError(null);
+    try {
+      const signed = await signRuling(
+        { type: "verifier.waitlist", handle: handle.trim(), infra, bond },
+        key,
+      );
+      setSig(signed);
+      const res = await fetch(`${GATEWAY_URL}/access-requests`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({
+          kind: "verifier_waitlist",
+          handle: handle.trim(),
+          role: "VERIFIER",
+          rail: infra,
+          use_case: `bond=${bond}`,
+          sig: signed.sig,
+          pubkey: signed.pubkey,
+          fp: signed.fp,
+          alg: signed.algLabel,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        queue?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) throw new Error(data.error || `submit failed (${res.status})`);
+      setQueueNumber(typeof data.queue === "number" ? data.queue : null);
+      setPhase("done");
+    } catch (e) {
+      setJoinError(e instanceof Error ? e.message : String(e));
+      setPhase("form");
+    }
   };
 
   return (
@@ -69,23 +100,16 @@ export default function Gates() {
       <Frame />
 
       {/* top bar */}
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
-        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
+      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
+        <div className="flex h-14 items-center justify-between px-6 md:px-12">
+          <div className="flex min-w-0 items-center gap-4">
+            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
               <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
             </a>
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ LAUNCH GATES</span>
           </div>
-          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-            <NodeHealth className="hidden sm:inline-flex" />
-            <a
-              href={liveConsoleHref()}
-              className="hidden font-mono text-[9px] tracking-[0.18em] text-mute transition-colors hover:text-volt md:inline"
-            >
-              LIVE CONSOLE
-            </a>
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
+          <div className="flex items-center gap-5">
+            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — Machinarc-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>
             <a
@@ -97,7 +121,7 @@ export default function Gates() {
             <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
               <XIcon size={13} />
             </a>
-            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
+            <a href="#/app" className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
               OPEN APP
               <ArrowUpRight size={11} />
             </a>
@@ -106,13 +130,13 @@ export default function Gates() {
       </header>
 
       {/* hero — the accrual clock */}
-      <div className="border-b border-edge px-4 py-10 sm:px-6 sm:py-12 md:px-12 md:py-16">
+      <div className="border-b border-edge px-6 py-12 md:px-12 md:py-16">
         <div className="flex items-center gap-3 font-mono text-[9.5px] tracking-[0.28em] text-volt">
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute h-full w-full animate-ping bg-volt opacity-60" />
             <span className="relative h-1.5 w-1.5 bg-volt" />
           </span>
-          READINESS BOARD · GATES TO CENT · UPDATES IN BLOCK HEIGHT
+          READINESS BOARD · GATES TO MARC · UPDATES IN BLOCK HEIGHT
         </div>
 
         <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-end">
@@ -125,26 +149,26 @@ export default function Gates() {
             </h1>
             <p className="mt-5 max-w-[520px] text-[14px] leading-[1.8] text-mute">
               Gate #4 can't be gamed or negotiated: sixty public days of epoch
-              accrual, verifiable by anyone, before CENT trades. The clock
+              accrual, verifiable by anyone, before MARC trades. The clock
               below is the clock — start-anchored, ticked by this page, signed
               by an operator key.
             </p>
           </div>
 
-          {/* the counter — dark well: use code-fg tokens for readable type */}
-          <div className="surface-code border border-code-edge p-5 md:p-6">
-            <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-code-mute">
+          {/* the counter */}
+          <div className="border border-volt/50 bg-deepgreen p-5 md:p-6">
+            <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-mute">
               <span>G4 — EPOCH ACCRUAL</span>
-              <span className="text-volthot">DAY {days} / {GATE4_DAYS}</span>
+              <span className="text-volt">DAY {days} / {GATE4_DAYS}</span>
             </div>
-            <div className="mt-3 font-display text-[54px] font-medium tabular-nums leading-none tracking-[-0.03em] text-volthot md:text-[64px]">
+            <div className="mt-3 font-display text-[54px] font-medium tabular-nums leading-none tracking-[-0.03em] text-volt md:text-[64px]">
               {String(days).padStart(2, "0")}
-              <span className="ml-3 font-mono text-[11px] tracking-[0.2em] text-code-mute">DAYS</span>
+              <span className="ml-3 font-mono text-[11px] tracking-[0.2em] text-mute">DAYS</span>
             </div>
-            <div className="mt-4 h-1.5 w-full bg-code-edge">
-              <div className="h-full bg-volthot transition-all duration-1000" style={{ width: `${pct}%` }} />
+            <div className="mt-4 h-1.5 w-full bg-edge">
+              <div className="h-full bg-volt transition-all duration-1000" style={{ width: `${pct}%` }} />
             </div>
-            <div className="mt-2.5 flex justify-between font-mono text-[7.5px] tracking-[0.18em] text-code-mute/80">
+            <div className="mt-2.5 flex justify-between font-mono text-[7.5px] tracking-[0.18em] text-mute/60">
               <span>GENESIS · BLK 12,840,117 · op:0x71be…e8d3</span>
               <span>ETA ≥ {formatEta(now)}</span>
             </div>
@@ -152,8 +176,8 @@ export default function Gates() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-12 md:px-12">
-        <div className="grid gap-10 lg:grid-cols-[1fr_minmax(280px,400px)]">
+      <div className="mx-auto max-w-[1240px] px-6 py-12 md:px-12">
+        <div className="grid gap-10 lg:grid-cols-[1fr_400px]">
           {/* left: gate cards + freeze anchor */}
           <div>
             <div className="space-y-3">
@@ -176,39 +200,31 @@ export default function Gates() {
               ))}
             </div>
 
-            {/* freeze-hash anchor — light canvas: mist/mute, never code-fg */}
-            <div className="mt-6 border border-amber-300/50 bg-panel p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[8.5px] tracking-[0.24em] text-mute">
+            {/* freeze-hash anchor */}
+            <div className="mt-6 border border-amber-300/40 bg-amber-300/[0.05] p-5">
+              <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-[#fff1e6]/70">
                 <span>ENG-A FREEZE HASH — AUDIT ANCHOR</span>
-                <span className="text-amber-600">PENDING BROADCAST</span>
+                <span className="text-amber-300">PENDING BROADCAST</span>
               </div>
               <div className="mt-3 space-y-2 font-mono text-[10.5px]">
-                <div className="flex flex-wrap justify-between gap-x-6 gap-y-1">
-                  <span className="text-mute">SCOPE</span>
-                  <span className="text-mist">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
+                <div className="flex justify-between gap-6">
+                  <span className="text-[#fff1e6]/70">SCOPE</span>
+                  <span className="text-[#fff1e6]">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
                 </div>
-                <div className="flex flex-wrap justify-between gap-x-6 gap-y-1">
-                  <span className="text-mute">HASH</span>
-                  <span className="text-mute/80">sha256(contracts/) — computed at broadcast</span>
+                <div className="flex justify-between gap-6">
+                  <span className="text-[#fff1e6]/70">HASH</span>
+                  <span className="text-[#fff1e6]/50">sha256(contracts/) — computed at broadcast</span>
                 </div>
-                <div className="flex flex-wrap justify-between gap-x-6 gap-y-1">
-                  <span className="text-mute">ANCHOR</span>
-                  <span className="text-mute/80">first batch root on Base-Sepolia · pending</span>
+                <div className="flex justify-between gap-6">
+                  <span className="text-[#fff1e6]/70">ANCHOR</span>
+                  <span className="text-[#fff1e6]/50">first batch root on Base-Sepolia · pending</span>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3 border-t border-edge pt-4">
-                <a
-                  href={SOCIALS.github}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
-                >
+              <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-300/25 pt-4">
+                <a href="https://github.com/CipherSentry-com" target="_blank" rel="noreferrer" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-[#fff1e6] transition-colors hover:border-volt/70 hover:text-volt">
                   AUDIT PACK — DOC-07 →
                 </a>
-                <a
-                  href="#/docs/audit"
-                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
-                >
+                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-[#fff1e6] transition-colors hover:border-volt/70 hover:text-volt">
                   /contracts/README.md →
                 </a>
               </div>
@@ -229,7 +245,7 @@ export default function Gates() {
                 <div className="space-y-4 p-5">
                   <p className="text-[12px] leading-[1.7] text-mute">
                     Names now, bonds at the B2 deploy. Waitlist order is
-                    signed and public; bonds post in order, 25,000 CENT floor.
+                    signed and public; bonds post in order, 25,000 MARC floor.
                   </p>
                   <div>
                     <label className="mb-1.5 block font-mono text-[8.5px] tracking-[0.22em] text-mute">NODE HANDLE</label>
@@ -238,7 +254,7 @@ export default function Gates() {
                       onChange={(e) => setHandle(e.target.value)}
                       placeholder="vrf:your-node"
                       spellCheck={false}
-                      className="w-full border border-edge2 bg-panel px-3.5 py-3 font-mono text-[11.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
+                      className="w-full border border-edge2 bg-ink px-3.5 py-3 font-mono text-[11.5px] text-mist placeholder:text-mute/40 transition-colors focus:border-volt/60 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -277,8 +293,11 @@ export default function Gates() {
                       </>
                     )}
                   </button>
+                  {joinError && (
+                    <p className="text-center font-mono text-[8.5px] tracking-[0.12em] text-red-400">{joinError}</p>
+                  )}
                   <p className="text-center font-mono text-[7px] tracking-[0.16em] text-mute/50">
-                    SIGNS WITH YOUR DEVICE KEY{key ? ` · ${key.fp}` : ""} — ORDER IS BINDING
+                    SIGNS WITH YOUR DEVICE KEY{key ? ` · ${key.fp}` : ""} · ORDER ROUTES TO OPS QUEUE
                   </p>
                 </div>
               ) : (
@@ -288,7 +307,7 @@ export default function Gates() {
                   </span>
                   <div className="mt-4 font-display text-[18px] font-semibold">In the queue.</div>
                   <div className="mt-1.5 font-mono text-[9px] tracking-[0.18em] text-mute">
-                    POSITION #{queueNumber} · BOND {bond.toLocaleString()} CENT
+                    POSITION #{queueNumber ?? "—"} · BOND {bond.toLocaleString()} MARC
                   </div>
                   {sig && (
                     <div className="mt-4 w-full border border-volt/40 bg-volt/[0.05] p-3.5 text-left font-mono text-[8.5px] leading-[1.9]">
