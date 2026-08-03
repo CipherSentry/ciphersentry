@@ -102,7 +102,7 @@ export default function Hero() {
         </div>
 
         {/* ---- right: LIVE TASK TRACE — void base + ASCII motion field ---- */}
-        <div className="relative border-t border-edge bg-void lg:min-h-[calc(100svh-68px)] lg:border-l lg:border-t-0">
+        <div className="relative border-t border-edge bg-void contain-paint lg:min-h-[calc(100svh-68px)] lg:border-l lg:border-t-0">
           <div className="pointer-events-none absolute inset-0 opacity-[0.72]">
             <AsciiFigure />
           </div>
@@ -110,7 +110,7 @@ export default function Hero() {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-void/55 via-void/25 to-void/55" />
 
           <div className="relative h-full flex-col lg:flex animate-shelf-in">
-            <div className="flex items-center justify-between border-b border-edge/80 bg-void/75 px-4 py-3.5 backdrop-blur-[2px] sm:px-7 sm:py-4">
+            <div className="flex items-center justify-between border-b border-edge/80 bg-void/90 px-4 py-3.5 sm:px-7 sm:py-4">
               <span className="flex items-center gap-2.5 font-mono text-[9px] tracking-[0.26em] text-volt">
                 <span className="h-1.5 w-1.5 bg-volt" />
                 LIVE TASK TRACE

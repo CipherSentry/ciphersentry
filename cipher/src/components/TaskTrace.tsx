@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 
 const TASKS = [
@@ -9,6 +9,43 @@ const TASKS = [
 ];
 
 const CMD = "ciphersentry.task.execute";
+
+type Phase =
+  | { k: "type"; n: number }
+  | { k: "rows"; n: number }
+  | { k: "checking" }
+  | { k: "check"; n: number }
+  | { k: "settled" }
+  | { k: "next" };
+
+/** Build a single timeline; one setState per event (no per-char timers). */
+function buildTimeline(): { at: number; phase: Phase }[] {
+  const out: { at: number; phase: Phase }[] = [];
+  let at = 500;
+  // type in chunks of 3 — ~9 re-renders instead of 26
+  for (let i = 3; i < CMD.length; i += 3) {
+    out.push({ at, phase: { k: "type", n: i } });
+    at += 70;
+  }
+  out.push({ at, phase: { k: "type", n: CMD.length } });
+  at += 260;
+  for (let r = 1; r <= 4; r++) {
+    out.push({ at, phase: { k: "rows", n: r } });
+    at += 145;
+  }
+  out.push({ at, phase: { k: "checking" } });
+  at += 950;
+  out.push({ at, phase: { k: "check", n: 1 } });
+  at += 260;
+  out.push({ at, phase: { k: "check", n: 2 } });
+  at += 300;
+  out.push({ at, phase: { k: "settled" } });
+  at += 2600;
+  out.push({ at, phase: { k: "next" } });
+  return out;
+}
+
+const TIMELINE = buildTimeline();
 
 function BlockCursor({ className = "" }: { className?: string }) {
   return (
@@ -32,47 +69,65 @@ export default function TaskTrace({
   const [checking, setChecking] = useState(false);
   const [checks, setChecks] = useState(0);
   const [settled, setSettled] = useState(false);
+  const [active, setActive] = useState(true);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const task = TASKS[idx];
 
+  // Pause when off-screen or tab hidden
   useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => setActive(e.isIntersecting && !document.hidden),
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    const onVis = () => setActive(!document.hidden && (io.takeRecords()[0]?.isIntersecting ?? true));
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+
     setTyped(0);
     setRows(0);
     setChecking(false);
     setChecks(0);
     setSettled(false);
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let at = 500;
-
-    for (let i = 1; i <= CMD.length; i++) {
-      const n = i;
-      timers.push(setTimeout(() => setTyped(n), at));
-      at += 26;
-    }
-    at += 260;
-    for (let r = 1; r <= 4; r++) {
-      const n = r;
-      timers.push(setTimeout(() => setRows(n), at));
-      at += 145;
-    }
-    timers.push(setTimeout(() => setChecking(true), at));
-    at += 950;
-    timers.push(
+    const timers = TIMELINE.map(({ at, phase }) =>
       setTimeout(() => {
-        setChecking(false);
-        setChecks(1);
+        switch (phase.k) {
+          case "type":
+            setTyped(phase.n);
+            break;
+          case "rows":
+            setRows(phase.n);
+            break;
+          case "checking":
+            setChecking(true);
+            break;
+          case "check":
+            setChecking(false);
+            setChecks(phase.n);
+            break;
+          case "settled":
+            setSettled(true);
+            break;
+          case "next":
+            setIdx((i) => (i + 1) % TASKS.length);
+            break;
+        }
       }, at),
     );
-    at += 260;
-    timers.push(setTimeout(() => setChecks(2), at));
-    at += 300;
-    timers.push(setTimeout(() => setSettled(true), at));
-    at += 2600;
-    timers.push(setTimeout(() => setIdx((i) => (i + 1) % TASKS.length), at));
 
     return () => timers.forEach(clearTimeout);
-  }, [idx]);
+  }, [idx, active]);
 
   const dataRows: [string, string][] = [
     ["task_id", task.id],
@@ -87,10 +142,11 @@ export default function TaskTrace({
 
   return (
     <div
+      ref={rootRef}
       className={
         bare
-          ? "relative flex h-full min-h-[420px] flex-col sm:min-h-[480px] lg:min-h-[520px]"
-          : "relative flex h-full min-h-[480px] flex-col overflow-hidden border-t border-edge bg-void sm:min-h-[520px] lg:min-h-0 lg:border-l lg:border-t-0"
+          ? "relative flex h-full min-h-[420px] flex-col contain-paint sm:min-h-[480px] lg:min-h-[520px]"
+          : "relative flex h-full min-h-[480px] flex-col overflow-hidden border-t border-edge bg-void contain-paint sm:min-h-[520px] lg:min-h-0 lg:border-l lg:border-t-0"
       }
     >
       {!bare && <div aria-hidden className="absolute inset-0 opacity-70 trace-grid" />}
@@ -125,13 +181,15 @@ export default function TaskTrace({
           <div
             className={`relative border ${
               light
-                ? "border-edge bg-void/88 shadow-[0_20px_60px_-24px_rgba(8,10,7,0.18)] backdrop-blur-[3px]"
+                ? "border-edge bg-void/92 shadow-[0_20px_60px_-24px_rgba(8,10,7,0.18)]"
                 : "surface-code shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)]"
             }`}
           >
-            {!light && (
+            {active && !light && (
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="animate-scan absolute h-8 w-full bg-gradient-to-b from-transparent via-volt/[0.07] to-transparent" />
+                <div className="animate-scan absolute inset-x-0 top-0 h-full">
+                  <div className="h-8 w-full bg-gradient-to-b from-transparent via-volt/[0.07] to-transparent" />
+                </div>
               </div>
             )}
 
