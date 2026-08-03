@@ -11,7 +11,7 @@
 
 import { createServer } from "node:http";
 import { createEventBus, type EventBus } from "@ciphersentry/bus";
-import { ClickHouseHttp, applyChSchema, createPgQuerier, type Querier } from "./db.ts";
+import { ClickHouseHttp, applyChSchema, applyPgSchema, createPgQuerier, type Querier } from "./db.ts";
 import {
   ChainListener,
   LedgerWriter,
@@ -45,9 +45,17 @@ const PORT = Number(process.env.PORT ?? process.env.INDEXER_PORT ?? 8081);
 /** Bind address — 127.0.0.1 local; 0.0.0.0 for Docker published ports (B7 compose). */
 const HOST = process.env.INDEXER_HOST ?? process.env.HOST ?? "127.0.0.1";
 const MEMORY = process.env.INDEXER_MEMORY === "1";
+/**
+ * ClickHouse mode when not fully in-memory:
+ *   http   — real CH (default when CH_URL set and INDEXER_CH_MODE unset)
+ *   memory — MemoryClickHouse analytics; Postgres remains SoR (Fly durable path)
+ */
+const CH_MODE = (process.env.INDEXER_CH_MODE ?? "").toLowerCase() || "http";
 const GATEWAY_URL = (process.env.GATEWAY_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
 /** Set at boot — exposed on /health + /stats. */
 let activeBusMode: "nats" | "ws" | "memory" | null = null;
+let activeStorage: "memory" | "pg" = MEMORY ? "memory" : "pg";
+let activeCh: "memory" | "http" = MEMORY ? "memory" : "http";
 
 /* ----------------------------- trust score --------------------------------- */
 
@@ -79,6 +87,9 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         nats: NATS_URL || null,
         bus: activeBusMode,
         memory: MEMORY,
+        storage: activeStorage,
+        ch: activeCh,
+        durable: activeStorage === "pg",
         gateway: GATEWAY_URL,
       },
     };
@@ -230,14 +241,33 @@ export async function boot(): Promise<void> {
     const { MemoryStore, MemoryClickHouse } = await import("./memory.ts");
     pg = new MemoryStore();
     ch = new MemoryClickHouse();
+    activeStorage = "memory";
+    activeCh = "memory";
     console.log("  storage  → MEMORY (INDEXER_MEMORY=1)");
   } else {
     pg = await createPgQuerier(PG_DSN);
-    ch = new ClickHouseHttp(CH_URL, CH_DB, process.env.CH_USER ?? "cent", process.env.CH_PASSWORD ?? "cent");
-    try {
-      await applyChSchema(ch as ClickHouseHttp);
-    } catch (e) {
-      console.warn(`  clickhouse schema: ${(e as Error).message?.slice(0, 120) ?? e}`);
+    await applyPgSchema(pg);
+    activeStorage = "pg";
+    const wantMemCh = CH_MODE === "memory" || CH_MODE === "mem" || process.env.INDEXER_CH_MEMORY === "1";
+    if (wantMemCh) {
+      const { MemoryClickHouse } = await import("./memory.ts");
+      ch = new MemoryClickHouse();
+      activeCh = "memory";
+      console.log("  storage  → PG + CH-memory (durable SoR, analytics ephemeral)");
+    } else {
+      ch = new ClickHouseHttp(CH_URL, CH_DB, process.env.CH_USER ?? "cent", process.env.CH_PASSWORD ?? "cent");
+      try {
+        await applyChSchema(ch as ClickHouseHttp);
+        activeCh = "http";
+        console.log(`  storage  → PG + CH-http (${CH_URL}/${CH_DB})`);
+      } catch (e) {
+        // Fly durable path without CH sidecar — fall back rather than fail boot
+        console.warn(`  clickhouse unavailable — CH-memory fallback: ${(e as Error).message?.slice(0, 120) ?? e}`);
+        const { MemoryClickHouse } = await import("./memory.ts");
+        ch = new MemoryClickHouse();
+        activeCh = "memory";
+        console.log("  storage  → PG + CH-memory (CH schema failed)");
+      }
     }
   }
 
@@ -374,7 +404,8 @@ export async function boot(): Promise<void> {
     console.log(`ciphersentry-indexer  [B6]`);
     console.log(`  api      → http://${HOST}:${PORT}`);
     console.log(`  events   → ${eventSource}`);
-    if (!MEMORY) console.log(`  analytics→ ${CH_URL}/${CH_DB}`);
+    console.log(`  storage  → ${activeStorage} ch=${activeCh} durable=${activeStorage === "pg"}`);
+    if (!MEMORY && activeCh === "http") console.log(`  analytics→ ${CH_URL}/${CH_DB}`);
   });
 }
 
