@@ -296,11 +296,12 @@ export class MemoryStore implements Querier {
       return (r ? [r] : []) as T[];
     }
 
-    if (/SELECT root, anchored_block, anchored_tx FROM batches WHERE batch_id/i.test(sql)) {
+    // proof / batch proofs — any column subset on batches by id
+    if (/FROM batches WHERE batch_id/i.test(sql) && /SELECT/i.test(sql)) {
       const b = this.batches.get(String(p[0]));
-      return (b
-        ? [{ root: b.root, anchored_block: b.anchored_block, anchored_tx: b.anchored_tx }]
-        : []) as T[];
+      if (!b) return [] as T[];
+      // return full row so SELECT root… or SELECT batch_id, root… both work
+      return [b] as T[];
     }
 
     if (/SELECT \* FROM agents WHERE agent_id/i.test(sql)) {

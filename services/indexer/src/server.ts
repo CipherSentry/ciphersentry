@@ -141,8 +141,9 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
       task_id: string;
     };
     const path = typeof r.path === "string" ? (JSON.parse(r.path) as string[]) : r.path;
+    // Column list must stay MemoryStore-compatible (see memory.ts SELECT root…)
     const batch = await pg.exec(
-      `SELECT root, anchored_block, anchored_tx, state FROM batches WHERE batch_id = $1`,
+      `SELECT root, anchored_block, anchored_tx FROM batches WHERE batch_id = $1`,
       [r.batch_id],
     );
     const root = batch[0] ? String((batch[0] as { root: string }).root) : "";
@@ -156,9 +157,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
           receipt_id: r.receipt_id,
           task_id: r.task_id,
           batch_id: r.batch_id,
-          anchor: batch[0]
-            ? { ...(batch[0] as object), root }
-            : null,
+          anchor: batch[0] ?? null,
           valid,
           reconciled: valid,
         },
