@@ -202,11 +202,23 @@ export const PG_DDL_STATEMENTS: string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_fraud_status ON fraud_cases(status)`,
   `CREATE INDEX IF NOT EXISTS idx_fraud_worker ON fraud_cases(worker)`,
+  // Durable trust series when ClickHouse is memory/ephemeral (Fly public path)
+  `CREATE TABLE IF NOT EXISTS trust_series (
+    agent_id       TEXT NOT NULL,
+    epoch          BIGINT NOT NULL,
+    stake          NUMERIC(20,6) NOT NULL DEFAULT 0,
+    success        NUMERIC(6,4) NOT NULL DEFAULT 1,
+    settled_count  INTEGER NOT NULL DEFAULT 0,
+    trust_score    NUMERIC(7,4) NOT NULL,
+    computed_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (agent_id, epoch)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_trust_series_agent_epoch ON trust_series(agent_id, epoch DESC)`,
 ];
 
 export async function applyPgSchema(pg: Querier): Promise<void> {
   for (const stmt of PG_DDL_STATEMENTS) await pg.exec(stmt);
-  console.log("postgres schema applied — tasks / receipts / batches / agents / fraud_cases");
+  console.log("postgres schema applied — tasks / receipts / batches / agents / fraud / trust_series");
 }
 
 // CLI entry: node src/db.ts --apply-ch-schema | --apply-pg-schema

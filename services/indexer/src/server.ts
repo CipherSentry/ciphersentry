@@ -166,6 +166,27 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
   const mt = p.match(/^\/trust\/([^/]+)$/);
   if (mt) {
     const agent = mt[1]!.replace(/'/g, "");
+    // Prefer durable Postgres series (survives CH-memory restarts on Fly)
+    try {
+      const pgRows = await pg.exec<{ agent_id: string; epoch: number | string; trust_score: number | string }>(
+        `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = $1 ORDER BY epoch DESC LIMIT 32`,
+        [agent],
+      );
+      if (pgRows.length) {
+        return {
+          status: 200,
+          body: {
+            data: pgRows.map((r) => ({
+              agent_id: r.agent_id,
+              epoch: Number(r.epoch),
+              trust_score: Number(r.trust_score),
+            })),
+          },
+        };
+      }
+    } catch {
+      /* fall through to CH */
+    }
     try {
       const rows = await ch.exec<{ agent_id: string; epoch: number; trust_score: number }>(
         `SELECT agent_id, epoch, trust_score FROM trust_series WHERE agent_id = '${agent}' ORDER BY epoch DESC LIMIT 32 FORMAT JSON`,
