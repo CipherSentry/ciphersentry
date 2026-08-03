@@ -76,6 +76,7 @@ describe("normalizeRuling", () => {
   it("maps common strings", () => {
     assert.equal(normalizeRuling("REFUND BUYER"), "Refund");
     assert.equal(normalizeRuling("release"), "Release");
+    assert.equal(normalizeRuling("RELEASE TO WORKER"), "Release");
     assert.equal(normalizeRuling("SPLIT 50/50"), "Split");
   });
 });

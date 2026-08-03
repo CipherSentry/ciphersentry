@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { liveConsoleHref } from "../sdk/livePath";
 import AsciiFigure from "./AsciiFigure";
 import TaskTrace from "./TaskTrace";
 import { EASE } from "./Reveal";
@@ -66,10 +67,10 @@ export default function Hero() {
             className="mt-8 flex flex-col gap-4 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-7"
           >
             <a
-              href="#/demo"
+              href={liveConsoleHref()}
               className="group flex min-h-12 w-full items-center justify-center gap-2.5 bg-volt px-6 py-3.5 font-mono text-[11px] font-semibold tracking-[0.2em] text-ink transition-colors duration-300 hover:bg-volthot sm:w-auto sm:py-4"
             >
-              TRY THE FLOW
+              OPEN LIVE CONSOLE
               <ArrowRight
                 size={14}
                 strokeWidth={2.5}
@@ -77,10 +78,10 @@ export default function Hero() {
               />
             </a>
             <a
-              href="#/protocol"
+              href="#/demo"
               className="group flex min-h-11 items-center justify-center gap-1.5 font-mono text-[10.5px] tracking-[0.2em] text-mute transition-colors duration-300 hover:text-mist sm:justify-start"
             >
-              SEE THE PROTOCOL
+              TRY THE FLOW
               <ArrowRight
                 size={13}
                 strokeWidth={2.5}

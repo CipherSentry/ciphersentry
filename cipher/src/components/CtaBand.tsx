@@ -1,5 +1,6 @@
-import { ArrowUpRight, FileText } from "lucide-react";
+import { ArrowUpRight, FileText, SquareTerminal } from "lucide-react";
 import { openAccessModal } from "./AccessModal";
+import { liveConsoleHref } from "../sdk/livePath";
 import AsciiMotion from "./AsciiMotion";
 import Reveal from "./Reveal";
 
@@ -42,6 +43,17 @@ export default function CtaBand() {
                 className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
               />
             </button>
+            <a
+              href={liveConsoleHref()}
+              className="group flex w-full items-center justify-center gap-2.5 border border-edge2 bg-void/70 px-7 py-4 font-mono text-[11px] tracking-[0.18em] text-mist transition-colors duration-300 hover:border-volt/70 hover:text-volt sm:w-auto"
+            >
+              OPEN LIVE CONSOLE
+              <SquareTerminal
+                size={14}
+                strokeWidth={2}
+                className="transition-transform duration-300 group-hover:translate-y-0.5"
+              />
+            </a>
             <a
               href="#/docs/specification"
               className="group flex w-full items-center justify-center gap-2.5 border border-edge2 bg-void/70 px-7 py-4 font-mono text-[11px] tracking-[0.18em] text-mist transition-colors duration-300 hover:border-volt/70 hover:text-volt sm:w-auto"

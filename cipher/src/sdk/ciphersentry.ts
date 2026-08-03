@@ -13,25 +13,39 @@ import { SimTransport } from "./transport";
 import type { BatchCb, TickCb, Transport } from "./transport";
 import type { ExBatch } from "./ledger";
 import type { TaskEvent } from "../app/data";
-import { DEFAULT_NODE, RpcTransport, RpcWireError, type SessionSigner } from "./rpc";
+import { defaultNodeUrl, RpcTransport, RpcWireError, type SessionSigner } from "./rpc";
+import { toWireRuling } from "./livePath";
 
 export type NetMode = "sim" | "rpc";
 
-/** ?net=rpc|sim — transport selection without a rebuild. */
-export function readNetMode(): NetMode {
+/**
+ * Query params may live in location.search OR the hash (`#/app?net=rpc`).
+ * Hash-router deep links put flags after the path.
+ */
+export function readUrlParams(): URLSearchParams {
   try {
-    return new URLSearchParams(window.location.search).get("net") === "rpc" ? "rpc" : "sim";
+    const sp = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace(/^#/, "");
+    const qi = hash.indexOf("?");
+    if (qi >= 0) {
+      const hp = new URLSearchParams(hash.slice(qi + 1));
+      hp.forEach((v, k) => {
+        if (!sp.has(k)) sp.set(k, v);
+      });
+    }
+    return sp;
   } catch {
-    return "sim";
+    return new URLSearchParams();
   }
 }
 
+/** ?net=rpc|sim — transport selection without a rebuild. */
+export function readNetMode(): NetMode {
+  return readUrlParams().get("net") === "rpc" ? "rpc" : "sim";
+}
+
 function readNodeUrl(): string {
-  try {
-    return new URLSearchParams(window.location.search).get("node") ?? DEFAULT_NODE;
-  } catch {
-    return DEFAULT_NODE;
-  }
+  return readUrlParams().get("node") ?? defaultNodeUrl();
 }
 
 /** ?auth=1 — auto openSession with device Ed25519 key. */
@@ -303,6 +317,7 @@ export class CipherSentry {
       const rpc = this.rpc;
       if (rpc) {
         try {
+          await this.autoSession();
           const res = await rpc.rpcTaskCommit({
             worker: params.worker,
             spec: params.spec,
@@ -491,6 +506,74 @@ export class CipherSentry {
     this.emit("task.verified", { task, ms: receipt.ms });
     this.emit("task.settled", receipt);
     return receipt;
+  };
+
+  /* ---- dispute + operator (rpc mutations; sim is local-only) ---- */
+
+  dispute = {
+    open: async (taskId: string, evidence?: unknown): Promise<{ task_id: string; state: string }> => {
+      const rpc = this.rpc;
+      if (!rpc) {
+        this.transport.setTaskState(taskId, "DISPUTED");
+        this.emit("dispute.opened", { taskId, evidence });
+        return { task_id: taskId, state: "DISPUTED" };
+      }
+      try {
+        await this.autoSession();
+        const res = (await rpc.rpcDisputeOpen(taskId, evidence ?? {})) as {
+          task_id?: string;
+          state?: string;
+        };
+        this.transport.setTaskState(taskId, "DISPUTED");
+        this.emit("dispute.opened", { taskId, evidence, res });
+        return { task_id: String(res.task_id ?? taskId), state: String(res.state ?? "DISPUTED") };
+      } catch (e) {
+        this.rethrow(e);
+      }
+    },
+  };
+
+  operator = {
+    /**
+     * Signed ruling on a disputed task.
+     * On rpc: posts operator.rule (gateway → fraud manualRule).
+     * On sim: local settle only (caller still applies UI resolve).
+     */
+    rule: async (
+      taskId: string,
+      ruling: string,
+      sig: string,
+    ): Promise<{ task_id: string; state: string; ruling: string }> => {
+      const wire = toWireRuling(ruling);
+      const rpc = this.rpc;
+      if (!rpc) {
+        const state = wire.includes("REFUND") ? "FAILED" : "SETTLED";
+        this.transport.setTaskState(taskId, state as TaskEvent["state"]);
+        return { task_id: taskId, state, ruling: wire };
+      }
+      try {
+        await this.autoSession();
+        const res = (await rpc.rpcOperatorRule(taskId, wire, sig)) as {
+          task_id?: string;
+          state?: string;
+          ruling?: string;
+        };
+        const state = String(res.state ?? (wire.includes("REFUND") ? "FAILED" : "SETTLED"));
+        this.transport.setTaskState(
+          taskId,
+          state === "FAILED" || state === "SETTLED" || state === "DISPUTED"
+            ? (state as TaskEvent["state"])
+            : "SETTLED",
+        );
+        return {
+          task_id: String(res.task_id ?? taskId),
+          state,
+          ruling: String(res.ruling ?? wire),
+        };
+      } catch (e) {
+        this.rethrow(e);
+      }
+    },
   };
 
   /* ---- staking ---- */

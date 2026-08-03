@@ -125,7 +125,13 @@ export function peekSessionPubkey(): string | null {
 
 export function readAuthFlag(): boolean {
   try {
-    return new URLSearchParams(window.location.search).get("auth") === "1";
+    if (new URLSearchParams(window.location.search).get("auth") === "1") return true;
+    const hash = window.location.hash.replace(/^#/, "");
+    const qi = hash.indexOf("?");
+    if (qi >= 0) {
+      return new URLSearchParams(hash.slice(qi + 1)).get("auth") === "1";
+    }
+    return false;
   } catch {
     return false;
   }

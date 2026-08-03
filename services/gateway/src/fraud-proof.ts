@@ -182,7 +182,13 @@ const RULING_CODE: Record<RulingKind, number> = {
 export function normalizeRuling(r: string): RulingKind {
   const u = r.trim().toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
   if (u === "REFUND" || u === "REFUND BUYER" || u === "0") return "Refund";
-  if (u === "RELEASE" || u === "PAY WORKER" || u === "1") return "Release";
+  if (
+    u === "RELEASE" ||
+    u === "RELEASE TO WORKER" ||
+    u === "PAY WORKER" ||
+    u === "1"
+  )
+    return "Release";
   if (u === "SPLIT" || u === "SPLIT 50 50" || u === "2") return "Split";
   throw new Error(`unknown ruling: ${r}`);
 }

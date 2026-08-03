@@ -1,7 +1,11 @@
 import { OctagonX, ShieldCheck } from "lucide-react";
 import { HoldButton, Stepper, Switch } from "../app/ui";
+import { CipherSentry } from "../sdk/ciphersentry";
+import { describeTransport } from "../sdk/livePath";
 import { useDesk } from "./store";
 import { Panel } from "./widgets";
+
+const cent = CipherSentry.shared();
 
 function PolicyRow({
   idx,
@@ -40,10 +44,30 @@ export default function Guardrails() {
     ["signing.key", <span className="text-code-str">"op:0x71be…e8d3"</span>],
   ];
 
+  const hud = describeTransport(cent.transport);
+
   return (
     <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_400px] divide-x divide-edge">
       {/* left: policies */}
       <div className="no-scrollbar min-h-0 overflow-y-auto p-5">
+        <div className="mb-4 flex flex-wrap items-center gap-3 border border-edge bg-panel/50 px-3 py-2 font-mono text-[8.5px] tracking-[0.16em]">
+          <span
+            className={
+              hud.tone === "volt"
+                ? "text-volt"
+                : hud.tone === "amber"
+                  ? "text-amber-600"
+                  : hud.tone === "red"
+                    ? "text-red-400"
+                    : "text-mute"
+            }
+          >
+            ●{hud.primary}
+          </span>
+          <span className="text-mute">{hud.secondary}</span>
+          {hud.sessionLine && <span className="text-volt">{hud.sessionLine}</span>}
+          {hud.kind === "sim" && <span className="text-mute/50">SIM — MUTATIONS LOCAL ONLY</span>}
+        </div>
         <Panel title="POLICY — SET ONCE, AGENTS RUN INSIDE IT" className="border-edge">
           <PolicyRow idx="P1" name="FLEET DAILY CAP · USDC" desc="ALL AGENTS COMBINED · HARD STOP" control={
             <Stepper value={L.global} min={250} max={10000} step={250} onChange={(v) => { d.setGlobalLimit(v); d.toast(`FLEET CAP → ${v} USDC/DAY`); }} />

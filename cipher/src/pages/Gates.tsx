@@ -2,11 +2,13 @@ import { ArrowUpRight, Check, KeyRound, Loader2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import Frame from "../components/Frame";
 import LogoMark from "../components/LogoMark";
+import NodeHealth from "../components/NodeHealth";
 import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
 import { Stepper, Tag } from "../app/ui";
 import { signRuling } from "../crypto/keys";
 import type { SignedRuling } from "../crypto/keys";
 import { useOperator } from "../crypto/useOperator";
+import { liveConsoleHref } from "../sdk/livePath";
 
 /* anchor: the day accrual counting began — public, immutable, block-height dated */
 const ACCRUAL_START_MS = 1_760_500_000_000; // genesis count
@@ -76,6 +78,13 @@ export default function Gates() {
             <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ LAUNCH GATES</span>
           </div>
           <div className="flex shrink-0 items-center gap-3 sm:gap-5">
+            <NodeHealth className="hidden sm:inline-flex" />
+            <a
+              href={liveConsoleHref()}
+              className="hidden font-mono text-[9px] tracking-[0.18em] text-mute transition-colors hover:text-volt md:inline"
+            >
+              LIVE CONSOLE
+            </a>
             <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
               <GithubIcon size={14} />
             </a>

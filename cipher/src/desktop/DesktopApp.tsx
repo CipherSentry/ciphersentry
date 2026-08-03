@@ -8,7 +8,7 @@ import {
   seedBatches,
 } from "../app/data";
 import { CipherSentry } from "../sdk/ciphersentry";
-import type { RpcTransport } from "../sdk/rpc";
+import { describeTransport } from "../sdk/livePath";
 
 const cent = CipherSentry.shared();
 import type { Agent, Approval, TaskEvent } from "../app/data";
@@ -410,20 +410,26 @@ export default function DesktopApp() {
         {/* ---- status bar (light) ---- */}
         <div className="flex h-8 shrink-0 items-center justify-between border-t border-edge bg-panel px-4 text-[8px] tracking-[0.18em] text-mute">
           <div className="flex items-center gap-4">
-            <span className={cent.transport.kind === "rpc" ? "text-amber-600" : halted ? "text-red-400" : "text-volt"}>
-              ●{cent.transport.kind.toUpperCase()} {cent.transport.kind === "rpc" ? "NODE" : halted ? "HALTED" : "LIVE"}
-            </span>
-            {cent.transport.kind === "rpc" ? (() => {
-              const r = cent.transport as RpcTransport;
-              if (r.lastCapBreach) return <span className="text-red-400">CAP BREACH</span>;
-              if (r.eventRejectStats.pinMismatch > 0) return <span className="text-red-400">KEY MISMATCH</span>;
-              if (r.sessionActive && r.sessionMeta)
-                return <span className="text-volt">AUTH · {r.sessionMeta.rpm}/min · S={r.sessionMeta.stake}</span>;
-              if (r.pinnedPubkey) return <span>PIN {r.pinnedPubkey.slice(0, 8)}…</span>;
-              return <span>WS {r.lastEventSigned === true ? "SIGNED" : r.status}</span>;
-            })() : (
-              <span>STREAM 2.8S · QUORUM 3/3</span>
-            )}
+            {(() => {
+              const hud = describeTransport(cent.transport);
+              const tone =
+                halted && hud.kind === "sim"
+                  ? "text-red-400"
+                  : hud.tone === "volt"
+                    ? "text-volt"
+                    : hud.tone === "amber"
+                      ? "text-amber-600"
+                      : hud.tone === "red"
+                        ? "text-red-400"
+                        : "text-mute";
+              return (
+                <>
+                  <span className={tone}>●{hud.primary}{halted && hud.kind === "sim" ? " · HALTED" : ""}</span>
+                  <span className="hidden sm:inline" title={hud.node}>{hud.secondary}</span>
+                  {hud.sessionLine && <span className={hud.tone === "red" ? "text-red-400" : "text-volt"}>{hud.sessionLine}</span>}
+                </>
+              );
+            })()}
             <span className={net.id === "robinhood" ? "text-volt" : ""}>NET {net.short}{net.tag === "CENT TGE" ? " · CENT SOON" : ""}</span>
             <span className="hidden xl:inline">WINDOW {feed.length} TXS</span>
           </div>

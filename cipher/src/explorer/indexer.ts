@@ -8,26 +8,38 @@
  */
 
 import type { ExBatch, Receipt, Vote } from "../sdk/ledger";
+import { indexerFromNode, LOCAL_INDEXER, resolveDefaultIndexer } from "../sdk/publicEndpoints";
 
-export const DEFAULT_INDEXER = "http://127.0.0.1:8081";
+export const DEFAULT_INDEXER = LOCAL_INDEXER;
+
+function readParams(): URLSearchParams {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace(/^#/, "");
+    const qi = hash.indexOf("?");
+    if (qi >= 0) {
+      const hp = new URLSearchParams(hash.slice(qi + 1));
+      hp.forEach((v, k) => {
+        if (!sp.has(k)) sp.set(k, v);
+      });
+    }
+    return sp;
+  } catch {
+    return new URLSearchParams();
+  }
+}
 
 export function readIndexerUrl(): string {
   try {
-    const sp = new URLSearchParams(window.location.search);
+    const sp = readParams();
     const explicit = sp.get("indexer");
     if (explicit) return explicit.replace(/\/$/, "");
     const node = sp.get("node");
-    if (node) {
-      const u = new URL(node);
-      // gateway :8080 → indexer :8081 by convention
-      if (u.port === "8080" || u.port === "") u.port = "8081";
-      else if (u.port === "18080") u.port = "18081";
-      return u.origin;
-    }
+    if (node) return indexerFromNode(node);
   } catch {
     /* SSR / offline */
   }
-  return DEFAULT_INDEXER;
+  return resolveDefaultIndexer();
 }
 
 /* ------------------------------ raw types --------------------------------- */

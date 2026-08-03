@@ -46,11 +46,42 @@ export PRIVATE_KEY
 u256() { awk '{print $1}'; }
 
 # serialize L2 sends — Alchemy rejects underpriced replacements on same nonce
+# S1.2: retry with bumped tip on underpriced / replacement-underpriced
 send() {
-  cast send "$@" --rpc-url "$CHAIN_RPC" \
-    --priority-gas-price "${PRIORITY_GAS:-2gwei}" \
-    --gas-price "${GAS_PRICE:-10gwei}" >/dev/null
-  sleep 1.5
+  local attempt=1 max="${SEND_MAX_ATTEMPTS:-5}"
+  local tip="${PRIORITY_GAS:-2gwei}" maxfee="${GAS_PRICE:-10gwei}"
+  local out rc
+  while [[ $attempt -le $max ]]; do
+    set +e
+    out=$(cast send "$@" --rpc-url "$CHAIN_RPC" \
+      --priority-gas-price "$tip" \
+      --gas-price "$maxfee" 2>&1)
+    rc=$?
+    set -e
+    if [[ $rc -eq 0 ]]; then
+      sleep 1.5
+      return 0
+    fi
+    if echo "$out" | grep -qiE 'underpriced|replacement transaction underpriced|nonce too low|already known'; then
+      echo "  send retry $attempt/$max (tip=$tip): $(echo "$out" | head -c 120)" >&2
+      # bump tip ~25% each try via python (gwei strings)
+      tip=$(python3 -c "
+s='${tip}'.lower().replace('gwei','').strip()
+print(f'{float(s)*1.35:.4f}gwei')
+")
+      maxfee=$(python3 -c "
+s='${maxfee}'.lower().replace('gwei','').strip()
+print(f'{float(s)*1.35:.4f}gwei')
+")
+      sleep $((attempt + 1))
+      attempt=$((attempt + 1))
+      continue
+    fi
+    echo "$out" >&2
+    return "$rc"
+  done
+  echo "send failed after $max attempts" >&2
+  return 1
 }
 
 echo "== Sepolia full e2e =="

@@ -1,0 +1,14 @@
+{
+  "name": "alchemy-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "demo-script.js",
+  "scripts": {
+    "demo": "node demo-script.js",
+    "test": "node demo-script.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

@@ -8,6 +8,10 @@ import { BackHeader, Card, HoldButton, SectionLabel } from "../ui";
 import { signRuling } from "../../crypto/keys";
 import type { SignedRuling } from "../../crypto/keys";
 import { useOperator } from "../../crypto/useOperator";
+import { CipherSentry } from "../../sdk/ciphersentry";
+import { formatWireError, isRpcMode } from "../../sdk/livePath";
+
+const cent = CipherSentry.shared();
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -170,6 +174,16 @@ export default function DisputeFlow({ id }: { id: string }) {
       },
       op.key,
     );
+
+    if (isRpcMode(cent.transport)) {
+      try {
+        await cent.operator.rule(a.ref, ruling, signed.sig);
+      } catch (e) {
+        app.toast(formatWireError(e));
+        return;
+      }
+    }
+
     setSig(signed);
     setDone(true);
     setTimeout(() => {

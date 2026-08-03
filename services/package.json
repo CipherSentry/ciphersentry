@@ -26,6 +26,7 @@
     "e2e:rails": "bash scripts/e2e-rails.sh",
     "e2e:rails:smoke": "bash scripts/e2e-rails-smoke.sh",
     "demo:sepolia": "bash scripts/demo-sepolia.sh",
+    "demo:local": "DEMO_LOCAL=1 DEMO_HOLD=0 bash scripts/demo-sepolia.sh",
     "e2e:sepolia:full": "bash scripts/e2e-sepolia-full.sh",
     "e2e:sepolia:circle": "bash scripts/e2e-sepolia-circle.sh",
     "b7:init": "bash scripts/b7-host.sh init",
