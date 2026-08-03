@@ -296,15 +296,20 @@ export function makeBatcherConfigFromEnv(): BatcherConfig {
     const k = resolveSecret(name);
     if (k && !keys.includes(k)) keys.push(k);
   }
-  // PROTOCOL_KEY may double as signer #1 when only one batcher key is set
+  // PROTOCOL_KEY may double as signer #1 only when <2 batcher keys (dev/anvil).
+  // After ceremony, protocol is usually NOT a SettlementBatcher signer — never
+  // unshift it into a full 2-of-3 set or quorum sigs recover to a non-signer.
   const protocol = resolveSecret("PROTOCOL_KEY", "PRIVATE_KEY");
-  if (protocol && !keys.includes(protocol)) keys.unshift(protocol);
+  if (protocol && !keys.includes(protocol) && keys.length < 2) {
+    keys.unshift(protocol);
+  }
 
   return {
     rpcUrl: process.env.CHAIN_RPC ?? process.env.BASE_SEPOLIA_RPC ?? "https://base-sepolia.publicnode.com",
     batcherAddress: process.env.BATCHER_ADDRESS ?? null,
     signerKeys: keys,
-    submitKey: resolveSecret("BATCHER_SUBMIT_KEY") ?? keys[0] ?? protocol,
+    // Protocol pays gas; batcher_* are off-chain EIP-712 only (ceremony).
+    submitKey: resolveSecret("BATCHER_SUBMIT_KEY") ?? protocol ?? keys[0] ?? null,
     fromAddress: process.env.PROTOCOL_FROM ?? process.env.OPERATOR_ADDRESS ?? null,
     chainId: Number(process.env.CHAIN_ID ?? 84532),
     intervalMs: Number(process.env.BATCH_INTERVAL_MS ?? 30_000),

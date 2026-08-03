@@ -1,13 +1,14 @@
 {
-  "batcher": "0x66855FBa76034B04053E6C419c0af1FE55867669",
-  "cent": "0xF29069482Cd4f01EC0Fa6a8930164a873C969074",
+  "batcher": "0x301284283E1592C094355f4ad17a8Ddb75D2656F",
+  "cent": "0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1",
   "chainId": 84532,
-  "deployer": "0x96a438924ACE133D5909bd3BAF3263845B760eF4",
-  "election": "0x5dcec279b58D25b7242a48A0e98F08bED187646F",
+  "deployer": "0xD309Fc7e2a3055Ed9320b7316ec142A1C5d8ba15",
+  "election": "0xDd2a21A41F6A07DF47192C91b709D5B4e73FfeDf",
   "escrow": "0xB41EC9A2E9fD7b9226E53a93daef0E1655729890",
   "mode": "base-sepolia-mockusdc",
-  "registry": "0x27648C8472881Bd770ccD370A97c01521e91b88c",
-  "slashExecutor": "0x39b0D1E0fED8e22775631974402bc5f6CFa9865b",
+  "registry": "0x3e237d84958cdbc9a5bf0535c30d449078532211",
+  "slashExecutor": "0xbbdeb95262a66772b6abc40668db6ae8a737ca74",
   "usdc": "0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0",
-  "vestingVault": "0x0825E500d2bc22e18bfCE5b4c13001DB35958346"
+  "vestingVault": "0xFa79780237DD58a5C799983D722EAf6aBE1C1296",
+  "note": "ceremony hybrid: protocol WATCHER/RESOLVER; ceremony batcher 2-of-3; escrow pre-ceremony (RULER old) until funded full redeploy"
 }

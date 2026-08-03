@@ -69,6 +69,7 @@ WS upgrade required on gateway (`/events`).
 
 ## Security
 
+- **Key ceremony:** **[CEREMONY.md](./CEREMONY.md)** (batcher 2-of-3 + protocol + ruler, `*_FILE` only)
 - **Mock USDC stack only** for public demo — never Circle production key
 - Gate: `npm run e2e:auth` then deploy Fly with `AUTH_REQUIRED=1` (fly.toml)
 - Live check: `npm run e2e:auth:public` (against `https://ciphersentry.fly.dev`)

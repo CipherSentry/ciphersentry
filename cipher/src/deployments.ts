@@ -38,17 +38,16 @@ export const BASE_SEPOLIA: Deployment = {
 export const BASE_SEPOLIA_MOCKUSDC: Deployment = {
   chainId: 84532,
   mode: "base-sepolia-mockusdc",
-  deployer: "0x96a438924ACE133D5909bd3BAF3263845B760eF4",
-  usdc: "0x9F1212c51F52e5964eafae16b624E980CB0b3E4f",
-  cent: "0xEfDAdd5080435Ac87C4689131ace12d9AE0ec887",
-  escrow: "0x597CD2fA7c74FBAcE24e7c141D4dc54Bd8e567b4",
-  batcher: "0xdbd23CF2b0944552C17C2db73b5e8a14a1649e14",
-  vestingVault: "0x870071096f7a2630820Df6B482fdd845e999A20d",
-  registry: "0x1424a75aB1bab8bBE6fAa19Df14797156442a73c",
-  election: "0x4aB2205CcCF3d71126769bDb90B5ca06C3A61694",
-  slashExecutor: "0x4FED88cbD0065d832ac8f54444E8498a56f9bc0b",
-  smokeCommitTx: "0x8741743272ba7ae60e7dc56b7335a70e3454ee2544a0cc8b6cd3f50ea4dc20f6",
-  note: "MockUSDC faucet stack for write-path smoke",
+  deployer: "0xD309Fc7e2a3055Ed9320b7316ec142A1C5d8ba15",
+  usdc: "0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0",
+  cent: "0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1",
+  escrow: "0xB41EC9A2E9fD7b9226E53a93daef0E1655729890",
+  batcher: "0x301284283E1592C094355f4ad17a8Ddb75D2656F",
+  vestingVault: "0xFa79780237DD58a5C799983D722EAf6aBE1C1296",
+  registry: "0x3e237d84958cdbc9a5bf0535c30d449078532211",
+  election: "0xDd2a21A41F6A07DF47192C91b709D5B4e73FfeDf",
+  slashExecutor: "0xbbdeb95262a66772b6abc40668db6ae8a737ca74",
+  note: "Ceremony hybrid stack — WATCHER=protocol, batcher 2-of-3 rotated",
 };
 
 export const DEPLOYMENTS = {

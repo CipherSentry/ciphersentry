@@ -39,8 +39,12 @@ ADDR1=$(cast wallet address --private-key "$KEY1")
 
 export ESCROW_ADDRESS="$ESCROW" BATCHER_ADDRESS="$BATCHER" USDC_ADDRESS="$USDC"
 export SLASH_EXECUTOR_ADDRESS="$SLASH" CENT_ADDRESS="$CENT" REGISTRY_ADDRESS="$REGISTRY"
-export PROTOCOL_KEY="$PRIVATE_KEY" PROTOCOL_FROM="$FROM" RULER_KEY="$PRIVATE_KEY"
-export BATCHER_KEY_1="$PRIVATE_KEY" BATCHER_KEY_2="$KEY1" BATCHER_KEY_3="$KEY2"
+# Prefer ceremony keys from demo-kit.env / env; fall back to anvil-style for greenfield
+export PROTOCOL_KEY="${PROTOCOL_KEY:-$PRIVATE_KEY}" PROTOCOL_FROM="${PROTOCOL_FROM:-$FROM}"
+export RULER_KEY="${RULER_KEY:-$PROTOCOL_KEY}"
+export BATCHER_KEY_1="${BATCHER_KEY_1:-$PRIVATE_KEY}"
+export BATCHER_KEY_2="${BATCHER_KEY_2:-$KEY1}"
+export BATCHER_KEY_3="${BATCHER_KEY_3:-$KEY2}"
 export PRIVATE_KEY
 
 u256() { awk '{print $1}'; }
@@ -256,21 +260,28 @@ PY
 cast receipt "$(cat /tmp/cs-sep-anchor-tx.txt)" --rpc-url "$CHAIN_RPC" >/dev/null
 
 echo "== slash.submit + processNext =="
+# WATCHER is immutable on SlashExecutor — after ceremony, set WATCHER_KEY to the
+# on-chain WATCHER EOA until a redeploy points WATCHER at PROTOCOL_FROM.
+WATCHER_KEY="${WATCHER_KEY:-$PRIVATE_KEY}"
+WATCHER_FROM=$(cast wallet address --private-key "$WATCHER_KEY")
+echo "  watcher=$WATCHER_FROM"
 # wait gateway/chain nonce to settle (avoids underpriced replacement)
 for _ in $(seq 1 25); do
-  L=$(cast nonce "$FROM" --rpc-url "$CHAIN_RPC")
-  P=$(cast nonce "$FROM" --rpc-url "$CHAIN_RPC" --block pending)
+  L=$(cast nonce "$WATCHER_FROM" --rpc-url "$CHAIN_RPC")
+  P=$(cast nonce "$WATCHER_FROM" --rpc-url "$CHAIN_RPC" --block pending)
   [[ "$L" == "$P" ]] && break
   sleep 2
 done
 sleep 2
+# challenge bond pull uses WATCHER CENT allowance
+send "$CENT" "approve(address,uint256)" "$SLASH" "$MAX" --private-key "$WATCHER_KEY" || true
 BEFORE=$(cast call "$REGISTRY" "bondOf(address)(uint256)" "$ADDR1" --rpc-url "$CHAIN_RPC" | u256)
 EVID=$(python3 -c 'import secrets;print(secrets.token_hex(32))')
 # cast path — explicit gas, more reliable than viem under mempool pressure
 # submitEvidence(bytes32,address,uint8)
 STX=$(cast send "$SLASH" "submitEvidence(bytes32,address,uint8)" \
   "0x${EVID}" "$ADDR1" 0 \
-  --rpc-url "$CHAIN_RPC" --private-key "$PRIVATE_KEY" \
+  --rpc-url "$CHAIN_RPC" --private-key "$WATCHER_KEY" \
   --priority-gas-price "${PRIORITY_GAS:-2gwei}" --gas-price "${GAS_PRICE:-6gwei}" \
   --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["transactionHash"])')
 echo "$STX" | tee /tmp/cs-sep-slash-tx.txt >/dev/null

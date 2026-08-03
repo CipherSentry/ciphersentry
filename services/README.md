@@ -152,7 +152,7 @@ Do **not** start until 2–3 green `e2e:full` CI runs and hosted B7 health stays
 
 1. External audits (#1 escrow/batcher, #2 slash/fraud)
 2. Circle **mainnet** USDC + Base mainnet deploy
-3. Key ceremony (batcher 2-of-3 + ruler + protocol) — offline; only `*_FILE` mounts in prod
+3. Key ceremony (batcher 2-of-3 + ruler + protocol) — offline; only `*_FILE` mounts in prod — see [`scripts/CEREMONY.md`](./scripts/CEREMONY.md)
 
 ### Auth (ed25519 + stake RPM)
 

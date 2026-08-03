@@ -1,6 +1,7 @@
 # Demo & e2e scripts
 
-Public host + DNS: **[HOSTING.md](./HOSTING.md)** (S1.3).
+Public host + DNS: **[HOSTING.md](./HOSTING.md)** (S1.3).  
+Key ceremony: **[CEREMONY.md](./CEREMONY.md)**.
 
 ## One-command demo (S1.2)
 
