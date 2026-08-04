@@ -38,16 +38,16 @@ export const BASE_SEPOLIA: Deployment = {
 export const BASE_SEPOLIA_MOCKUSDC: Deployment = {
   chainId: 84532,
   mode: "base-sepolia-mockusdc",
-  deployer: "0xD309Fc7e2a3055Ed9320b7316ec142A1C5d8ba15",
+  deployer: "0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3",
   usdc: "0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0",
-  cent: "0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1",
+  cent: "0x9f59f6454c14b5a4f1456e7e0c83aa0e03e39e96",
   escrow: "0x20a1253ec5b06e319384762c0b1b896d5b9baf15",
   batcher: "0xb9cc42df4f77b172901ee4d84ced98f576dcc31f",
   vestingVault: "0xFa79780237DD58a5C799983D722EAf6aBE1C1296",
-  registry: "0x44edb88067dcb0593db73603679ef42880141d58",
-  election: "0x6b3a92ca9f9f35f51eb9700bf47de93055f7ee71",
-  slashExecutor: "0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec",
-  note: "Ceremony hybrid + election — WATCHER=protocol, batcher 2-of-3, QuorumElection on ceremony registry",
+  registry: "0xdb74154c97c3b93f7536bfb4d44665987cb6dbbf",
+  election: "0x318a6c18fb25623dcfa71726e32f500a03ae07fe",
+  slashExecutor: "0x5b7d9a23b30941aaf98103e71c99af62c02304d1",
+  note: "Elect live — protocol CENT + 3 bonded seats; epoch 703771 quorum finalized; escrow/batcher mock USDC unchanged",
 };
 
 export const DEPLOYMENTS = {

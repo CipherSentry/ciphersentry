@@ -71,11 +71,11 @@ Addresses only — see also [`ceremony-roster.sepolia.txt`](./ceremony-roster.se
 |------|---------|
 | Escrow | `0x20a1253ec5b06e319384762c0b1b896d5b9baf15` |
 | SettlementBatcher | `0xb9cc42df4f77b172901ee4d84ced98f576dcc31f` |
-| VerifierRegistry | `0x44edb88067dcb0593db73603679ef42880141d58` |
-| QuorumElection | `0x6b3a92ca9f9f35f51eb9700bf47de93055f7ee71` |
-| SlashExecutor | `0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec` |
+| VerifierRegistry | `0xdb74154c97c3b93f7536bfb4d44665987cb6dbbf` |
+| QuorumElection | `0x318a6c18fb25623dcfa71726e32f500a03ae07fe` (elect epoch 703771 finalized) |
+| SlashExecutor | `0x5b7d9a23b30941aaf98103e71c99af62c02304d1` |
 | MockUSDC | `0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0` |
-| CENT | `0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1` |
+| CENT | `0x9f59f6454c14b5a4f1456e7e0c83aa0e03e39e96` (protocol-funded elect path) |
 | Public node | `https://ciphersentry.fly.dev` (AUTH_REQUIRED, B7) |
 
 **Out of scope for funds risk on Sepolia:** MockUSDC is mintable faucet USDC — treat as harness, not capital.

@@ -1,4 +1,4 @@
-# Ceremony roster — addresses only — 2026-08-04T13:16Z
+# Ceremony roster — addresses only — 2026-08-04 elect live
 # Private keys: services/secrets/* (gitignored). Never paste.
 NETWORK=base-sepolia
 CHAIN_ID=84532
@@ -9,11 +9,17 @@ SIGNER_2=0x6213974b2b86E0749a087525071aF83C8556FffF
 SIGNER_3=0xeEDB7D5c11955903947C8eFeF0bdeeE9CAeEC3d0
 BATCHER=0xb9cc42df4f77b172901ee4d84ced98f576dcc31f
 ESCROW=0x20a1253ec5b06e319384762c0b1b896d5b9baf15
-REGISTRY=0x44edb88067dcb0593db73603679ef42880141d58
-ELECTION=0x6b3a92ca9f9f35f51eb9700bf47de93055f7ee71
-SLASH_EXECUTOR=0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec
 USDC=0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0
-CENT=0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1
+# Consensus (protocol-funded CENT — prior CENT 0x4f3e99… locked on deployer 0xD309…)
+CENT=0x9f59f6454c14b5a4f1456e7e0c83aa0e03e39e96
+REGISTRY=0xdb74154c97c3b93f7536bfb4d44665987cb6dbbf
+ELECTION=0x318a6c18fb25623dcfa71726e32f500a03ae07fe
+SLASH_EXECUTOR=0x5b7d9a23b30941aaf98103e71c99af62c02304d1
 WATCHER=0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3
 RESOLVER=0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3
-NOTE=Ceremony hybrid + election: Escrow+RULER; Slash WATCHER/RESOLVER=protocol; batcher 2-of-3; QuorumElection→registry 0x44edb880. MockUSDC mint/approve for protocol write path.
+# Bonded seats (25k CENT each, accuracy 10000 bps) — keys in secrets/verifier_{1,2,3}
+VERIFIER_1=0x5Ce74D0d0C572A339ac8fA54878Da51B3844EFe5
+VERIFIER_2=0xf4cC7F692249f2fA4088575826656187eCd3939B
+VERIFIER_3=0x966E07ad9D3df73993656cbC7Bde5A54C226F61f
+LAST_ELECTED_EPOCH=703771
+NOTE=Escrow/batcher/RULER ceremony retained. Consensus redeployed with protocol CENT; elect(703771) finalized on-chain.
