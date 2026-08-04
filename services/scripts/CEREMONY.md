@@ -32,23 +32,24 @@ Offline generation → `*_FILE` mounts → on-chain align → verify write path.
 From `deployments/base-sepolia-mockusdc.json` (public Fly demo):
 
 ```
-BATCHER  0x6e3bb45b33d30dd876b273370c3b3bd72af9b4c7   # redeploy 2026-08-04; signers = Fly BATCHER_KEY_1/2/3
+BATCHER  0xb9cc42df4f77b172901ee4d84ced98f576dcc31f   # ceremony redeploy 2026-08-04; roster: scripts/ceremony-roster.sepolia.txt
 ESCROW   0xB41EC9A2E9fD7b9226E53a93daef0E1655729890
+PROTOCOL 0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3   # funded for gas; not anvil
 ```
 
 Current signers (read any time):
 
 ```bash
 RPC=https://sepolia.base.org
-B=0x6e3bb45b33d30dd876b273370c3b3bd72af9b4c7
+B=0xb9cc42df4f77b172901ee4d84ced98f576dcc31f
 for i in 0 1 2; do cast call $B "signers(uint256)(address)" $i --rpc-url $RPC; done
-# expected today (matches Fly PROTOCOL/BATCHER keys):
-# [0] 0x96a438…760eF4  (deployer / protocol)
-# [1] 0x709979…dc79C8  (anvil#1)
-# [2] 0x3C44Cd…4293BC  (anvil#2)
+# expected (ceremony batcher_1/2/3 — see ceremony-roster.sepolia.txt):
+# [0] 0x8e689E…c3FAD
+# [1] 0x621397…6FffF
+# [2] 0xeEDB7D…EC3d0
 ```
 
-Escrow `RULER` = deployer (immutable). Rotating ruler ⇒ **redeploy escrow** (new address, new gateway env). Prefer keep ruler=protocol until mainnet redeploy with dedicated RULER.
+Escrow `RULER` = `0x96a438…760eF4` (immutable). Rotating ruler ⇒ **redeploy escrow**. Fly `RULER_KEY` must recover to that address until full redeploy.
 
 **Critical:** any key pasted in chat is burned — rotate before ceremony exit.
 
@@ -56,14 +57,14 @@ Escrow `RULER` = deployer (immutable). Rotating ruler ⇒ **redeploy escrow** (n
 
 | Piece | Address / status |
 |-------|------------------|
-| Protocol | `0xD309Fc7e…d8ba15` |
-| Batcher signers | ceremony `batcher_1/2/3` on `0x301284…656F` |
-| Slash WATCHER/RESOLVER | protocol on `0xbbdeb9…cA74` |
-| Registry | `0x3e237d…2211` + new CENT |
-| Escrow + USDC | pre-ceremony (`0xB41EC9…` / mock USDC) — **RULER still old** |
-| Full e2e | green without `WATCHER_KEY` override |
+| Protocol | `0xab2903…E1E3` (ceremony; Fly secrets) |
+| Batcher | `0xb9cc42…c31f` ceremony 2-of-3 |
+| Slash WATCHER/RESOLVER | still hybrid on `0xbbdeb9…cA74` |
+| Registry | `0x3e237d…2211` + CENT |
+| Escrow + USDC | pre-ceremony (`0xB41EC9…` / mock USDC) — **RULER still `0x96a438…`** |
+| Anvil keys | removed from Fly batcher/protocol; backup under `secrets/.anvil-backup-*` (local only) |
 
-Escrow `RULER` still pre-ceremony until funded full escrow redeploy. Fly secrets require `fly auth login` + set keys/addrs.
+Escrow `RULER` still pre-ceremony until funded full escrow redeploy.
 
 ---
 
