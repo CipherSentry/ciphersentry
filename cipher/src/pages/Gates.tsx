@@ -1,5 +1,6 @@
 import { ArrowUpRight, Check, KeyRound, Loader2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
+import { CentLaunchHero, CentUtilitySection } from "../components/CentLaunch";
 import Frame from "../components/Frame";
 import PageHeader from "../components/PageHeader";
 import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
@@ -138,7 +139,7 @@ export default function Gates() {
       name: "Orynth listing + legal complete",
       status: "PENDING",
       metric: "COUNSEL AFTER G3",
-      desc: "CENT TGE on orynth.dev — listing terms and warrant structure go to counsel with audits booked and the waitlist sized, not before.",
+      desc: "CENT fair launch on orynth.dev — no presale, no VC token round. Listing legal after audits booked. Pack: #/cent.",
     },
   ];
 
@@ -187,7 +188,7 @@ export default function Gates() {
       <Frame />
 
       <PageHeader
-        path="/ LAUNCH GATES"
+        path="/ $CENT · LAUNCH"
         end={
           <>
             <a
@@ -225,47 +226,32 @@ export default function Gates() {
         }
       />
 
-      {/* hero — the accrual clock */}
-      <div className="border-b border-edge px-6 py-12 md:px-12 md:py-16">
-        <div className="flex items-center gap-3 font-mono text-[9.5px] tracking-[0.28em] text-volt">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute h-full w-full animate-ping bg-volt opacity-60" />
-            <span className="relative h-1.5 w-1.5 bg-volt" />
-          </span>
-          READINESS BOARD · GATES TO CENT · UPDATES IN BLOCK HEIGHT
-        </div>
+      <CentLaunchHero />
+      <CentUtilitySection />
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-end">
+      {/* G4 accrual strip */}
+      <div className="border-b border-edge bg-deepgreen px-4 py-6 sm:px-6 md:px-12">
+        <div className="mx-auto flex max-w-[1240px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display text-[clamp(2.4rem,6vw,5rem)] font-medium leading-[0.98] tracking-[-0.04em] text-mist">
-              Counting in block height,{" "}
-              <em className="font-serif font-normal italic tracking-[-0.01em] text-volt">
-                not quarters.
-              </em>
-            </h1>
-            <p className="mt-5 max-w-[520px] text-[14px] leading-[1.8] text-mute">
-              Gate #4 can't be gamed or negotiated: sixty public days of epoch
-              accrual, verifiable by anyone, before CENT trades. The clock
-              below is the clock — start-anchored, ticked by this page, signed
-              by an operator key.
-            </p>
-          </div>
-
-          {/* the counter — code surface on light canvas */}
-          <div className="border border-volt/50 bg-deepgreen p-5 md:p-6">
-            <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-code-mute">
-              <span>G4 — EPOCH ACCRUAL</span>
-              <span className="text-volt">DAY {days} / {GATE4_DAYS}</span>
+            <div className="font-mono text-[8.5px] tracking-[0.24em] text-code-mute">
+              G4 — EPOCH ACCRUAL · BLOCK HEIGHT, NOT QUARTERS
             </div>
-            <div className="mt-3 font-display text-[54px] font-medium tabular-nums leading-none tracking-[-0.03em] text-volt md:text-[64px]">
+            <div className="mt-1 font-display text-[28px] font-medium tabular-nums tracking-[-0.03em] text-volt sm:text-[32px]">
               {String(days).padStart(2, "0")}
-              <span className="ml-3 font-mono text-[11px] tracking-[0.2em] text-code-mute">DAYS</span>
+              <span className="ml-2 font-mono text-[11px] tracking-[0.18em] text-code-mute">
+                / {GATE4_DAYS} DAYS
+              </span>
             </div>
-            <div className="mt-4 h-1.5 w-full bg-code-edge">
-              <div className="h-full bg-volt transition-all duration-1000" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="w-full max-w-md sm:w-72">
+            <div className="h-1.5 w-full bg-code-edge">
+              <div
+                className="h-full bg-volt transition-all duration-1000"
+                style={{ width: `${pct}%` }}
+              />
             </div>
-            <div className="mt-2.5 flex justify-between font-mono text-[7.5px] tracking-[0.18em] text-code-mute/80">
-              <span>GENESIS · BLK 12,840,117 · op:0x71be…e8d3</span>
+            <div className="mt-2 flex justify-between font-mono text-[7.5px] tracking-[0.16em] text-code-mute/80">
+              <span>GENESIS · BLK 12,840,117</span>
               <span>ETA ≥ {formatEta(now)}</span>
             </div>
           </div>
@@ -273,6 +259,9 @@ export default function Gates() {
       </div>
 
       <div className="mx-auto max-w-[1240px] px-6 py-12 md:px-12">
+        <div className="mb-8 font-mono text-[9px] tracking-[0.24em] text-volt">
+          READINESS GATES · G1–G5
+        </div>
         <div className="grid gap-10 lg:grid-cols-[1fr_400px]">
           {/* left: gate cards + freeze anchor */}
           <div>
@@ -299,34 +288,34 @@ export default function Gates() {
             {/* freeze-hash anchor — light panel, never cream-on-void */}
             <div className="mt-6 border border-amber-600/35 bg-panel p-5">
               <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-mute">
-                <span>ENG-A FREEZE HASH — AUDIT ANCHOR</span>
-                <span className="text-amber-700">PENDING BROADCAST</span>
+                <span>SOURCE FREEZE — G3 / ORYNTH PACK</span>
+                <span className="text-volt">RECORDED</span>
               </div>
               <div className="mt-3 space-y-2 font-mono text-[10.5px]">
                 <div className="flex justify-between gap-6">
                   <span className="text-mute">SCOPE</span>
-                  <span className="text-mist">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
+                  <span className="text-mist">cipher/contracts/src/**/*.sol</span>
+                </div>
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-6">
+                  <span className="shrink-0 text-mute">HASH</span>
+                  <span className="break-all text-mist">
+                    a5ab9e52103bdda839a7f2445526d1bc7f086e21ad526e221f87ea1d226be2de
+                  </span>
                 </div>
                 <div className="flex justify-between gap-6">
-                  <span className="text-mute">HASH</span>
-                  <span className="text-mute">sha256(contracts/) — computed at broadcast</span>
-                </div>
-                <div className="flex justify-between gap-6">
-                  <span className="text-mute">ANCHOR</span>
-                  <span className="text-mute">first batch root on Base-Sepolia · pending</span>
+                  <span className="text-mute">TGE VENUE</span>
+                  <span className="text-mist">ORYNTH · orynth.dev</span>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-600/25 pt-4">
-                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
-                  AUDIT PACK — DOC-06 →
+                <a href="#/cent" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  CENT / ORYNTH PACK →
                 </a>
-                <a
-                  href="https://github.com/CipherSentry/ciphersentry/blob/main/cipher/contracts/README.md"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
-                >
-                  /contracts/README.md →
+                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  AUDIT PACK →
+                </a>
+                <a href="#/docs/tokenomics" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  HOW $CENT WORKS →
                 </a>
               </div>
             </div>

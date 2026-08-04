@@ -101,7 +101,7 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     title: "Multi-Network & CENT",
     items: [
       "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, CENT TGE on Orynth (orynth.dev) — selector in the titlebar.",
-      "Tokenomics published: fixed supply, decaying verifier emissions, epoch-indexed vesting, five launch gates, Rule Zero.",
+      "How $CENT works: fair launch (no presale, no VC token round), Rule Zero — USDC prices work, CENT bonds; tokenomics table not published yet.",
       "Typed SDK with the live playground; backend architecture doc.",
     ],
   },

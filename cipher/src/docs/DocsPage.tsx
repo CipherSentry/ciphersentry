@@ -8,6 +8,7 @@ import AuditReadiness from "./AuditReadiness";
 import Manifesto from "./Manifesto";
 import Sdk from "./Sdk";
 import Specification from "./Specification";
+import Tokenomics from "./Tokenomics";
 import VerificationDoc from "./VerificationDoc";
 import Whitepaper from "./Whitepaper";
 
@@ -16,6 +17,7 @@ export const DOCS: { slug: string; title: string; group: string; component: Comp
   { slug: "sdk", title: "SDK Reference", group: "PROTOCOL", component: Sdk },
   { slug: "verification", title: "Verification", group: "PROTOCOL", component: VerificationDoc },
   { slug: "whitepaper", title: "Whitepaper", group: "PROTOCOL", component: Whitepaper },
+  { slug: "tokenomics", title: "How $CENT works", group: "PROTOCOL", component: Tokenomics },
   { slug: "audit", title: "Audit Readiness", group: "SECURITY", component: AuditReadiness },
   { slug: "manifesto", title: "Manifesto", group: "ESSAYS", component: Manifesto },
 ];

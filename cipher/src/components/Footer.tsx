@@ -11,7 +11,7 @@ const COLS: { h: string; links: [string, string][] }[] = [
       ["SDK Reference", "#/docs/sdk"],
       ["Verification", "#/docs/verification"],
       ["Whitepaper", "#/docs/whitepaper"],
-      ["Tokenomics", "#/docs/tokenomics"],
+      ["How $CENT works", "#/docs/tokenomics"],
       ["Audit Readiness", "#/docs/audit"],
     ],
   },
@@ -20,6 +20,7 @@ const COLS: { h: string; links: [string, string][] }[] = [
     links: [
       ["Try the Flow", liveConsoleHref({ path: "/demo" })],
       ["Launch Gates", "#/gates"],
+      ["CENT / Orynth pack", "#/cent"],
       ["Task Explorer", "#/explorer"],
       ["Ops Console", liveConsoleHref()],
     ],
