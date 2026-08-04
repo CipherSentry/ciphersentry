@@ -30,7 +30,7 @@ import Registry from "./screens/Registry";
 import Staking from "./screens/Staking";
 import TaskDetail from "./screens/TaskDetail";
 import Wallet from "./screens/Wallet";
-import { StatusBar, TabBar } from "./Phone";
+import { AppNav } from "./Phone";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -237,14 +237,13 @@ export default function OperatorApp() {
   return (
     <AppCtx.Provider value={value}>
       <div className="relative flex h-full flex-col overflow-hidden bg-void font-display text-mist">
-        <StatusBar now={now} />
-
         {!connected ? (
           <div className="relative z-10 flex-1 overflow-hidden">
             <Onboarding />
           </div>
         ) : (
           <>
+            <AppNav />
             {/* tab screens */}
             <div className="relative z-10 flex-1 overflow-hidden">
               <AnimatePresence mode="wait">
@@ -273,7 +272,7 @@ export default function OperatorApp() {
                   animate={{ x: 0 }}
                   exit={{ x: "100%" }}
                   transition={{ duration: 0.38, ease: EASE }}
-                  className="absolute inset-0 z-30 bg-void pt-12 shadow-[-30px_0_60px_rgba(0,0,0,0.6)]"
+                  className="absolute inset-0 z-30 bg-void shadow-[-30px_0_60px_rgba(0,0,0,0.6)]"
                 >
                   {currentOverlay.s === "task" && <TaskDetail id={currentOverlay.id} />}
                   {currentOverlay.s === "agent" && <AgentDetail id={currentOverlay.id} />}
@@ -282,13 +281,11 @@ export default function OperatorApp() {
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <TabBar />
           </>
         )}
 
         {/* toasts */}
-        <div className="pointer-events-none absolute inset-x-5 bottom-24 z-50 flex flex-col items-center gap-2">
+        <div className="pointer-events-none absolute inset-x-5 bottom-8 z-50 flex flex-col items-center gap-2">
           <AnimatePresence>
             {toasts.map((t) => (
               <motion.div

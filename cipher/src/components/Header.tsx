@@ -5,17 +5,10 @@ import LogoMark from "./LogoMark";
 import { openAccessModal } from "./AccessModal";
 import NodeHealth from "./NodeHealth";
 import { liveConsoleHref } from "../sdk/livePath";
+import { SITE_NAV } from "./siteNav";
 
 const LIVE_APP = liveConsoleHref();
-
-const NAV = [
-  { label: "THE PROTOCOL", href: "#/protocol" },
-  { label: "DOCS", href: "#/docs" },
-  { label: "TRY THE FLOW", href: "#/demo" },
-  { label: "LAUNCH", href: "#/gates" },
-  { label: "EXPLORER", href: "#/explorer" },
-  { label: "FAQ", href: "#/faq" },
-];
+const NAV = SITE_NAV;
 
 function LiveBlock() {
   const [blk, setBlk] = useState(12840112);

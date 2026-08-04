@@ -1,7 +1,7 @@
 import { ArrowRight, Check, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Frame from "../components/Frame";
-import LogoMark from "../components/LogoMark";
+import PageHeader from "../components/PageHeader";
 import { Stepper } from "../app/ui";
 import { signRuling } from "../crypto/keys";
 import type { SignedRuling } from "../crypto/keys";
@@ -230,26 +230,19 @@ function Chrome({
   return (
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
-        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
-              <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
-            </a>
-            <span className="hidden font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ TRY THE FLOW</span>
-          </div>
-          <div className="min-w-0 shrink text-right">
-            <span
-              className={`block truncate font-mono text-[7.5px] tracking-[0.14em] sm:text-[8.5px] sm:tracking-[0.2em] ${
-                nodeLive === false ? "text-red-400" : "text-volt"
-              }`}
-            >
-              <span className="sm:hidden">{badge}</span>
-              <span className="hidden sm:inline">{right ?? badge}</span>
-            </span>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        path="/ TRY THE FLOW"
+        badge={
+          <span
+            className={`block truncate font-mono text-[7.5px] tracking-[0.14em] sm:text-[8.5px] sm:tracking-[0.2em] ${
+              nodeLive === false ? "text-red-400" : "text-volt"
+            }`}
+          >
+            <span className="sm:hidden">{badge}</span>
+            <span className="hidden sm:inline">{right ?? badge}</span>
+          </span>
+        }
+      />
       <main className="mx-auto max-w-[900px] px-4 py-8 sm:px-6 sm:py-10 md:px-12 md:py-14">{children}</main>
     </div>
   );
