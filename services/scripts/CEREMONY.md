@@ -34,9 +34,10 @@ From `deployments/base-sepolia-mockusdc.json` (public Fly demo):
 ```
 BATCHER   0xb9cc42df4f77b172901ee4d84ced98f576dcc31f
 ESCROW    0x20a1253ec5b06e319384762c0b1b896d5b9baf15   # ceremony RULER redeploy 2026-08-04
-REGISTRY  0x44edb88067dcb0593db73603679ef42880141d58
-ELECTION  0x6b3a92ca9f9f35f51eb9700bf47de93055f7ee71   # ceremony QuorumElection → registry
-SLASH     0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec   # WATCHER/RESOLVER = protocol
+CENT      0x9f59f6454c14b5a4f1456e7e0c83aa0e03e39e96   # protocol-funded (elect path)
+REGISTRY  0xdb74154c97c3b93f7536bfb4d44665987cb6dbbf
+ELECTION  0x318a6c18fb25623dcfa71726e32f500a03ae07fe   # elect(703771) finalized
+SLASH     0x5b7d9a23b30941aaf98103e71c99af62c02304d1   # WATCHER/RESOLVER = protocol
 PROTOCOL  0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3
 RULER     0x63BBd94EE43c5bf51BEb34b68D04D1859070961e   # ≠ protocol
 ```
@@ -64,11 +65,12 @@ cast call $S "RESOLVER()(address)" --rpc-url $RPC
 | Ruler | `0x63BBd9…0961e` distinct EOA on new Escrow |
 | Batcher | `0xb9cc42…c31f` ceremony 2-of-3 |
 | Escrow | `0x20a125…af15` + mock USDC (mintable faucet) |
-| Registry + Slash | new pair; SLASHER matches SlashExecutor |
-| Election | `0x6b3a92…ee71` → ceremony registry (`REGISTRY()` checked) |
+| Registry + Slash | `0xdb7415…` / `0x5b7d9a…` — protocol CENT path |
+| Election | `0x318a6c…07fe` — **elect(703771) finalized** (3 seats @ 25k CENT) |
+| Verifiers | `0x5Ce74D…`, `0xf4cC7F…`, `0x966E07…` (keys: `secrets/verifier_*`) |
 | Anvil keys | not on Fly; local backup under `secrets/.anvil-backup-*` |
 
-Remaining Sepolia caveats: mock USDC (not Circle). On-chain `elect()` needs ≥3 eligible bonded seats on registry (foundation/daemon path).
+Remaining Sepolia caveats: mock USDC (not Circle). Prior CENT `0x4f3e99…` still held by deployer `0xD309…` (no operator key) — consensus moved to protocol-minted CENT for elect.
 
 ---
 
