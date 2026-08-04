@@ -11,6 +11,8 @@ export GATEWAY_HOST="${GATEWAY_HOST:-0.0.0.0}"
 export GATEWAY_PORT="${GATEWAY_PORT:-8080}"
 export PORT="${PORT:-$GATEWAY_PORT}"
 export INDEXER_UPSTREAM="${INDEXER_UPSTREAM:-http://127.0.0.1:8081}"
+# V0.3 reputation overlay (gateway trust.* / registry.query live T_i)
+export INDEXER_URL="${INDEXER_URL:-$INDEXER_UPSTREAM}"
 export INDEXER_PORT="${INDEXER_PORT:-8081}"
 export INDEXER_HOST="${INDEXER_HOST:-127.0.0.1}"
 export INDEXER_FORCE_WS="${INDEXER_FORCE_WS:-0}"

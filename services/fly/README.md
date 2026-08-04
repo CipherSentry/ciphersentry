@@ -19,12 +19,12 @@ cd path\to\workspaces-ciphersentry
 # create app (once)
 fly apps create ciphersentry-node --org personal
 
-# secrets — use publicnode (not Alchemy) for writes if EOA is EIP-7702 delegated
+# secrets — prefer sepolia.base.org (publicnode can hit EIP-7702 in-flight limits)
 fly secrets set -a ciphersentry-node `
-  CHAIN_RPC=https://base-sepolia.publicnode.com `
+  CHAIN_RPC=https://sepolia.base.org `
   CHAIN_ID=84532 `
   ESCROW_ADDRESS=0xB41EC9A2E9fD7b9226E53a93daef0E1655729890 `
-  BATCHER_ADDRESS=0x66855FBa76034B04053E6C419c0af1FE55867669 `
+  BATCHER_ADDRESS=0x6e3bb45b33d30dd876b273370c3b3bd72af9b4c7 `
   USDC_ADDRESS=0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0 `
   SLASH_EXECUTOR_ADDRESS=0x39b0D1E0fED8e22775631974402bc5f6CFa9865b `
   PROTOCOL_FROM=0x96a438924ACE133D5909bd3BAF3263845B760eF4 `

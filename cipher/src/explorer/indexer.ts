@@ -2,9 +2,9 @@
  * Indexer HTTP client — public receipt graph (B6).
  *
  * URL resolution:
- *   ?indexer=http://host:8081   explicit
- *   ?node=http://host:8080      → same host :8081
- *   default                     http://127.0.0.1:8081
+ *   ?indexer=http://host:8090   explicit
+ *   ?node=http://host:8080      → same host :8090 (B7)
+ *   default                     resolveDefaultIndexer()
  */
 
 import type { ExBatch, Receipt, Vote } from "../sdk/ledger";
@@ -374,13 +374,75 @@ export class IndexerClient {
     return [...rows].sort((a, b) => num(a.epoch) - num(b.epoch));
   }
 
-  async getAgent(agentId: string): Promise<{ agent_id: string; trust?: number; stake?: number; success?: number } | null> {
+  async getAgent(agentId: string): Promise<{
+    agent_id: string;
+    trust?: number;
+    stake?: number;
+    success?: number;
+    T_i?: number;
+    s_i?: number;
+    q_i?: number;
+    tier?: string;
+    status?: string;
+  } | null> {
     const res = await fetch(`${this.base}/agents/${encodeURIComponent(agentId)}`);
     if (res.status === 404) return null;
     if (!res.ok) return null;
-    const body = (await res.json()) as { data: { agent_id: string; trust?: number; stake?: number; success?: number } };
+    const body = (await res.json()) as {
+      data: {
+        agent_id: string;
+        trust?: number;
+        stake?: number;
+        success?: number;
+        T_i?: number;
+        s_i?: number;
+        q_i?: number;
+        tier?: string;
+        status?: string;
+      };
+    };
     return body.data ?? null;
   }
+
+  /** V0.3 ranked agents — GET /agents */
+  async listAgents(opts?: { limit?: number; minTrust?: number }): Promise<AgentRankRow[]> {
+    const q = new URLSearchParams();
+    if (opts?.limit != null) q.set("limit", String(opts.limit));
+    if (opts?.minTrust != null) q.set("minTrust", String(opts.minTrust));
+    const res = await fetch(`${this.base}/agents?${q.toString()}`);
+    if (!res.ok) return [];
+    const body = (await res.json()) as { data: AgentRankRow[] };
+    return body.data ?? [];
+  }
+
+  /** V0.3 trust graph — GET /graph */
+  async getGraph(limit = 40): Promise<TrustGraph> {
+    const res = await fetch(`${this.base}/graph?limit=${limit}`);
+    if (!res.ok) return { nodes: [], edges: [] };
+    const body = (await res.json()) as { data?: TrustGraph };
+    return body.data ?? { nodes: [], edges: [] };
+  }
+}
+
+export interface AgentRankRow {
+  agent_id: string;
+  tier?: string;
+  trust: number | string;
+  stake: number | string;
+  success?: number | string;
+  status?: string;
+}
+
+export interface TrustGraphEdge {
+  source: string;
+  target: string;
+  weight: number | string;
+  volume?: number | string;
+}
+
+export interface TrustGraph {
+  nodes: AgentRankRow[];
+  edges: TrustGraphEdge[];
 }
 
 export interface TrustPoint {

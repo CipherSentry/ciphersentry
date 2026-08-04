@@ -22,9 +22,9 @@ const PHASES = [
     v: "V0.3",
     name: "Reputation Layer",
     body: "Portable agent scores, queryable by any agent. Trust becomes a public utility.",
-    chip: "Q3",
-    chipCls: "border-edge2 text-mute",
-    dot: "later",
+    chip: "LIVE",
+    chipCls: "border-volt/70 text-volt",
+    dot: "live",
   },
   {
     v: "V1.0",

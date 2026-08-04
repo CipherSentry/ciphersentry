@@ -1,6 +1,7 @@
 /**
  * S1.1 live-path helpers — deep links + transport HUD labels.
- * Hash-router: #/app?net=rpc&auth=1&node=…
+ * Hash-router deep links: #/app?net=rpc&auth=1&node=…&indexer=…
+ * Defaults match product path (rpc + auth on) even without query params.
  */
 
 import { defaultNodeUrl, RpcWireError, type RpcTransport } from "./rpc";

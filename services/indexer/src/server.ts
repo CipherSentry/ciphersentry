@@ -61,6 +61,10 @@ let activeCh: "memory" | "http" = MEMORY ? "memory" : "http";
 
 export { trustScore } from "./trust.ts";
 
+/** Whitepaper §5 — portable reputation formula (agents can recompute offline). */
+export const TRUST_FORMULA =
+  "T_i = clamp(0, 100, 50·log2(1 + s_i) + 40·q_i + 10·(1 − e^(−n_i/500)))";
+
 /* ------------------------------- router ------------------------------------ */
 
 function json(res: import("node:http").ServerResponse, status: number, body: unknown): void {
@@ -88,6 +92,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         service: "ciphersentry-indexer",
         phase: prodOps ? "B7" : "B6",
         b7: prodOps,
+        reputation: "V0.3",
         events: NODE_EVENTS,
         nats: NATS_URL || null,
         bus: activeBusMode,
@@ -96,6 +101,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
         ch: activeCh,
         durable: activeStorage === "pg",
         gateway: GATEWAY_URL,
+        formula: TRUST_FORMULA,
       },
     };
   }
@@ -242,11 +248,44 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
     };
   }
 
+  /** V0.3 — ranked portable reputation (whitepaper §5 T_i). */
+  if (p === "/agents") {
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? 50) || 50));
+    const minTrust = Number(url.searchParams.get("minTrust") ?? 0) || 0;
+    const rows = await pg.exec(
+      `SELECT agent_id, tier, trust, stake, success, status, updated_at
+       FROM agents WHERE trust >= $1 ORDER BY trust DESC, stake DESC LIMIT $2`,
+      [minTrust, limit],
+    );
+    return {
+      status: 200,
+      body: {
+        data: rows,
+        formula: TRUST_FORMULA,
+        phase: "V0.3",
+      },
+    };
+  }
+
   const ma = p.match(/^\/agents\/([^/]+)$/);
   if (ma && !p.endsWith("/receipts")) {
     const rows = await pg.exec(`SELECT * FROM agents WHERE agent_id = $1`, [ma[1]]);
     if (!rows.length) return { status: 404, body: { error: "agent_not_found" } };
-    return { status: 200, body: { data: rows[0] } };
+    const a = rows[0] as Record<string, unknown>;
+    return {
+      status: 200,
+      body: {
+        data: {
+          ...a,
+          formula: TRUST_FORMULA,
+          // portable score fields for agents/SDK
+          score: Number(a.trust),
+          T_i: Number(a.trust),
+          s_i: Number(a.stake),
+          q_i: Number(a.success),
+        },
+      },
+    };
   }
 
   const mar = p.match(/^\/agents\/([^/]+)\/receipts$/);
@@ -258,6 +297,38 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
       [mar[1]],
     );
     return { status: 200, body: { data: rows } };
+  }
+
+  /** V0.3 — public trust graph (nodes = agents, edges = settled commerce). */
+  if (p === "/graph") {
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? 40) || 40));
+    const [nodes, edges] = await Promise.all([
+      pg.exec(
+        `SELECT agent_id, tier, trust, stake, success, status
+         FROM agents ORDER BY trust DESC, stake DESC LIMIT $1`,
+        [limit],
+      ),
+      pg.exec(
+        `SELECT buyer AS source, worker AS target, COUNT(*)::int AS weight,
+                COALESCE(SUM(amount), 0) AS volume
+         FROM tasks
+         WHERE state = 'SETTLED'
+           AND buyer IS NOT NULL AND worker IS NOT NULL
+           AND buyer <> worker
+         GROUP BY buyer, worker
+         ORDER BY weight DESC
+         LIMIT $1`,
+        [Math.min(200, limit * 4)],
+      ),
+    ]);
+    return {
+      status: 200,
+      body: {
+        data: { nodes, edges },
+        formula: TRUST_FORMULA,
+        phase: "V0.3",
+      },
+    };
   }
 
   const mt = p.match(/^\/trust\/([^/]+)$/);
@@ -297,6 +368,7 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
               success: r.success != null ? Number(r.success) : undefined,
               settled_count: r.settled_count != null ? Number(r.settled_count) : undefined,
             })),
+            formula: TRUST_FORMULA,
           },
         };
       }
@@ -317,9 +389,9 @@ async function handle(pg: Querier, ch: ClickHouseHttp, url: URL): Promise<{ stat
          WHERE agent_id = '${safe}' AND epoch >= ${Number.isFinite(since) ? since : 0}
          ORDER BY epoch DESC LIMIT ${limit} FORMAT JSON`,
       );
-      return { status: 200, body: { data: rows } };
+      return { status: 200, body: { data: rows, formula: TRUST_FORMULA } };
     } catch {
-      return { status: 200, body: { data: [] } };
+      return { status: 200, body: { data: [], formula: TRUST_FORMULA } };
     }
   }
 
@@ -536,6 +608,7 @@ export async function boot(): Promise<void> {
           fraudIn,
           reconcileMiss,
           phase: "B6",
+          reputation: "V0.3",
           bus: busMode,
         });
         return;
@@ -548,10 +621,11 @@ export async function boot(): Promise<void> {
   });
 
   server.listen(PORT, HOST, () => {
-    console.log(`ciphersentry-indexer  [B6]`);
+    console.log(`ciphersentry-indexer  [B6 · V0.3 reputation]`);
     console.log(`  api      → http://${HOST}:${PORT}`);
     console.log(`  events   → ${eventSource}`);
     console.log(`  storage  → ${activeStorage} ch=${activeCh} durable=${activeStorage === "pg"}`);
+    console.log(`  trust    → /agents · /graph · /trust/:agent`);
     if (!MEMORY && activeCh === "http") console.log(`  analytics→ ${CH_URL}/${CH_DB}`);
   });
 }

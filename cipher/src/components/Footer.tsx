@@ -1,6 +1,7 @@
 import { ArrowUpRight, Globe } from "lucide-react";
 import LogoMark from "./LogoMark";
 import { GithubIcon, SOCIALS, XIcon } from "./Social";
+import { liveConsoleHref } from "../sdk/livePath";
 
 const COLS: { h: string; links: [string, string][] }[] = [
   {
@@ -17,10 +18,10 @@ const COLS: { h: string; links: [string, string][] }[] = [
   {
     h: "NETWORK",
     links: [
-      ["Try the Flow", "#/demo"],
+      ["Try the Flow", liveConsoleHref({ path: "/demo" })],
       ["Launch Gates", "#/gates"],
       ["Task Explorer", "#/explorer"],
-      ["Ops Console", "#/app"],
+      ["Ops Console", liveConsoleHref()],
     ],
   },
   {

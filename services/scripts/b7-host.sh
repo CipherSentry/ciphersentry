@@ -99,8 +99,13 @@ up)
     export GATEWAY_URL="http://127.0.0.1:${GPORT}"
     export PG_DSN="${PG_DSN:-postgres://cent:cent@127.0.0.1:5432/ciphersentry}"
     export CH_URL="${CH_URL:-http://127.0.0.1:8123}"
+    export INDEXER_REQUIRE_NATS=1 INDEXER_FORCE_WS=0 NATS_REQUIRE=1
     npm run indexer -w indexer >"$ILOG" 2>&1 &
     echo $! >"$PIDDIR/indexer.pid"
+    for _ in $(seq 1 80); do
+      curl -sf "http://127.0.0.1:${IPORT}/health" >/dev/null 2>&1 && break
+      sleep 0.25
+    done
   fi
   exec bash "$0" health
   ;;
