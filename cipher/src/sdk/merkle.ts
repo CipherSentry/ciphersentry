@@ -144,5 +144,5 @@ export function proofLooksValid(
       return true;
     }
   }
-  return indexerValid === true;
+  return false;
 }

@@ -63,6 +63,7 @@ export default function Header() {
             <SquareTerminal size={12} strokeWidth={2} className="transition-colors duration-300 group-hover:text-volt" />
           </a>
           <button
+            type="button"
             onClick={openAccessModal}
             className="group hidden items-center gap-2 bg-volt px-3 py-2 font-mono text-[10px] font-semibold tracking-[0.2em] text-void transition-all duration-300 hover:bg-mist md:flex xl:px-4 xl:py-2.5"
           >
@@ -70,7 +71,9 @@ export default function Header() {
             <ArrowUpRight size={13} strokeWidth={2.5} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </button>
           <button
+            type="button"
             aria-label="Toggle menu"
+            aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
             className="flex h-10 w-10 items-center justify-center border border-edge2 text-mist transition-colors hover:border-volt/60 hover:text-volt lg:hidden"
           >

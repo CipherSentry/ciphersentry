@@ -95,7 +95,7 @@ export default function Onboarding() {
 
   return (
     <div className="no-scrollbar flex h-full flex-col overflow-y-auto bg-void">
-      <div className="flex items-center justify-between px-6 pt-6">
+      <div className="flex items-center justify-between px-6 pt-[max(1.5rem,env(safe-area-inset-top,0px)+0.75rem)]">
         <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex items-center">
           <LogoMark size={16} className="text-volt transition-transform duration-300 group-hover:scale-105" />
         </a>
@@ -301,7 +301,7 @@ export default function Onboarding() {
         </motion.div>
       </div>
 
-      <div className="mt-auto px-6 pb-8 pt-10">
+      <div className="mt-auto px-6 pb-[max(2rem,env(safe-area-inset-bottom,0px)+1rem)] pt-10">
         <div className="border-t border-edge pt-4 font-mono text-[8px] tracking-[0.22em] text-mute/50">
           NON-CUSTODIAL · KEYS NEVER LEAVE DEVICE · BASE-SEPOLIA
         </div>

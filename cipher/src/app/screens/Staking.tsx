@@ -20,7 +20,7 @@ export default function Staking() {
   const pct = next ? Math.min(100, Math.round((staked / next.min) * 100)) : 100;
 
   return (
-    <div className="no-scrollbar h-full overflow-y-auto bg-void pb-10">
+    <div className="no-scrollbar h-full overflow-y-auto bg-void pb-6">
       <BackHeader title="STAKING & TRUST TIERS" sub="PHASE 2 · BETA" onBack={app.close} />
 
       <div className="px-5 pt-6">

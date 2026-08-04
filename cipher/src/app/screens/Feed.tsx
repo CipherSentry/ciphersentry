@@ -17,7 +17,7 @@ export default function Feed() {
     hud.tone === "volt" ? "bg-volt" : hud.tone === "amber" ? "bg-amber-300" : hud.tone === "red" ? "bg-red-400" : "bg-mute";
 
   return (
-    <div className="no-scrollbar h-full overflow-y-auto pb-10">
+    <div className="no-scrollbar h-full overflow-y-auto pb-6">
       {/* app bar */}
       <div className="flex items-center justify-between px-5 pb-2 pt-5">
         <div>

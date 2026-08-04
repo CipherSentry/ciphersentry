@@ -243,9 +243,8 @@ export default function OperatorApp() {
           </div>
         ) : (
           <>
-            <AppNav />
             {/* tab screens */}
-            <div className="relative z-10 flex-1 overflow-hidden">
+            <div className="relative z-10 min-h-0 flex-1 overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={tab}
@@ -263,7 +262,7 @@ export default function OperatorApp() {
               </AnimatePresence>
             </div>
 
-            {/* overlay stack (pushed screens) */}
+            {/* overlay stack (pushed screens) — leave dock free below */}
             <AnimatePresence>
               {currentOverlay && (
                 <motion.div
@@ -272,7 +271,7 @@ export default function OperatorApp() {
                   animate={{ x: 0 }}
                   exit={{ x: "100%" }}
                   transition={{ duration: 0.38, ease: EASE }}
-                  className="absolute inset-0 z-30 bg-void shadow-[-30px_0_60px_rgba(0,0,0,0.6)]"
+                  className="absolute inset-x-0 top-0 bottom-[var(--app-dock-h,4.75rem)] z-30 bg-void shadow-[-30px_0_60px_rgba(0,0,0,0.6)]"
                 >
                   {currentOverlay.s === "task" && <TaskDetail id={currentOverlay.id} />}
                   {currentOverlay.s === "agent" && <AgentDetail id={currentOverlay.id} />}
@@ -281,11 +280,13 @@ export default function OperatorApp() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <AppNav />
           </>
         )}
 
-        {/* toasts */}
-        <div className="pointer-events-none absolute inset-x-5 bottom-8 z-50 flex flex-col items-center gap-2">
+        {/* toasts — clear of bottom dock */}
+        <div className="pointer-events-none absolute inset-x-5 bottom-[calc(var(--app-dock-h,4.75rem)+0.75rem)] z-50 flex flex-col items-center gap-2">
           <AnimatePresence>
             {toasts.map((t) => (
               <motion.div

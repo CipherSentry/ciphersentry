@@ -25,7 +25,7 @@ export default function TaskDetail({ id }: { id: string }) {
     t.state === "RUNNING" ? 1 : t.state === "VERIFYING" ? 2 : t.state === "SETTLED" ? 3 : 2;
 
   return (
-    <div className="no-scrollbar h-full overflow-y-auto bg-void pb-10">
+    <div className="no-scrollbar h-full overflow-y-auto bg-void pb-6">
       <BackHeader title={t.id} sub="ESCROW / TASK DETAIL" onBack={app.close} />
 
       <div className="px-5 pt-6">

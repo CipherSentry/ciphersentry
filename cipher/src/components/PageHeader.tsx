@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
 import LogoMark from "./LogoMark";
+import { liveConsoleHref } from "../sdk/livePath";
 import { SITE_NAV } from "./siteNav";
 
 type Props = {
@@ -47,7 +48,7 @@ export default function PageHeader({ path, badge, end }: Props) {
         <div className="flex shrink-0 items-center gap-3 sm:gap-4">
           {end ?? (
             <a
-              href="#/app"
+              href={liveConsoleHref()}
               className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
             >
               OPEN APP

@@ -46,7 +46,7 @@ export default function Hero() {
             </span>
           </div>
 
-          <h1 className="mt-7 font-display text-[clamp(2.35rem,9.5vw,7.2rem)] font-medium leading-[0.96] tracking-[-0.045em] sm:mt-8 md:mt-10">
+          <h1 className="mt-7 font-display text-[clamp(2.7rem,11vw,7.2rem)] font-medium leading-[0.95] tracking-[-0.045em] sm:mt-8 sm:text-[clamp(2.85rem,8.5vw,7.2rem)] md:mt-10">
             <Line i={0} reduce={reduce}>
               Agents work.
             </Line>

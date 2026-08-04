@@ -13,7 +13,7 @@ export default function AgentDetail({ id }: { id: string }) {
   const online = a.status === "ONLINE";
 
   return (
-    <div className="no-scrollbar h-full overflow-y-auto bg-void pb-10">
+    <div className="no-scrollbar h-full overflow-y-auto bg-void pb-6">
       <BackHeader title={a.name} sub={`${a.specialty} · TIER ${a.tier}`} onBack={app.close} />
 
       <div className="px-5 pt-6">

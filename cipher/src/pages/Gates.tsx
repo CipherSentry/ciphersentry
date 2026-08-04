@@ -14,14 +14,6 @@ const ACCRUAL_START_MS = 1_760_500_000_000; // genesis count
 const GATE4_DAYS = 60;
 const WAITLIST_FLOOR = 349;
 
-const GATES = [
-  { id: "G1", name: "Verifier network ≥ 400 bonded verifiers", status: "IN PROGRESS", metric: "349 ON WAITLIST", desc: "Names first, bonds after the B2 deploy. The waitlist below is the headcount that becomes this number." },
-  { id: "G2", name: "Slashing live + publicly auditable", status: "PENDING", metric: "EXECUTOR SIM'D", desc: "Slash executor runs in the console today; real burns need the on-chain registry to exist first." },
-      { id: "G3", name: "Two independent audits closed", status: "RFP NEXT", metric: "PACK READY", desc: "DOC-06 audit pack is live at #/docs/audit. Both firms book 4–8 weeks out — the only calendar we can't compress." },
-    { id: "G4", name: "60 days of epoch accrual ahead of TGE", status: "COUNTING", metric: "MODE: CALENDAR — PENDING ANCHOR", desc: "The 60 visible days. Unrestartable. The clock runs on block-height anchors the moment the first merkle batch lands on a rail." },
-  { id: "G5", name: "Robinhood Chain terms + legal complete", status: "PENDING", metric: "COUNSEL AFTER G3", desc: "Issuer terms and warrant structure go to counsel with audits booked and the waitlist sized, not before." },
-];
-
 const INFRA = ["FIRECRACKER VM", "BARE METAL", "SELF-HOST GPU", "CLOUD K8S"];
 const GATEWAY_URL = (
   (import.meta as ImportMeta & { env?: { VITE_GATEWAY_URL?: string } }).env?.VITE_GATEWAY_URL ??
