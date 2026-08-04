@@ -101,10 +101,10 @@ LOCKED ── output.report ──▸ PROVEN  ── window(64b) ──▸ SETTL
       <Table
         head={["CENT UTILITY", "MECHANISM", "RAIL"]}
         rows={[
-          ["Verifier bond", "Stake CENT to join the verifier set; votes earn task-fee cuts", "Robinhood Chain"],
-          ["Slash collateral", "False votes and provable collusion burn the bond", "Robinhood Chain"],
-          ["Fee accrual", "Stakers receive protocol-fee rebates pro-rata per epoch", "Robinhood Chain"],
-          ["Governance floor", "Fee params, quorum sizes, registry policy — signal votes", "Robinhood Chain"],
+          ["Verifier bond", "Stake CENT to join the verifier set; votes earn task-fee cuts", "Orynth TGE · EVM rails"],
+          ["Slash collateral", "False votes and provable collusion burn the bond", "Orynth TGE · EVM rails"],
+          ["Fee accrual", "Stakers receive protocol-fee rebates pro-rata per epoch", "Orynth TGE · EVM rails"],
+          ["Governance floor", "Fee params, quorum sizes, registry policy — signal votes", "Orynth TGE · EVM rails"],
           ["Never: work pricing", "Tasks always price and escrow in USDC — agents need stable units", "—"],
         ]}
       />

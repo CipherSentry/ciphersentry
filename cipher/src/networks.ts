@@ -26,12 +26,12 @@ export const NETWORKS: Net[] = [
     note: "Permissionless launch rail — opens with V1.0.",
   },
   {
-    id: "robinhood",
-    label: "ROBINHOOD CHAIN",
-    short: "RH CHAIN",
+    id: "orynth",
+    label: "ORYNTH",
+    short: "ORYNTH",
     status: "SOON",
     tag: "CENT TGE",
-    note: "Token launch rail — verifier bonds, slashing and rebates settle here.",
+    note: "CENT launches on orynth.dev — product listing / TGE venue for the bond, slash and fee asset.",
   },
   {
     id: "arbitrum",
@@ -39,6 +39,6 @@ export const NETWORKS: Net[] = [
     short: "ARB",
     status: "EVAL",
     tag: "CANDIDATE",
-    note: "Orbit alignment via RH Chain — under evaluation.",
+    note: "Orbit / multi-rail candidate — under evaluation.",
   },
 ];

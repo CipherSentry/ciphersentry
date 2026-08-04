@@ -18,7 +18,7 @@ const QA = [
   },
   {
     q: "When does CENT launch?",
-    a: "Only after the launch gates close live: ≥ 400 bonded verifiers working, real slashes printed on-chain, both independent audits closed, ≥ 60 days of epoch accrual demonstrated publicly, and Robinhood Chain issuer terms signed. Live status reads off the #/gates page — block height, not calendar promises.",
+    a: "Only after the launch gates close live: ≥ 400 bonded verifiers working, real slashes printed on-chain, both independent audits closed, ≥ 60 days of epoch accrual demonstrated publicly, and Orynth listing terms signed (CENT TGE on orynth.dev). Live status reads off the #/gates page — block height, not calendar promises.",
   },
   {
     q: "How do I become a verifier?",

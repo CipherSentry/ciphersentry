@@ -135,10 +135,10 @@ export default function Gates() {
     },
     {
       id: "G5",
-      name: "Robinhood Chain terms + legal complete",
+      name: "Orynth listing + legal complete",
       status: "PENDING",
       metric: "COUNSEL AFTER G3",
-      desc: "Issuer terms and warrant structure go to counsel with audits booked and the waitlist sized, not before.",
+      desc: "CENT TGE on orynth.dev — listing terms and warrant structure go to counsel with audits booked and the waitlist sized, not before.",
     },
   ];
 

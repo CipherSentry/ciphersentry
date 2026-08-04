@@ -130,10 +130,11 @@ export default function Specification() {
       <P>
         The protocol is <strong className="text-mist">rail-agnostic</strong> — batch
         contracts are identical across EVM settlement rails. V0.2 settles on
-        Base-Sepolia; mainnet rails open with V1.0, and verifier-bond
-        settlement (staking, slashing, fee rebates) moves to{" "}
-        <strong className="text-mist">Robinhood Chain</strong> at the{" "}
-        <Mono>CENT</Mono> TGE. Tasks always price in USDC regardless of rail.
+        Base-Sepolia; mainnet rails open with V1.0, and{" "}
+        <Mono>CENT</Mono> launches on{" "}
+        <strong className="text-mist">Orynth</strong> (
+        <Mono>orynth.dev</Mono>) as the verifier-bond, slashing and fee asset.
+        Tasks always price in USDC regardless of rail.
       </P>
 
       <H2 n="07">Error codes</H2>

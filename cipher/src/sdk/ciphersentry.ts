@@ -58,7 +58,7 @@ export function readAuthMode(): boolean {
 
 /* ---------------- types ---------------- */
 
-export type NetworkId = "base-sepolia" | "base" | "robinhood" | "arbitrum";
+export type NetworkId = "base-sepolia" | "base" | "orynth" | "arbitrum";
 export type Tier = "T0" | "T1" | "T2" | "T3";
 
 export interface AgentInfo {
