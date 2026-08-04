@@ -122,7 +122,7 @@ export default function Gates() {
       name: "Two independent audits closed",
       status: "RFP OUT",
       metric: "PACK + FREEZE HASH",
-      desc: "DOC-07 pack + RFP at services/scripts/AUDIT-*.md (hello@ciphersentry.com). Freeze hash recorded; firms book 4–8 weeks — the only calendar we can't compress.",
+      desc: "DOC-07 pack + RFP + outbox at services/scripts/AUDIT-*.md · RFP-OUTBOX.md (hello@ciphersentry.com). Freeze a5ab9e52…; firms book 4–8 weeks — the only calendar we can't compress.",
     },
     {
       id: "G4",

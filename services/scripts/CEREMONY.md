@@ -35,6 +35,7 @@ From `deployments/base-sepolia-mockusdc.json` (public Fly demo):
 BATCHER   0xb9cc42df4f77b172901ee4d84ced98f576dcc31f
 ESCROW    0x20a1253ec5b06e319384762c0b1b896d5b9baf15   # ceremony RULER redeploy 2026-08-04
 REGISTRY  0x44edb88067dcb0593db73603679ef42880141d58
+ELECTION  0x6b3a92ca9f9f35f51eb9700bf47de93055f7ee71   # ceremony QuorumElection → registry
 SLASH     0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec   # WATCHER/RESOLVER = protocol
 PROTOCOL  0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3
 RULER     0x63BBd94EE43c5bf51BEb34b68D04D1859070961e   # ≠ protocol
@@ -64,9 +65,10 @@ cast call $S "RESOLVER()(address)" --rpc-url $RPC
 | Batcher | `0xb9cc42…c31f` ceremony 2-of-3 |
 | Escrow | `0x20a125…af15` + mock USDC (mintable faucet) |
 | Registry + Slash | new pair; SLASHER matches SlashExecutor |
+| Election | `0x6b3a92…ee71` → ceremony registry (`REGISTRY()` checked) |
 | Anvil keys | not on Fly; local backup under `secrets/.anvil-backup-*` |
 
-Remaining Sepolia caveats: mock USDC (not Circle), election still pre-ceremony address, protocol gas balance is thin — top up before long demos.
+Remaining Sepolia caveats: mock USDC (not Circle). On-chain `elect()` needs ≥3 eligible bonded seats on registry (foundation/daemon path).
 
 ---
 

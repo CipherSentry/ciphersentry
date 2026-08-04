@@ -32,7 +32,7 @@ export default function AuditReadiness() {
         Operator pack + RFP: <Mono>services/scripts/AUDIT-PACK.md</Mono> ·{" "}
         <Mono>AUDIT-RFP.md</Mono>. Source freeze (sorted{" "}
         <Mono>cipher/contracts/src/**/*.sol</Mono>):{" "}
-        <Mono>2b757cbf169ce82c2f898325267121a6e96bf221543e49b26360404141bd8504</Mono>
+        <Mono>a5ab9e52103bdda839a7f2445526d1bc7f086e21ad526e221f87ea1d226be2de</Mono>
         . Contact: hello@ciphersentry.com.
       </Note>
 

@@ -3,8 +3,8 @@
 **Status:** shippable · contact `hello@ciphersentry.com`  
 **Network (dev):** Base Sepolia mock stack · **Mainnet:** not in scope until both audits close  
 **Freeze (sources):** `sha256(concat sorted cipher/contracts/src/**/*.sol)` =
-`2b757cbf169ce82c2f898325267121a6e96bf221543e49b26360404141bd8504`  
-**Repo pin (at pack issue):** merge `main` after ceremony hybrid cleanup; re-hash at kickoff.
+`a5ab9e52103bdda839a7f2445526d1bc7f086e21ad526e221f87ea1d226be2de`  
+**Repo pin (at pack issue):** ceremony hybrid + election redeploy 2026-08-04; re-hash at firm kickoff.
 
 Auditors audit against **commit freeze** — no mid-review scope drift. Any post-freeze source change reopens that engagement's contracts.
 
@@ -72,6 +72,7 @@ Addresses only — see also [`ceremony-roster.sepolia.txt`](./ceremony-roster.se
 | Escrow | `0x20a1253ec5b06e319384762c0b1b896d5b9baf15` |
 | SettlementBatcher | `0xb9cc42df4f77b172901ee4d84ced98f576dcc31f` |
 | VerifierRegistry | `0x44edb88067dcb0593db73603679ef42880141d58` |
+| QuorumElection | `0x6b3a92ca9f9f35f51eb9700bf47de93055f7ee71` |
 | SlashExecutor | `0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec` |
 | MockUSDC | `0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0` |
 | CENT | `0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1` |

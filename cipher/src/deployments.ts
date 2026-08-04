@@ -41,13 +41,13 @@ export const BASE_SEPOLIA_MOCKUSDC: Deployment = {
   deployer: "0xD309Fc7e2a3055Ed9320b7316ec142A1C5d8ba15",
   usdc: "0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0",
   cent: "0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1",
-  escrow: "0xB41EC9A2E9fD7b9226E53a93daef0E1655729890",
-  batcher: "0x301284283E1592C094355f4ad17a8Ddb75D2656F",
+  escrow: "0x20a1253ec5b06e319384762c0b1b896d5b9baf15",
+  batcher: "0xb9cc42df4f77b172901ee4d84ced98f576dcc31f",
   vestingVault: "0xFa79780237DD58a5C799983D722EAf6aBE1C1296",
-  registry: "0x3e237d84958cdbc9a5bf0535c30d449078532211",
-  election: "0xDd2a21A41F6A07DF47192C91b709D5B4e73FfeDf",
-  slashExecutor: "0xbbdeb95262a66772b6abc40668db6ae8a737ca74",
-  note: "Ceremony hybrid stack — WATCHER=protocol, batcher 2-of-3 rotated",
+  registry: "0x44edb88067dcb0593db73603679ef42880141d58",
+  election: "0x6b3a92ca9f9f35f51eb9700bf47de93055f7ee71",
+  slashExecutor: "0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec",
+  note: "Ceremony hybrid + election — WATCHER=protocol, batcher 2-of-3, QuorumElection on ceremony registry",
 };
 
 export const DEPLOYMENTS = {
