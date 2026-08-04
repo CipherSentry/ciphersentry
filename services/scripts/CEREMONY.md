@@ -32,39 +32,41 @@ Offline generation → `*_FILE` mounts → on-chain align → verify write path.
 From `deployments/base-sepolia-mockusdc.json` (public Fly demo):
 
 ```
-BATCHER  0xb9cc42df4f77b172901ee4d84ced98f576dcc31f   # ceremony redeploy 2026-08-04; roster: scripts/ceremony-roster.sepolia.txt
-ESCROW   0xB41EC9A2E9fD7b9226E53a93daef0E1655729890
-PROTOCOL 0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3   # funded for gas; not anvil
+BATCHER   0xb9cc42df4f77b172901ee4d84ced98f576dcc31f
+ESCROW    0x20a1253ec5b06e319384762c0b1b896d5b9baf15   # ceremony RULER redeploy 2026-08-04
+REGISTRY  0x44edb88067dcb0593db73603679ef42880141d58
+SLASH     0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec   # WATCHER/RESOLVER = protocol
+PROTOCOL  0xab290337AF2f808D5aA3Ff0dbF270253AEb6E1E3
+RULER     0x63BBd94EE43c5bf51BEb34b68D04D1859070961e   # ≠ protocol
 ```
 
-Current signers (read any time):
+Full roster: [`ceremony-roster.sepolia.txt`](./ceremony-roster.sepolia.txt).
 
 ```bash
 RPC=https://sepolia.base.org
 B=0xb9cc42df4f77b172901ee4d84ced98f576dcc31f
+E=0x20a1253ec5b06e319384762c0b1b896d5b9baf15
+S=0xa457acbb26bc794d4ad5bd3404cb311e8d7f7aec
 for i in 0 1 2; do cast call $B "signers(uint256)(address)" $i --rpc-url $RPC; done
-# expected (ceremony batcher_1/2/3 — see ceremony-roster.sepolia.txt):
-# [0] 0x8e689E…c3FAD
-# [1] 0x621397…6FffF
-# [2] 0xeEDB7D…EC3d0
+cast call $E "RULER()(address)" --rpc-url $RPC
+cast call $S "WATCHER()(address)" --rpc-url $RPC
+cast call $S "RESOLVER()(address)" --rpc-url $RPC
 ```
-
-Escrow `RULER` = `0x96a438…760eF4` (immutable). Rotating ruler ⇒ **redeploy escrow**. Fly `RULER_KEY` must recover to that address until full redeploy.
 
 **Critical:** any key pasted in chat is burned — rotate before ceremony exit.
 
-### Post-ceremony live mock (hybrid)
+### Post-ceremony live mock (Sepolia)
 
 | Piece | Address / status |
 |-------|------------------|
-| Protocol | `0xab2903…E1E3` (ceremony; Fly secrets) |
+| Protocol | `0xab2903…E1E3` gas + WATCHER/RESOLVER |
+| Ruler | `0x63BBd9…0961e` distinct EOA on new Escrow |
 | Batcher | `0xb9cc42…c31f` ceremony 2-of-3 |
-| Slash WATCHER/RESOLVER | still hybrid on `0xbbdeb9…cA74` |
-| Registry | `0x3e237d…2211` + CENT |
-| Escrow + USDC | pre-ceremony (`0xB41EC9…` / mock USDC) — **RULER still `0x96a438…`** |
-| Anvil keys | removed from Fly batcher/protocol; backup under `secrets/.anvil-backup-*` (local only) |
+| Escrow | `0x20a125…af15` + mock USDC (mintable faucet) |
+| Registry + Slash | new pair; SLASHER matches SlashExecutor |
+| Anvil keys | not on Fly; local backup under `secrets/.anvil-backup-*` |
 
-Escrow `RULER` still pre-ceremony until funded full escrow redeploy.
+Remaining Sepolia caveats: mock USDC (not Circle), election still pre-ceremony address, protocol gas balance is thin — top up before long demos.
 
 ---
 

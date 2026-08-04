@@ -4,7 +4,7 @@ export default function AuditReadiness() {
   return (
     <>
       <Kicker>DOC-06 · SECURITY</Kicker>
-      <Title sub="PRE-ENGAGEMENT PACK · TWO AUDITS · CODE FREEZE HASH PENDING">
+      <Title sub="PRE-ENGAGEMENT PACK · TWO AUDITS · FREEZE HASH RECORDED · RFP READY">
         Audit Readiness
       </Title>
 
@@ -28,6 +28,13 @@ export default function AuditReadiness() {
         drift mid-review. Frozen hash recorded on-chain at engagement start;
         any post-freeze change reopens that contract's review.
       </P>
+      <Note label="SHIPPABLE PACK">
+        Operator pack + RFP: <Mono>services/scripts/AUDIT-PACK.md</Mono> ·{" "}
+        <Mono>AUDIT-RFP.md</Mono>. Source freeze (sorted{" "}
+        <Mono>cipher/contracts/src/**/*.sol</Mono>):{" "}
+        <Mono>2b757cbf169ce82c2f898325267121a6e96bf221543e49b26360404141bd8504</Mono>
+        . Contact: hello@ciphersentry.com.
+      </Note>
 
       <H2 n="02">Escrow — invariants & threat model</H2>
       <P>

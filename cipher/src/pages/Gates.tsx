@@ -120,9 +120,9 @@ export default function Gates() {
     {
       id: "G3",
       name: "Two independent audits closed",
-      status: "RFP NEXT",
-      metric: "PACK READY",
-      desc: "DOC-07 shippable tomorrow from hello@ciphersentry.com. Both firms book 4–8 weeks out — the only calendar we can't compress.",
+      status: "RFP OUT",
+      metric: "PACK + FREEZE HASH",
+      desc: "DOC-07 pack + RFP at services/scripts/AUDIT-*.md (hello@ciphersentry.com). Freeze hash recorded; firms book 4–8 weeks — the only calendar we can't compress.",
     },
     {
       id: "G4",
