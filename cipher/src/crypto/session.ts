@@ -2,7 +2,8 @@
  * Gateway session keys — Ed25519 WebCrypto for AUTH_REQUIRED.
  * Separate from operator ruling keys (which may be P-256 fallback).
  *
- * Auto path: ?net=rpc&auth=1 → ensureSessionSigner() → openSession().
+ * Auto path: default net=rpc + auth on → ensureSessionSigner() → openSession().
+ * Opt out: ?net=sim or ?auth=0.
  */
 
 import type { SessionSigner } from "../sdk/rpc";
@@ -123,16 +124,22 @@ export function peekSessionPubkey(): string | null {
   return cached?.pubkey ?? null;
 }
 
+/**
+ * Session auto-open for AUTH_REQUIRED nodes.
+ * Default **on**. Explicit `auth=0` disables; `auth=1` forces on.
+ */
 export function readAuthFlag(): boolean {
   try {
-    if (new URLSearchParams(window.location.search).get("auth") === "1") return true;
-    const hash = window.location.hash.replace(/^#/, "");
-    const qi = hash.indexOf("?");
-    if (qi >= 0) {
-      return new URLSearchParams(hash.slice(qi + 1)).get("auth") === "1";
+    const sp = new URLSearchParams(window.location.search);
+    let auth = sp.get("auth");
+    if (auth == null) {
+      const hash = window.location.hash.replace(/^#/, "");
+      const qi = hash.indexOf("?");
+      if (qi >= 0) auth = new URLSearchParams(hash.slice(qi + 1)).get("auth");
     }
-    return false;
+    if (auth === "0" || auth === "false" || auth === "off") return false;
+    return true; // default on (product path)
   } catch {
-    return false;
+    return true;
   }
 }

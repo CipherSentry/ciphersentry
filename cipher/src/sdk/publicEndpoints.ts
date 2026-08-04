@@ -20,7 +20,8 @@ export const PUBLIC_NODE = "https://ciphersentry.fly.dev";
 export const PUBLIC_INDEXER = "https://ciphersentry.fly.dev";
 
 export const LOCAL_NODE = "http://127.0.0.1:8080";
-export const LOCAL_INDEXER = "http://127.0.0.1:8081";
+/** B7 host / docker-compose.b7 default indexer port. */
+export const LOCAL_INDEXER = "http://127.0.0.1:8090";
 
 function isLocalHost(): boolean {
   try {
@@ -89,11 +90,11 @@ export function indexerFromNode(node: string): string {
       return `${u.protocol}//${u.host}`;
     }
     if (u.port === "8080" || u.port === "") {
-      u.port = "8081";
+      u.port = "8090"; // B7 local indexer
       return u.origin;
     }
     if (u.port === "18080") {
-      u.port = "18081";
+      u.port = "18090";
       return u.origin;
     }
     // path convention: /indexer on same origin (optional reverse-proxy)

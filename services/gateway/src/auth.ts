@@ -44,6 +44,8 @@ export const PUBLIC_METHODS = new Set([
   "auth.whoami",
   "registry.query",
   "registry.list",
+  "trust.of",
+  "trust.rank",
   "node.info",
   "events.subscribe",
   "batch.info",

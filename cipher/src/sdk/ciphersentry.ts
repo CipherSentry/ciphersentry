@@ -39,16 +39,19 @@ export function readUrlParams(): URLSearchParams {
   }
 }
 
-/** ?net=rpc|sim — transport selection without a rebuild. */
+/**
+ * ?net=rpc|sim — transport selection without a rebuild.
+ * Default is **rpc** (live product path). Opt out with `?net=sim`.
+ */
 export function readNetMode(): NetMode {
-  return readUrlParams().get("net") === "rpc" ? "rpc" : "sim";
+  return readUrlParams().get("net") === "sim" ? "sim" : "rpc";
 }
 
 function readNodeUrl(): string {
   return readUrlParams().get("node") ?? defaultNodeUrl();
 }
 
-/** ?auth=1 — auto openSession with device Ed25519 key. */
+/** Auto openSession (default on; ?auth=0 to disable). */
 export function readAuthMode(): boolean {
   return readAuthFlag();
 }
@@ -65,6 +68,27 @@ export interface AgentInfo {
   rate: number;
   success: number;
   stake: number;
+  /** Whitepaper §5 portable score (alias of trust when live). */
+  T_i?: number;
+  s_i?: number;
+  q_i?: number;
+  live?: boolean;
+  formula?: string;
+}
+
+/** V0.3 portable reputation record. */
+export interface TrustScore {
+  agent_id: string;
+  T_i: number;
+  s_i: number;
+  q_i: number;
+  trust: number;
+  stake: number;
+  success: number;
+  tier?: string;
+  status?: string;
+  live: boolean;
+  formula: string;
 }
 
 export interface QueryFilter {
@@ -201,8 +225,8 @@ export class CipherSentry {
           ? new RpcTransport({ url: readNodeUrl() })
           : new SimTransport({ cap: 34, tickMs: 2800 });
       SHARED = new CipherSentry(opts ?? { key: "op:demo" }, transport);
-      // rpc + ?auth=1 (or always when auth flag set) → Ed25519 session
-      if (mode === "rpc" && transport.kind === "rpc" && readAuthMode()) {
+      // rpc + auth (default on; ?auth=0 off) → Ed25519 session for AUTH_REQUIRED nodes
+      if (mode === "rpc" && transport.kind === "rpc" && readAuthFlag()) {
         void SHARED.autoSession();
       }
     }
@@ -350,6 +374,10 @@ export class CipherSentry {
         rate: a.rate,
         success: a.success,
         stake: a.stake,
+        T_i: a.trust,
+        s_i: a.stake,
+        q_i: a.success / 100,
+        live: false,
       }))
         .filter((a) => a.trust >= (filter.minTrust ?? 0))
         .filter((a) => TIER_ORDER.indexOf(a.tier) >= minTierIdx)
@@ -361,6 +389,89 @@ export class CipherSentry {
         })
         .sort((a, b) => b.trust - a.trust)
         .slice(0, filter.limit ?? 10);
+    },
+  };
+
+  /* ---- V0.3 reputation (portable T_i) ---- */
+
+  trust = {
+    of: async (agentId: string): Promise<TrustScore> => {
+      const rpc = this.rpc;
+      if (rpc) {
+        try {
+          const r = await rpc.rpcTrustOf(agentId);
+          return {
+            agent_id: String(r.agent_id ?? agentId),
+            T_i: Number(r.T_i ?? r.trust ?? 0),
+            s_i: Number(r.s_i ?? r.stake ?? 0),
+            q_i: Number(r.q_i ?? r.success ?? 0),
+            trust: Number(r.trust ?? r.T_i ?? 0),
+            stake: Number(r.stake ?? r.s_i ?? 0),
+            success: Number(r.success ?? r.q_i ?? 0),
+            tier: r.tier != null ? String(r.tier) : undefined,
+            status: r.status != null ? String(r.status) : undefined,
+            live: Boolean(r.live),
+            formula: String(r.formula ?? ""),
+          };
+        } catch (e) {
+          this.rethrow(e);
+        }
+      }
+      const hit = AGENTS.find((x) => x.name === agentId);
+      if (!hit) throw new CenError("CEN_E_SCHEMA", `unknown agent ${agentId}`);
+      return {
+        agent_id: hit.name,
+        T_i: hit.trust,
+        s_i: hit.stake,
+        q_i: hit.success / 100,
+        trust: hit.trust,
+        stake: hit.stake,
+        success: hit.success / 100,
+        tier: hit.tier,
+        live: false,
+        formula: "T_i = clamp(0, 100, 50·log2(1 + s_i) + 40·q_i + 10·(1 − e^(−n_i/500)))",
+      };
+    },
+
+    rank: async (filter: { minTrust?: number; limit?: number } = {}): Promise<TrustScore[]> => {
+      const rpc = this.rpc;
+      if (rpc) {
+        try {
+          const res = await rpc.rpcTrustRank(filter);
+          const rows = res.data ?? [];
+          return rows.map((r) => ({
+            agent_id: String(r.agent_id ?? r.id ?? ""),
+            T_i: Number(r.T_i ?? r.trust ?? 0),
+            s_i: Number(r.s_i ?? r.stake ?? 0),
+            q_i: Number(r.q_i ?? r.success ?? 0),
+            trust: Number(r.T_i ?? r.trust ?? 0),
+            stake: Number(r.s_i ?? r.stake ?? 0),
+            success: Number(r.q_i ?? r.success ?? 0),
+            tier: r.tier != null ? String(r.tier) : undefined,
+            status: r.status != null ? String(r.status) : undefined,
+            live: Boolean(r.live),
+            formula: String(res.formula ?? ""),
+          }));
+        } catch (e) {
+          this.rethrow(e);
+        }
+      }
+      const agents = await this.registry.query({
+        minTrust: filter.minTrust,
+        limit: filter.limit ?? 20,
+      });
+      return agents.map((a) => ({
+        agent_id: a.id,
+        T_i: a.T_i ?? a.trust,
+        s_i: a.s_i ?? a.stake,
+        q_i: a.q_i ?? a.success / 100,
+        trust: a.trust,
+        stake: a.stake,
+        success: a.success / 100,
+        tier: a.tier,
+        live: Boolean(a.live),
+        formula: a.formula ?? "",
+      }));
     },
   };
 

@@ -9,9 +9,11 @@ import type { ExBatch, Receipt } from "./data";
 import {
   connectIndexer,
   readIndexerUrl,
+  type AgentRankRow,
   type FraudRow,
   type IndexerClient,
   type ProofResult,
+  type TrustGraphEdge,
   type TrustPoint,
 } from "./indexer";
 import { CipherSentry } from "../sdk/ciphersentry";
@@ -185,6 +187,8 @@ export default function ExplorerPage() {
   const [lastProof, setLastProof] = useState<ProofResult | null>(null);
   const [trustSeries, setTrustSeries] = useState<TrustPoint[]>([]);
   const [agentMeta, setAgentMeta] = useState<{ trust?: number; stake?: number; success?: number } | null>(null);
+  const [rank, setRank] = useState<AgentRankRow[]>([]);
+  const [edges, setEdges] = useState<TrustGraphEdge[]>([]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -192,10 +196,12 @@ export default function ExplorerPage() {
   }, []);
 
   const hydrateIndexer = useCallback(async (c: IndexerClient) => {
-    const [ledger, fraudRows, st] = await Promise.all([
+    const [ledger, fraudRows, st, agents, graph] = await Promise.all([
       c.loadLedger(12),
       c.listFraud(24),
       c.stats(),
+      c.listAgents({ limit: 24 }),
+      c.getGraph(32),
     ]);
     if (ledger.length) {
       setBatches(ledger);
@@ -209,6 +215,8 @@ export default function ExplorerPage() {
       });
     }
     setFraud(fraudRows);
+    setRank(agents);
+    setEdges(graph.edges ?? []);
     setSource("indexer");
     setIndexerUrl(c.base);
   }, []);
@@ -673,6 +681,52 @@ export default function ExplorerPage() {
               </button>
             );
           })}
+
+          <div className="sticky top-[4.5rem] z-10 flex h-9 items-center justify-between border-b border-t border-edge bg-void px-4">
+            <span className="font-mono text-[8.5px] tracking-[0.24em] text-mute">REPUTATION · V0.3</span>
+            <ShieldCheck size={11} className="text-volt/70" />
+          </div>
+          {rank.length === 0 && (
+            <div className="px-4 py-5 font-mono text-[10px] text-mute/50">
+              {source === "indexer" ? "NO AGENTS SCORED YET" : "CONNECT INDEXER FOR T_i"}
+            </div>
+          )}
+          {rank.map((a) => {
+            const id = a.agent_id;
+            const t = Number(a.trust);
+            const s = Number(a.stake);
+            const sel = agent === id;
+            const bar = Math.max(2, Math.min(100, t));
+            return (
+              <button
+                key={id}
+                onClick={() => openAgent(id)}
+                className={`flex w-full items-center gap-3 border-b border-edge px-4 py-3 text-left transition-colors hover:bg-panel/70 ${
+                  sel ? "bg-volt/[0.08] shadow-[inset_2px_0_0_var(--color-volt)]" : ""
+                }`}
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-edge2 font-mono text-[9px] text-volt">
+                  {id.replace("agent:", "")[0]?.toUpperCase() ?? "A"}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-mono text-[11px] text-mist">
+                    {id.replace("agent:", "")}
+                  </span>
+                  <span className="mt-1 block h-1 w-full bg-edge2">
+                    <span className="block h-1 bg-volt" style={{ width: `${bar}%` }} />
+                  </span>
+                </span>
+                <span className="text-right">
+                  <span className="block font-mono text-[10.5px] tabular-nums text-volt">
+                    T={t.toFixed(1)}
+                  </span>
+                  <span className="mt-0.5 block font-mono text-[7px] tracking-[0.12em] text-mute/60">
+                    S={s.toLocaleString()}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* detail */}
@@ -693,6 +747,36 @@ export default function ExplorerPage() {
                 </div>
               </div>
               <TrustChart series={trustSeries} />
+              {(() => {
+                const neighbors = edges
+                  .filter((e) => e.source === agent || e.target === agent)
+                  .slice(0, 8);
+                if (!neighbors.length) return null;
+                return (
+                  <div className="mt-5 border border-edge">
+                    <div className="border-b border-edge px-4 py-2 font-mono text-[8.5px] tracking-[0.24em] text-mute">
+                      GRAPH EDGES · SETTLED COMMERCE
+                    </div>
+                    {neighbors.map((e) => {
+                      const peer = e.source === agent ? e.target : e.source;
+                      const dir = e.source === agent ? "→" : "←";
+                      return (
+                        <button
+                          key={`${e.source}-${e.target}`}
+                          onClick={() => openAgent(peer)}
+                          className="flex w-full items-center gap-2 border-b border-edge/60 px-4 py-2.5 text-left font-mono text-[10px] last:border-b-0 hover:bg-panel/60"
+                        >
+                          <span className="text-mute">{dir}</span>
+                          <span className="text-mist">{peer.replace("agent:", "")}</span>
+                          <span className="ml-auto text-mute/60">
+                            n={Number(e.weight)} · ${Number(e.volume ?? 0).toFixed(0)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
               <div className="mt-6 border border-edge">
                 {accountRows.length === 0 && (
                   <div className="px-4 py-6 font-mono text-[10px] text-mute/50">NO RECEIPTS IN CURRENT WINDOW</div>

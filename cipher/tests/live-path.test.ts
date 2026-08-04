@@ -105,8 +105,9 @@ describe("publicEndpoints", () => {
     expect(PUBLIC_NODE).toBe(PUBLIC_INDEXER);
   });
 
-  it("maps local :8080 → :8081", () => {
+  it("maps local :8080 → :8090 (B7)", () => {
     expect(indexerFromNode(LOCAL_NODE)).toBe(LOCAL_INDEXER);
+    expect(LOCAL_INDEXER).toContain("8090");
   });
 
   it("resolveDefaultNode is localhost under mock local host", () => {
@@ -128,6 +129,18 @@ describe("hash deep-link params", () => {
     expect(readNetMode()).toBe("rpc");
     expect(readAuthFlag()).toBe(true);
     expect(readUrlParams().get("node")).toBe("http://127.0.0.1:8080");
+  });
+
+  it("defaults product path to rpc + auth on", () => {
+    mockLocation("http://localhost/#/app");
+    expect(readNetMode()).toBe("rpc");
+    expect(readAuthFlag()).toBe(true);
+  });
+
+  it("opt-out with net=sim and auth=0", () => {
+    mockLocation("http://localhost/#/app?net=sim&auth=0");
+    expect(readNetMode()).toBe("sim");
+    expect(readAuthFlag()).toBe(false);
   });
 
   it("prefers location.search when both present", () => {

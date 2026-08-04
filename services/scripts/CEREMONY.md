@@ -29,20 +29,20 @@ Offline generation → `*_FILE` mounts → on-chain align → verify write path.
 
 ## 2. Live mock stack (Base Sepolia) — before ceremony
 
-From `deployments/base-sepolia-mockusdc.json`:
+From `deployments/base-sepolia-mockusdc.json` (public Fly demo):
 
 ```
-BATCHER  0x66855FBa76034B04053E6C419c0af1FE55867669
+BATCHER  0x6e3bb45b33d30dd876b273370c3b3bd72af9b4c7   # redeploy 2026-08-04; signers = Fly BATCHER_KEY_1/2/3
 ESCROW   0xB41EC9A2E9fD7b9226E53a93daef0E1655729890
 ```
 
 Current signers (read any time):
 
 ```bash
-RPC=https://base-sepolia.publicnode.com
-B=0x66855FBa76034B04053E6C419c0af1FE55867669
+RPC=https://sepolia.base.org
+B=0x6e3bb45b33d30dd876b273370c3b3bd72af9b4c7
 for i in 0 1 2; do cast call $B "signers(uint256)(address)" $i --rpc-url $RPC; done
-# expected today:
+# expected today (matches Fly PROTOCOL/BATCHER keys):
 # [0] 0x96a438…760eF4  (deployer / protocol)
 # [1] 0x709979…dc79C8  (anvil#1)
 # [2] 0x3C44Cd…4293BC  (anvil#2)

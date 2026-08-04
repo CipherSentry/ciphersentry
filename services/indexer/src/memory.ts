@@ -158,6 +158,47 @@ export class MemoryStore implements Querier {
       return (a ? [a] : []) as T[];
     }
 
+    // V0.3 ranked agents list
+    if (
+      /FROM agents WHERE trust >= \$1 ORDER BY trust DESC/i.test(sql) ||
+      (/SELECT agent_id, tier, trust, stake, success, status/i.test(sql) &&
+        /FROM agents/i.test(sql) &&
+        /ORDER BY trust DESC/i.test(sql))
+    ) {
+      const minTrust = p[0] != null && sql.includes("trust >=") ? Number(p[0]) : 0;
+      const limit = Number(p[p.length - 1] ?? 50) || 50;
+      return [...this.agents.values()]
+        .filter((a) => Number(a.trust) >= minTrust)
+        .sort((a, b) => Number(b.trust) - Number(a.trust) || Number(b.stake) - Number(a.stake))
+        .slice(0, limit) as T[];
+    }
+
+    // SELECT * FROM agents WHERE agent_id
+    if (/SELECT \* FROM agents WHERE agent_id/i.test(sql)) {
+      const a = this.agents.get(String(p[0]));
+      return (a ? [a] : []) as T[];
+    }
+
+    // V0.3 graph edges from settled tasks
+    if (/SELECT buyer AS source, worker AS target/i.test(sql) || /GROUP BY buyer, worker/i.test(sql)) {
+      const limit = Number(p[0] ?? 200) || 200;
+      const acc = new Map<string, { source: string; target: string; weight: number; volume: number }>();
+      for (const t of this.tasks.values()) {
+        if (String(t.state) !== "SETTLED") continue;
+        const source = String(t.buyer ?? "");
+        const target = String(t.worker ?? "");
+        if (!source || !target || source === target) continue;
+        const key = `${source}->${target}`;
+        const prev = acc.get(key) ?? { source, target, weight: 0, volume: 0 };
+        prev.weight += 1;
+        prev.volume += Number(t.amount) || 0;
+        acc.set(key, prev);
+      }
+      return [...acc.values()]
+        .sort((a, b) => b.weight - a.weight)
+        .slice(0, limit) as T[];
+    }
+
     // participation stats for trust series
     if (/FROM receipts r\s+JOIN tasks t ON t\.task_id = r\.task_id/i.test(sql) ||
         (/FROM receipts r JOIN tasks t/i.test(sql) && /worker = \$1 OR t\.buyer = \$1/i.test(sql))) {

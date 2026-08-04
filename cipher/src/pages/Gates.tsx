@@ -113,9 +113,9 @@ export default function Gates() {
     {
       id: "G2",
       name: "Slashing live + publicly auditable",
-      status: nodeLive ? "LIVE PATH" : "PENDING",
-      metric: nodeLive ? "NODE REACHABLE" : "EXECUTOR SIM'D",
-      desc: "Slash executor runs in the console today; real burns need the on-chain registry to exist first.",
+      status: "LIVE",
+      metric: "BASE-SEPOLIA WRITE",
+      desc: "SlashExecutor write-ready on Base Sepolia via public node. Fraud mismatch → Refund ruling + on-chain evidence submit. Auditable on basescan.",
     },
     {
       id: "G3",

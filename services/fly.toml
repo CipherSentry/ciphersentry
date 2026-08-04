@@ -29,6 +29,7 @@ primary_region = "iad"
   INDEXER_FORCE_WS = "0"
   INDEXER_REQUIRE_NATS = "1"
   INDEXER_UPSTREAM = "http://127.0.0.1:8081"
+  INDEXER_URL = "http://127.0.0.1:8081"
   PG_DSN = "postgres://cent:cent@127.0.0.1:5432/ciphersentry"
 
 [http_service]

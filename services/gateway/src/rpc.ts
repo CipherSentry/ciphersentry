@@ -15,6 +15,11 @@ import {
   expectedPureHash,
   type VerifierPool,
 } from "@ciphersentry/verifier-daemon";
+import {
+  liveRank,
+  liveScore,
+  TRUST_FORMULA,
+} from "./reputation.ts";
 
 export interface Envelope {
   jsonrpc: "2.0";
@@ -217,6 +222,41 @@ export function makeDispatcher(ctx: RpcContext) {
         const minTrust = filter.minTrust ?? 0;
         const minTierIdx = filter.minTier ? TIER_ORDER.indexOf(filter.minTier as (typeof TIER_ORDER)[number]) : 0;
         const maxPrice = filter.maxPrice ? parseFloat(filter.maxPrice) : Infinity;
+        const limit = filter.limit ?? 10;
+
+        // V0.3: overlay live T_i from indexer when available
+        const live = await liveRank({ minTrust, limit: 100 });
+        if (live && live.length) {
+          const seedById = new Map(REGISTRY.map((a) => [a.id, a]));
+          const out = live
+            .map((a) => {
+              const seed = seedById.get(a.id);
+              const tier = (seed?.tier ?? a.tier) as string;
+              return {
+                id: a.id,
+                tier,
+                trust: a.T_i,
+                rate: seed?.rate ?? a.rate ?? 1,
+                success: a.q_i > 1 ? a.q_i : a.q_i * 100, // wire success as 0..100 for SDK parity
+                stake: a.s_i,
+                T_i: a.T_i,
+                s_i: a.s_i,
+                q_i: a.q_i,
+                live: true,
+                formula: TRUST_FORMULA,
+              };
+            })
+            .filter(
+              (a) =>
+                a.trust >= minTrust &&
+                TIER_ORDER.indexOf(a.tier as (typeof TIER_ORDER)[number]) >= minTierIdx &&
+                a.rate <= maxPrice,
+            )
+            .sort((a, b) => b.trust - a.trust)
+            .slice(0, limit);
+          if (out.length) return ok(out);
+        }
+
         const out = REGISTRY.filter(
           (a) =>
             a.trust >= minTrust &&
@@ -224,8 +264,90 @@ export function makeDispatcher(ctx: RpcContext) {
             a.rate <= maxPrice,
         )
           .sort((a, b) => b.trust - a.trust)
-          .slice(0, filter.limit ?? 10);
+          .slice(0, limit)
+          .map((a) => ({
+            ...a,
+            T_i: a.trust,
+            s_i: a.stake,
+            q_i: a.success / 100,
+            live: false,
+            formula: TRUST_FORMULA,
+          }));
         return ok(out);
+      }
+
+      /** V0.3 — portable score for one agent. */
+      case "trust.of": {
+        const agentId = String((p as { agent_id?: string; id?: string }).agent_id ?? (p as { id?: string }).id ?? "");
+        if (!agentId) return err(M.SCHEMA, "trust.of requires agent_id");
+        const live = await liveScore(agentId);
+        if (live) {
+          return ok({
+            agent_id: live.id,
+            T_i: live.T_i,
+            s_i: live.s_i,
+            q_i: live.q_i,
+            trust: live.T_i,
+            stake: live.s_i,
+            success: live.q_i,
+            tier: live.tier,
+            status: live.status,
+            live: true,
+            formula: TRUST_FORMULA,
+          });
+        }
+        const seed = REGISTRY.find((a) => a.id === agentId);
+        if (!seed) return err(M.SCHEMA, `unknown agent ${agentId}`);
+        return ok({
+          agent_id: seed.id,
+          T_i: seed.trust,
+          s_i: seed.stake,
+          q_i: seed.success / 100,
+          trust: seed.trust,
+          stake: seed.stake,
+          success: seed.success / 100,
+          tier: seed.tier,
+          live: false,
+          formula: TRUST_FORMULA,
+        });
+      }
+
+      /** V0.3 — ranked public reputation board. */
+      case "trust.rank": {
+        const filter = p as { minTrust?: number; limit?: number };
+        const minTrust = filter.minTrust ?? 0;
+        const limit = Math.min(100, filter.limit ?? 20);
+        const live = await liveRank({ minTrust, limit });
+        if (live && live.length) {
+          return ok({
+            data: live.map((a) => ({
+              agent_id: a.id,
+              T_i: a.T_i,
+              s_i: a.s_i,
+              q_i: a.q_i,
+              tier: a.tier,
+              status: a.status,
+              live: true,
+            })),
+            formula: TRUST_FORMULA,
+            phase: "V0.3",
+          });
+        }
+        return ok({
+          data: REGISTRY.filter((a) => a.trust >= minTrust)
+            .sort((a, b) => b.trust - a.trust)
+            .slice(0, limit)
+            .map((a) => ({
+              agent_id: a.id,
+              T_i: a.trust,
+              s_i: a.stake,
+              q_i: a.success / 100,
+              tier: a.tier,
+              live: false,
+            })),
+          formula: TRUST_FORMULA,
+          phase: "V0.3",
+        });
       }
 
       case "task.commit": {

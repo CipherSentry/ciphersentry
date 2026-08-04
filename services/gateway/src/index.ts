@@ -311,7 +311,7 @@ async function boot(): Promise<void> {
   // Optional path proxy → co-located memory indexer (Fly public node)
   const INDEXER_UPSTREAM = (process.env.INDEXER_UPSTREAM ?? "").replace(/\/$/, "");
   if (INDEXER_UPSTREAM) {
-    const prefixes = ["/batches", "/receipts", "/agents", "/trust", "/fraud", "/search", "/stats", "/tasks"];
+    const prefixes = ["/batches", "/receipts", "/agents", "/trust", "/fraud", "/search", "/stats", "/tasks", "/graph"];
     const proxyIndexer = async (req: import("fastify").FastifyRequest, reply: import("fastify").FastifyReply) => {
       try {
         const target = `${INDEXER_UPSTREAM}${req.url}`;

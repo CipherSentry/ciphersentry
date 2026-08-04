@@ -21,6 +21,85 @@ import { applyFraudStakeCut, seedStake, StakeCache } from "../src/stakes.ts";
 
 void trustScoreImport;
 
+describe("V0.3 reputation surfaces", () => {
+  it("ranks agents by trust and builds graph edges", async () => {
+    const pg = new MemoryStore();
+    // seed agents
+    await pg.exec(
+      `INSERT INTO agents (agent_id, tier, trust, stake, success, status) VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (agent_id) DO UPDATE SET trust = EXCLUDED.trust, stake = GREATEST(agents.stake, EXCLUDED.stake)`,
+      ["agent:vector-7", "T2", 96, 2600, 1, "ONLINE"],
+    );
+    await pg.exec(
+      `INSERT INTO agents (agent_id, tier, trust, stake, success, status) VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (agent_id) DO UPDATE SET trust = EXCLUDED.trust, stake = GREATEST(agents.stake, EXCLUDED.stake)`,
+      ["agent:forge-11", "T1", 50, 807.5, 1, "ONLINE"],
+    );
+    await pg.exec(
+      `INSERT INTO agents (agent_id, tier, trust, stake, success, status) VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (agent_id) DO UPDATE SET trust = EXCLUDED.trust, stake = GREATEST(agents.stake, EXCLUDED.stake)`,
+      ["agent:atlas-01", "T3", 99, 12000, 1, "ONLINE"],
+    );
+    const ranked = await pg.exec(
+      `SELECT agent_id, tier, trust, stake, success, status, updated_at
+       FROM agents WHERE trust >= $1 ORDER BY trust DESC, stake DESC LIMIT $2`,
+      [0, 10],
+    );
+    assert.equal(ranked.length, 3);
+    assert.equal((ranked[0] as { agent_id: string }).agent_id, "agent:atlas-01");
+    assert.equal((ranked[2] as { agent_id: string }).agent_id, "agent:forge-11");
+
+    await pg.exec(
+      `INSERT INTO tasks (task_id, buyer, worker, spec, amount, bond, state, reported_hash, state_at_block)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (task_id) DO UPDATE SET state = EXCLUDED.state, amount = EXCLUDED.amount`,
+      [
+        "cent_g1",
+        "agent:atlas-01",
+        "agent:vector-7",
+        "render.sequence.4k",
+        "12.00",
+        0,
+        "SETTLED",
+        "0xabc",
+        1,
+      ],
+    );
+    await pg.exec(
+      `INSERT INTO tasks (task_id, buyer, worker, spec, amount, bond, state, reported_hash, state_at_block)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (task_id) DO UPDATE SET state = EXCLUDED.state, amount = EXCLUDED.amount`,
+      [
+        "cent_g2",
+        "agent:atlas-01",
+        "agent:vector-7",
+        "render.sequence.4k",
+        "8.00",
+        0,
+        "SETTLED",
+        "0xdef",
+        2,
+      ],
+    );
+    const edges = await pg.exec(
+      `SELECT buyer AS source, worker AS target, COUNT(*)::int AS weight,
+              COALESCE(SUM(amount), 0) AS volume
+       FROM tasks
+       WHERE state = 'SETTLED' AND buyer IS NOT NULL AND worker IS NOT NULL
+       GROUP BY buyer, worker
+       ORDER BY weight DESC
+       LIMIT $1`,
+      [40],
+    );
+    assert.equal(edges.length, 1);
+    const e = edges[0] as { source: string; target: string; weight: number; volume: number };
+    assert.equal(e.source, "agent:atlas-01");
+    assert.equal(e.target, "agent:vector-7");
+    assert.equal(e.weight, 2);
+    assert.ok(Number(e.volume) >= 20);
+  });
+});
+
 describe("search pre-batch tasks", () => {
   it("ILIKE tasks returns task_id before receipts exist", async () => {
     const pg = new MemoryStore();

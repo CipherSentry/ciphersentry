@@ -2,8 +2,8 @@
  * RpcTransport — JSON-RPC + WebSocket twin of SimTransport.
  * Wire surface: docs/architecture.md §5 · services/gateway.
  *
- * Connect: ?net=rpc&node=http://127.0.0.1:8080
- *   (also accepts ws(s)://host/events)
+ * Connect: default product path (or explicit ?net=rpc&node=…).
+ * Opt out: ?net=sim. Also accepts ws(s)://host/events.
  */
 
 import type { TaskEvent, TaskState } from "../app/data";
@@ -37,6 +37,8 @@ export const RPC_METHODS = {
   AUTH_WHOAMI: "auth.whoami",
   REGISTRY_QUERY: "registry.query",
   REGISTRY_LIST: "registry.list",
+  TRUST_OF: "trust.of",
+  TRUST_RANK: "trust.rank",
   TASK_COMMIT: "task.commit",
   TASK_REPORT: "task.report",
   VERIFY: "verify",
@@ -630,6 +632,13 @@ export class RpcTransport implements Transport {
   }) => this.sendRaw<Record<string, unknown>>(RPC_METHODS.AUTH_SESSION, params, { skipAuth: true });
   rpcAuthWhoami = () => this.send<Record<string, unknown>>(RPC_METHODS.AUTH_WHOAMI, {});
   rpcRegistryQuery = (filter: unknown) => this.send<unknown>(RPC_METHODS.REGISTRY_QUERY, { filter });
+  rpcTrustOf = (agentId: string) =>
+    this.send<Record<string, unknown>>(RPC_METHODS.TRUST_OF, { agent_id: agentId });
+  rpcTrustRank = (params?: { minTrust?: number; limit?: number }) =>
+    this.send<{ data: Record<string, unknown>[]; formula?: string; phase?: string }>(
+      RPC_METHODS.TRUST_RANK,
+      params ?? {},
+    );
   rpcTaskCommit = (params: unknown) => this.send<Record<string, unknown>>(RPC_METHODS.TASK_COMMIT, params);
   rpcTaskReport = (taskId: string, hash: string) =>
     this.send<Record<string, unknown>>(RPC_METHODS.TASK_REPORT, { task_id: taskId, hash });
