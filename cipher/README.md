@@ -15,7 +15,7 @@ human in the loop.
 ![License](https://img.shields.io/badge/LICENSE-MIT-c6ff41?style=flat-square&labelColor=0d110a)
 [![X](https://img.shields.io/badge/X-@ciphersentry-c6ff41?style=flat-square&labelColor=0d110a)](https://x.com/ciphersentry)
 
-[ciphersentry.xyz](https://ciphersentry.xyz) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [Launch Gates](#/gates) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
+[ciphersentry.xyz](https://ciphersentry.xyz) · [App](#/app) · [Docs](#/docs/specification) · [Explorer](#/explorer) · [$CENT](#/cent) · [Investors](#/investors) · [Whitepaper](#/docs/whitepaper)
 
 </div>
 
@@ -35,7 +35,7 @@ network today; the transport seam is cut for a real JSON-RPC node tomorrow.
 | Ops Console | `#/app` (≥ lg) | Terminal-dense cockpit: stream, escrow state machine, verifiers, interventions, kill switch |
 | Mobile Ops | `#/app` (< lg) | Operator phone app: feed, registry, wallet, hold-to-sign disputes |
 | Task Explorer | `#/explorer` | Public ledger: batches, receipts, client-verified merkle proofs |
-| Launch Gates | `#/gates` | G4 accrual counter live · freeze-hash anchor · signed verifier waitlist |
+| $CENT | `#/cent` | Orynth pack · revenue flywheel · G1–G5 gates · freeze-hash · verifier waitlist (`#/gates` aliases) |
 | Investors | `#/investors` | Round terms, use of proceeds, thesis, gate tracker, data room |
 | Docs Center | `#/docs/*` | 8 documents: spec, SDK (with live playground), verification, whitepaper, tokenomics, audit pack, manifesto |
 | Contracts | `contracts/` | Foundry ENG-A: Escrow + SettlementBatcher, invariant-suite first |
@@ -170,7 +170,7 @@ starting March 2026: [#/docs/manifesto](#/docs/manifesto) (scroll to
 - Site — [ciphersentry.xyz](https://ciphersentry.xyz)
 - X — [@ciphersentry](https://x.com/cipher_sentry)
 - GitHub — [CipherSentry-com](https://github.com/CipherSentry)
-- Launch Gates — [#/gates](#/gates)
+- $CENT — [#/cent](#/cent)
 - Investors — [#/investors](#/investors)
 - Contact — hello@ciphersentry.xyz
 

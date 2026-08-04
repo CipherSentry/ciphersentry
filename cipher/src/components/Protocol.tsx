@@ -155,8 +155,8 @@ export default function Protocol() {
             <a href="#/docs" className="transition-colors hover:text-volt">
               DOCS
             </a>
-            <a href="#/gates" className="transition-colors hover:text-volt">
-              LAUNCH
+            <a href="#/cent" className="transition-colors hover:text-volt">
+              $CENT
             </a>
           </nav>
           <div className="flex items-center gap-3 sm:gap-5">
