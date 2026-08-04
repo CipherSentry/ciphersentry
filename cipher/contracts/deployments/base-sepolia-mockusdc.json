@@ -1,5 +1,5 @@
 {
-  "batcher": "0x6e3bb45b33d30dd876b273370c3b3bd72af9b4c7",
+  "batcher": "0xb9cc42df4f77b172901ee4d84ced98f576dcc31f",
   "cent": "0x4f3e99cafe2a0e9803b9a7aae9cca2163348cfa1",
   "chainId": 84532,
   "deployer": "0xD309Fc7e2a3055Ed9320b7316ec142A1C5d8ba15",
@@ -10,5 +10,5 @@
   "slashExecutor": "0xbbdeb95262a66772b6abc40668db6ae8a737ca74",
   "usdc": "0x4fa4890F31143C5158eD0Aa95d80815bFd3580D0",
   "vestingVault": "0xFa79780237DD58a5C799983D722EAf6aBE1C1296",
-  "note": "batcher redeployed 2026-08-04 for Fly key parity (anvil#0/1/2 as 2-of-3). Escrow/USDC/slash still hybrid. Ceremony keys required for mainnet."
+  "note": "ceremony batcher 0xb9cc42df4f77b172901ee4d84ced98f576dcc31f (2026-08-04). Signers=ceremony batcher_1/2/3. Escrow/RULER still hybrid (0x96a438924ACE133D5909bd3BAF3263845B760eF4)."
 }
