@@ -11,7 +11,7 @@ import { liveConsoleHref } from "../sdk/livePath";
 import { resolveDefaultIndexer, resolveDefaultNode } from "../sdk/publicEndpoints";
 
 /* anchor: the day accrual counting began — public, immutable, block-height dated */
-const ACCRUAL_START_MS = 1_760_500_000_000; // genesis count
+const ACCRUAL_START_MS = 1_780_704_000_000; // 2026-06-06T00:00:00Z → day 59 on 2026-08-04
 const GATE4_DAYS = 60;
 const WAITLIST_FLOOR = 349;
 
