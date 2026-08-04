@@ -89,7 +89,7 @@ export default function Tokenomics() {
 
       <H2 n="05">After mint</H2>
       <P>
-        Contract address and Solscan link publish on the launch page when live.
+        Contract address and Basescan link publish on the launch page when live.
         Verify the address before you transact. Contact:{" "}
         <Mono>hello@ciphersentry.xyz</Mono>.
       </P>
