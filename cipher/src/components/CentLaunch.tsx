@@ -4,10 +4,12 @@ import AsciiCentTitle from "./AsciiCentTitle";
 import AsciiMotion from "./AsciiMotion";
 import LogoMark from "./LogoMark";
 
-/** Set after Orynth / Solana mint is live. Empty = TBD card. */
-export const CENT_CONTRACT_ADDRESS = "";
-/** Solscan token URL — fill after launch. */
-export const CENT_SOLSCAN_URL = "";
+/** Robinhood Chain token contract. Empty = TBD card. */
+export const CENT_CONTRACT_ADDRESS =
+  "0xfFe25Ff4f0fc01Cf44DB5654E9766F9D1fCF03eF";
+/** Robinhood Chain Blockscout token URL. */
+export const CENT_EXPLORER_URL =
+  "https://robinhoodchain.blockscout.com/token/0xfFe25Ff4f0fc01Cf44DB5654E9766F9D1fCF03eF";
 
 export const ORYNTH_PROJECT = "https://orynth.dev/projects/cipher-sentry";
 export const ORYNTH_BADGE =
@@ -69,7 +71,7 @@ export function CentLaunchHero() {
   const [copied, setCopied] = useState(false);
   const addr = CENT_CONTRACT_ADDRESS.trim();
   const hasAddr = addr.length > 0;
-  const solscan = CENT_SOLSCAN_URL.trim();
+  const explorer = CENT_EXPLORER_URL.trim();
 
   const copy = async () => {
     if (!hasAddr) return;
@@ -135,7 +137,7 @@ export function CentLaunchHero() {
               CONTRACT ADDRESS
             </span>
             <span className="font-mono text-[8px] tracking-[0.18em] text-mute">
-              {hasAddr ? "MAINNET · SOLANA" : "TBD — POST LAUNCH"}
+              {hasAddr ? "MAINNET · ROBINHOOD" : "TBD — POST LAUNCH"}
             </span>
           </div>
           <div className="px-4 py-4 sm:px-5 sm:py-5">
@@ -168,40 +170,40 @@ export function CentLaunchHero() {
                     </>
                   )}
                 </button>
-                {solscan ? (
+                {explorer ? (
                   <a
-                    href={solscan}
+                    href={explorer}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex min-h-9 items-center gap-1.5 border border-edge2 px-3 py-2 font-mono text-[9px] tracking-[0.16em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
                   >
-                    VIEW ON SOLSCAN <ExternalLink size={11} />
+                    VIEW ON EXPLORER <ExternalLink size={11} />
                   </a>
                 ) : (
                   <span
                     className="inline-flex min-h-9 items-center gap-1.5 border border-edge2 px-3 py-2 font-mono text-[9px] tracking-[0.16em] text-mute/40"
-                    title="Solscan link after launch"
+                    title="Explorer link after launch"
                   >
-                    VIEW ON SOLSCAN
+                    VIEW ON EXPLORER
                   </span>
                 )}
               </div>
             </div>
             <p className="mt-4 border-t border-edge pt-3.5 font-mono text-[10px] leading-[1.7] tracking-[0.06em] text-mute">
               Verify the address before you transact. View on{" "}
-              {solscan ? (
+              {explorer ? (
                 <a
-                  href={solscan}
+                  href={explorer}
                   target="_blank"
                   rel="noreferrer"
                   className="text-volt underline-offset-2 hover:underline"
                 >
-                  Solscan
+                  Robinhood Chain explorer
                 </a>
               ) : (
-                <em className="text-mist/70">Solscan</em>
+                <em className="text-mist/70">Robinhood Chain explorer</em>
               )}
-              {!solscan && (
+              {!explorer && (
                 <span className="text-mute/60">
                   {" "}
                   — link publishes after launch.
