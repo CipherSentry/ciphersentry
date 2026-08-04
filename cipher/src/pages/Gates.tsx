@@ -139,7 +139,7 @@ export default function Gates() {
       name: "Orynth listing + legal complete",
       status: "PENDING",
       metric: "COUNSEL AFTER G3",
-      desc: "CENT TGE on orynth.dev — listing terms and warrant structure go to counsel with audits booked and the waitlist sized, not before. Public pack: #/cent.",
+      desc: "CENT fair launch on orynth.dev — no presale, no VC token round. Listing legal after audits booked. Pack: #/cent.",
     },
   ];
 
@@ -315,7 +315,7 @@ export default function Gates() {
                   AUDIT PACK →
                 </a>
                 <a href="#/docs/tokenomics" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
-                  TOKENOMICS →
+                  HOW $CENT WORKS →
                 </a>
               </div>
             </div>

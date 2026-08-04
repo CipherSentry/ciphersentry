@@ -15,10 +15,10 @@ export const ORYNTH_BADGE =
 export const CENT_PITCH =
   "A verification and settlement protocol for autonomous agents. Agents commit capital to buy work; independent sentries re-execute that work byte-for-byte; escrow settles only when outputs match. It is not a payment network — USDC does the pricing, CENT does the bonding.";
 
-const UTILITIES: { title: string; body: string }[] = [
+const HOW_IT_WORKS: { title: string; body: string }[] = [
   {
     title: "BOND",
-    body: "Stake CENT to join the verifier set. Floor 25,000. Seats are slashable skin-in-game — not a tip jar.",
+    body: "CENT is the stake verifiers post to hold a seat. Skin-in-game — not a tip jar, not a payment rail.",
   },
   {
     title: "VERIFY",
@@ -26,19 +26,11 @@ const UTILITIES: { title: string; body: string }[] = [
   },
   {
     title: "SLASH",
-    body: "False votes and proven collusion burn bond to the graveyard. Replay-proof, epoch-capped.",
+    body: "False votes and proven collusion burn bond. Replay-proof evidence; faults have a price.",
   },
   {
     title: "SETTLE",
-    body: "Escrow releases USDC only on quorum match or a signed ruling inside the fraud window.",
-  },
-  {
-    title: "ACCRUE",
-    body: "Honest votes earn fee rebates and decaying emissions. Work never prices in CENT.",
-  },
-  {
-    title: "GOVERN",
-    body: "Bond-weighted signal on fee params, quorum sizes, registry policy — no admin path on escrow funds.",
+    body: "Escrow releases USDC only on quorum match or a signed ruling. Work never prices in CENT.",
   },
 ];
 
@@ -192,7 +184,7 @@ export function CentLaunchHero() {
   );
 }
 
-/** Utility grid over motioned ASCII density field */
+/** LAUNCH — how the token works + fair launch, over motioned ASCII */
 export function CentUtilitySection() {
   return (
     <section className="relative overflow-hidden border-b border-edge">
@@ -202,24 +194,37 @@ export function CentUtilitySection() {
       </div>
 
       <div className="relative mx-auto max-w-[1100px] px-4 py-12 sm:px-6 sm:py-16 md:px-12 md:py-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="font-mono text-[9px] tracking-[0.26em] text-volt">
-              UTILITY
-            </div>
-            <h2 className="mt-2 font-display text-[clamp(1.5rem,4vw,2.15rem)] font-semibold tracking-[-0.03em] text-mist">
-              What{" "}
-              <span className="text-volt">$CENT</span> does
-            </h2>
+        <div className="font-mono text-[9px] tracking-[0.26em] text-volt">
+          LAUNCH
+        </div>
+        <h2 className="mt-2 max-w-[18ch] font-display text-[clamp(1.65rem,4.5vw,2.35rem)] font-semibold tracking-[-0.03em] text-mist">
+          How the token works.
+        </h2>
+        <p className="mt-4 max-w-[560px] text-[14px] leading-[1.8] text-mute">
+          USDC prices work.{" "}
+          <span className="text-mist">$CENT</span> is the bond asset —
+          stake to verify, slash on fault. It is not a payment network and not
+          the unit of commerce.
+        </p>
+
+        {/* fair launch callout */}
+        <div className="mt-8 border border-volt/45 bg-void/75 p-5 backdrop-blur-[2px] sm:p-6">
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] tracking-[0.22em] text-volt">
+            <span className="h-1.5 w-1.5 bg-volt" />
+            FAIR LAUNCH
           </div>
-          <p className="max-w-[320px] font-mono text-[10px] leading-[1.7] tracking-[0.08em] text-mute">
-            USDC prices work. CENT is only bond, slash, and accrual — never the
-            unit of commerce.
+          <p className="mt-3 max-w-[640px] text-[14px] leading-[1.8] text-mist/90">
+            No presale. No VC token round. No private allocation table.
+          </p>
+          <p className="mt-2 max-w-[640px] text-[13px] leading-[1.75] text-mute">
+            We do not publish tokenomics yet — no supply splits, vesting charts,
+            or investor warrants on the coin. When the mint is live on Orynth,
+            the contract address lands above. Same rules for everyone.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {UTILITIES.map((u) => (
+        <div className="mt-10 grid gap-3 sm:grid-cols-2">
+          {HOW_IT_WORKS.map((u) => (
             <div
               key={u.title}
               className="border border-edge/80 bg-void/70 p-5 backdrop-blur-[2px] transition-colors hover:border-volt/40"

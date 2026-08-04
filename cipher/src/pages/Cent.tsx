@@ -11,7 +11,7 @@ const FREEZE =
 
 const LINKS: { label: string; href: string; ext?: boolean }[] = [
   { label: "Orynth project", href: ORYNTH_PROJECT, ext: true },
-  { label: "Tokenomics", href: "#/docs/tokenomics" },
+  { label: "How $CENT works", href: "#/docs/tokenomics" },
   { label: "Audit readiness", href: "#/docs/audit" },
   { label: "Whitepaper", href: "#/docs/whitepaper" },
   { label: "Launch gates", href: "#/gates" },

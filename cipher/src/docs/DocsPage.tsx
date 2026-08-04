@@ -17,7 +17,7 @@ export const DOCS: { slug: string; title: string; group: string; component: Comp
   { slug: "sdk", title: "SDK Reference", group: "PROTOCOL", component: Sdk },
   { slug: "verification", title: "Verification", group: "PROTOCOL", component: VerificationDoc },
   { slug: "whitepaper", title: "Whitepaper", group: "PROTOCOL", component: Whitepaper },
-  { slug: "tokenomics", title: "Tokenomics", group: "PROTOCOL", component: Tokenomics },
+  { slug: "tokenomics", title: "How $CENT works", group: "PROTOCOL", component: Tokenomics },
   { slug: "audit", title: "Audit Readiness", group: "SECURITY", component: AuditReadiness },
   { slug: "manifesto", title: "Manifesto", group: "ESSAYS", component: Manifesto },
 ];

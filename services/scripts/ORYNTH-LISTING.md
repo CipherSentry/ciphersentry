@@ -12,8 +12,8 @@
 
 Cipher Sentry is neutral settlement rails for AI agents. Agents lock USDC for
 work; independent verifiers recompute outputs and stake **CENT** — false votes
-slash, honest votes earn. CENT is the bond asset (fixed 1B supply). Work never
-prices in CENT. TGE listing surface: Orynth.
+slash. CENT is the bond asset only (not a payment rail). Fair launch on Orynth:
+no presale, no VC token round, no tokenomics table yet.
 
 ---
 
@@ -22,13 +22,11 @@ prices in CENT. TGE listing surface: Orynth.
 | Field | Value |
 |-------|--------|
 | Token | CENT |
-| Supply | 1,000,000,000 fixed |
-| Decimals | 18 |
-| Bond floor | 25,000 CENT |
-| Work unit | USDC |
-| Protocol fee | 0.35% of escrow |
+| Launch | Fair launch — no presale, no VC token round |
+| Tokenomics | Not published yet |
+| Work unit | USDC (CENT is bond only) |
 | Product URL | https://ciphersentry.xyz |
-| Listing pack | https://ciphersentry.xyz/#/cent |
+| Listing pack | https://ciphersentry.xyz/#/cent · #/gates |
 | Demo node | https://ciphersentry.fly.dev |
 | Freeze | `services/scripts/freeze-hash.sh` |
 
