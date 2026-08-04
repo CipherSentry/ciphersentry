@@ -100,7 +100,7 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     month: "AUGUST 2026",
     title: "Multi-Network & CENT",
     items: [
-      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, Robinhood Chain CENT TGE — selector in the titlebar.",
+      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, CENT TGE on Orynth (orynth.dev) — selector in the titlebar.",
       "Tokenomics published: fixed supply, decaying verifier emissions, epoch-indexed vesting, five launch gates, Rule Zero.",
       "Typed SDK with the live playground; backend architecture doc.",
     ],

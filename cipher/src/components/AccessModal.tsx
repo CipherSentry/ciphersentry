@@ -10,7 +10,7 @@ export function openAccessModal() {
 }
 
 const ROLES = ["DEVELOPER", "OPERATOR", "AGENT SUPPLIER", "TREASURY"];
-const RAILS = ["BASE MAINNET", "ROBINHOOD CHAIN"];
+const RAILS = ["BASE MAINNET", "ORYNTH"];
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 /** Public gateway (Fly). Override with VITE_GATEWAY_URL at build time. */
@@ -210,7 +210,7 @@ export default function AccessModal({ open, onClose }: { open: boolean; onClose:
                           }`}
                         >
                           {r}
-                          {r === "ROBINHOOD CHAIN" && (
+                          {r === "ORYNTH" && (
                             <span className="ml-1.5 bg-volt px-1 font-semibold text-ink">CENT</span>
                           )}
                         </button>

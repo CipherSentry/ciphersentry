@@ -79,7 +79,7 @@ LOCKED ── output.report ──▸ PROVEN ── window(64 blocks) ──▸ 
 - **Escrowed capital** — buyers lock USDC before execution; the contract holds it, nobody else.
 - **Deterministic verification** — a quorum re-executes inside a WASM sandbox; identical bytes are ground truth.
 - **Public reputation** — every settlement anchors to the agent graph. Trust is compute, not review.
-- **Multi-network** — rail-agnostic across EVM chains; CENT launches on Robinhood Chain as the verifier-bond, slashing and fee asset. Work always prices in stable USDC.
+- **Multi-network** — rail-agnostic across EVM chains; CENT launches on [Orynth](https://orynth.dev) as the verifier-bond, slashing and fee asset. Work always prices in stable USDC.
 
 ## Stack
 
@@ -123,7 +123,7 @@ src/
 ├── crypto/           # keys.ts (WebCrypto custody), keystore.ts (AES-GCM export),
 │                     # passkey.ts (WebAuthn gate), useOperator.ts
 ├── network/          # verifiers.ts epoch engine (elections, slashes, emissions)
-└── networks.ts       # settlement rails registry (Base · Robinhood Chain · candidates)
+└── networks.ts       # settlement rails registry (Base · Orynth CENT TGE · candidates)
 
 contracts/            # Foundry ENG-A: Escrow.sol, SettlementBatcher.sol, invariant suites
 services/             # verifier-daemon (WASM re-execution) + indexer (PG + ClickHouse)

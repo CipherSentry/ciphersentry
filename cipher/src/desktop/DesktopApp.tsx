@@ -427,7 +427,7 @@ export default function DesktopApp() {
                 onClick={() => setNetOpen((o) => !o)}
                 aria-label="Switch settlement rail"
                 className={`hidden items-center gap-1.5 border px-1.5 py-1 text-[8px] tracking-[0.14em] transition-colors md:flex ${
-                  net.id === "robinhood" ? "border-volt/60 text-volt" : "border-edge2 text-mute hover:border-volt/50 hover:text-mist"
+                  net.id === "orynth" ? "border-volt/60 text-volt" : "border-edge2 text-mute hover:border-volt/50 hover:text-mist"
                 }`}
               >
                 {net.label}
@@ -445,7 +445,7 @@ export default function DesktopApp() {
                       onClick={() => {
                         setNetId(n.id);
                         setNetOpen(false);
-                        value.toast(n.id === "robinhood" ? "ROBINHOOD CHAIN — CENT TGE PENDING · PREVIEW" : `RAIL → ${n.label}`);
+                        value.toast(n.id === "orynth" ? "ORYNTH — CENT TGE ON orynth.dev · PREVIEW" : `RAIL → ${n.label}`);
                       }}
                       className={`flex w-full items-center gap-3 border-b border-edge/60 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-void ${
                         n.id === net.id ? "bg-volt/[0.06]" : ""
@@ -549,7 +549,7 @@ export default function DesktopApp() {
                 </>
               );
             })()}
-            <span className={net.id === "robinhood" ? "text-volt" : ""}>NET {net.short}{net.tag === "CENT TGE" ? " · CENT SOON" : ""}</span>
+            <span className={net.id === "orynth" ? "text-volt" : ""}>NET {net.short}{net.tag === "CENT TGE" ? " · CENT SOON" : ""}</span>
             <span className="hidden xl:inline">WINDOW {feed.length} TXS</span>
           </div>
           <div className="flex items-center gap-4">

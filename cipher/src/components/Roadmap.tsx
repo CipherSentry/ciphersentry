@@ -128,16 +128,23 @@ export default function Roadmap() {
                 rail-agnostic — identical batch contracts across EVM rails.
                 Mainnet opens with V1.0, and{" "}
                 <span className="text-mist">CENT</span> launches on{" "}
-                <span className="text-volt">Robinhood Chain</span> as the
-                verifier-bond, slashing and fee asset. Work stays priced in
-                stable USDC; CENT never denominates a task.
+                <a
+                  href="https://orynth.dev"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-volt underline-offset-2 hover:underline"
+                >
+                  Orynth
+                </a>{" "}
+                as the verifier-bond, slashing and fee asset. Work stays priced
+                in stable USDC; CENT never denominates a task.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 md:flex-col md:items-end">
               {[
                 ["BASE-SEPOLIA", "V0.2 LIVE", "volt"],
                 ["BASE MAINNET", "WITH V1.0", "mist"],
-                ["ROBINHOOD CHAIN", "CENT TGE · SOON", "volt"],
+                ["ORYNTH", "CENT TGE · SOON", "volt"],
               ].map(([rail, tag, tone]) => (
                 <div key={rail} className="flex items-center gap-3 border border-edge2 px-3 py-2.5">
                   <span className={`h-1.5 w-1.5 ${tag.includes("LIVE") || tag.includes("CENT") ? "bg-volt" : "bg-amber-300"}`} />
