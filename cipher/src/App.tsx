@@ -6,7 +6,6 @@ import DocsPage from "./docs/DocsPage";
 import Faq from "./pages/Faq";
 import ExplorerPage from "./explorer/ExplorerPage";
 import Cent from "./pages/Cent";
-import Gates from "./pages/Gates";
 import Investors from "./pages/Investors";
 import Landing from "./Landing";
 import Protocol from "./components/Protocol";
@@ -28,8 +27,11 @@ export default function App() {
   const isDocs = route.startsWith("/docs");
   const isExplorer = route.startsWith("/explorer");
   const isInvestors = route.startsWith("/investors");
-  const isGates = route.startsWith("/gates");
-  const isCent = route.startsWith("/cent") || route.startsWith("/orynth");
+  // /cent is canonical; /gates and /orynth alias the same $CENT page
+  const isCent =
+    route.startsWith("/cent") ||
+    route.startsWith("/orynth") ||
+    route.startsWith("/gates");
   const isFaq = route.startsWith("/faq");
   const isDemo = route.startsWith("/demo");
   const isProtocol = route.startsWith("/protocol");
@@ -39,7 +41,6 @@ export default function App() {
   }, [isApp, isDocs, isExplorer, isInvestors, isCent, route]);
 
   if (isExplorer) return <ExplorerPage />;
-  if (isGates) return <Gates />;
   if (isCent) return <Cent />;
   if (isFaq) return <Faq />;
   if (isInvestors) return <Investors />;

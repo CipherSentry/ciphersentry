@@ -26,7 +26,7 @@ no presale, no VC token round, no tokenomics table yet.
 | Tokenomics | Not published yet |
 | Work unit | USDC (CENT is bond only) |
 | Product URL | https://ciphersentry.xyz |
-| Listing pack | https://ciphersentry.xyz/#/cent · #/gates |
+| Listing pack | https://ciphersentry.xyz/#/cent |
 | Demo node | https://ciphersentry.fly.dev |
 | Freeze | `services/scripts/freeze-hash.sh` |
 

@@ -70,8 +70,8 @@ export default function Tokenomics() {
         ]}
       />
       <P>
-        Full launch surface (badge, contract card, utility):{" "}
-        <Mono>#/gates</Mono> · pack <Mono>#/cent</Mono>.
+        Full launch surface (badge, contract, flywheel, gates):{" "}
+        <Mono>#/cent</Mono>.
       </P>
 
       <H2 n="04">What we are not claiming</H2>
