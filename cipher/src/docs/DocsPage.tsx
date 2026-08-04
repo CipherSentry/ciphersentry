@@ -1,8 +1,7 @@
-import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { ComponentType } from "react";
 import Frame from "../components/Frame";
-import LogoMark from "../components/LogoMark";
-import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
+import PageHeader from "../components/PageHeader";
 import AuditReadiness from "./AuditReadiness";
 import Manifesto from "./Manifesto";
 import Sdk from "./Sdk";
@@ -32,30 +31,7 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
-        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
-              <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
-            </a>
-            <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">
-              / DOCS{doc ? ` / ${doc.title.toUpperCase()}` : ""}
-            </span>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — CipherSentry-com" className="text-mute transition-colors hover:text-volt">
-              <GithubIcon size={14} />
-            </a>
-            <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
-              <XIcon size={13} />
-            </a>
-            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
-              OPEN APP
-              <ArrowUpRight size={11} />
-            </a>
-          </div>
-        </div>
-      </header>
+      <PageHeader path={`/ DOCS${doc ? ` / ${doc.title.toUpperCase()}` : ""}`} />
 
       <div className="mx-auto grid max-w-[1240px] gap-x-10 gap-y-6 px-4 py-6 sm:gap-x-14 sm:gap-y-10 sm:px-6 sm:py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
         <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">

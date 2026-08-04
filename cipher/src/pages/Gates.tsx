@@ -1,8 +1,7 @@
 import { ArrowUpRight, Check, KeyRound, Loader2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import Frame from "../components/Frame";
-import LogoMark from "../components/LogoMark";
-import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
+import PageHeader from "../components/PageHeader";
 import { Stepper, Tag } from "../app/ui";
 import { signRuling } from "../crypto/keys";
 import type { SignedRuling } from "../crypto/keys";
@@ -194,35 +193,18 @@ export default function Gates() {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      {/* top bar */}
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.com" className="group flex shrink-0 items-center">
-              <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
-            </a>
-            <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ LAUNCH GATES</span>
-          </div>
-          <div className="flex items-center gap-5">
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub — Machinarc-com" className="text-mute transition-colors hover:text-volt">
-              <GithubIcon size={14} />
-            </a>
-            <a
-              href="#/"
-              className="hidden items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:text-volt sm:flex"
-            >
-              ← HOME
-            </a>
-            <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X — @ciphersentry" className="text-mute transition-colors hover:text-volt">
-              <XIcon size={13} />
-            </a>
-            <a href={liveConsoleHref({ node: GATEWAY_URL })} className="flex items-center gap-1.5 border border-edge2 px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:border-volt/70 hover:text-volt">
-              OPEN APP
-              <ArrowUpRight size={11} />
-            </a>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        path="/ LAUNCH GATES"
+        end={
+          <a
+            href={liveConsoleHref({ node: GATEWAY_URL })}
+            className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
+          >
+            OPEN APP
+            <ArrowUpRight size={11} />
+          </a>
+        }
+      />
 
       {/* hero — the accrual clock */}
       <div className="border-b border-edge px-6 py-12 md:px-12 md:py-16">

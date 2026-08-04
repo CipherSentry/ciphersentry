@@ -1,7 +1,7 @@
 import { ArrowUpRight, Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import Frame from "../components/Frame";
-import LogoMark from "../components/LogoMark";
+import PageHeader from "../components/PageHeader";
 
 const QA = [
   {
@@ -63,32 +63,7 @@ export default function Faq() {
           }),
         }}
       />
-      {/* header */}
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
-        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
-              <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
-            </a>
-            <span className="hidden font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ FAQ</span>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-            <a
-              href="#/"
-              className="hidden items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:text-volt sm:flex"
-            >
-              ← HOME
-            </a>
-            <a
-              href="#/app"
-              className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
-            >
-              OPEN APP
-              <ArrowUpRight size={11} />
-            </a>
-          </div>
-        </div>
-      </header>
+      <PageHeader path="/ FAQ" />
 
       <div className="section-x py-10 sm:py-14 md:py-20">
         <div className="mx-auto max-w-[820px]">

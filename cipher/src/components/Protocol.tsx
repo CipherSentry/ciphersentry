@@ -1,6 +1,6 @@
-import { ArrowUpRight, Compass, LockKeyhole, Plus, ScanSearch, Zap } from "lucide-react";
+import { Compass, LockKeyhole, Plus, ScanSearch, Zap } from "lucide-react";
 import Frame from "./Frame";
-import LogoMark from "./LogoMark";
+import PageHeader from "./PageHeader";
 import LoopDiagram from "./LoopDiagram";
 import Reveal from "./Reveal";
 import SectionHead from "./SectionHead";
@@ -142,27 +142,7 @@ export default function Protocol() {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
-        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-16">
-          <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
-            <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
-          </a>
-          <nav className="hidden items-center gap-8 font-mono text-[10px] tracking-[0.22em] text-mute md:flex">
-            <a href="#/" className="transition-colors hover:text-volt">← HOME</a>
-            <a href="#/docs" className="transition-colors hover:text-volt">DOCS</a>
-            <a href="#/gates" className="transition-colors hover:text-volt">LAUNCH</a>
-          </nav>
-          <div className="flex items-center gap-3 sm:gap-5">
-            <a href="#/" className="font-mono text-[9px] tracking-[0.18em] text-mute transition-colors hover:text-volt md:hidden">
-              ← HOME
-            </a>
-            <a href="#/app" className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]">
-              OPEN APP
-              <ArrowUpRight size={11} />
-            </a>
-          </div>
-        </div>
-      </header>
+      <PageHeader path="/ PROTOCOL" />
 
       <section id="protocol" className="scroll-mt-[68px] border-b border-edge">
         <SectionHead

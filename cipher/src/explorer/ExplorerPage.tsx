@@ -1,8 +1,7 @@
 import { ArrowUpRight, Check, Layers, Search, ShieldCheck, ShieldAlert, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Frame from "../components/Frame";
-import LogoMark from "../components/LogoMark";
-import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
+import PageHeader from "../components/PageHeader";
 import { Tag } from "../app/ui";
 import { agentReceipts, proofRows, search, searchFromIndexer } from "./data";
 import type { ExBatch, Receipt } from "./data";
@@ -492,42 +491,28 @@ export default function ExplorerPage() {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      <header className="sticky top-0 z-40 border-b border-edge bg-void/85 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md">
-        <div className="flex h-12 items-center justify-between gap-3 px-4 sm:h-14 sm:px-6 md:px-12">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <a href="#/" aria-label="Back to ciphersentry.xyz" className="group flex shrink-0 items-center">
-              <LogoMark size={15} className="text-volt transition-transform duration-300 group-hover:scale-105" />
-            </a>
-            <span className="hidden truncate font-mono text-[9px] tracking-[0.22em] text-mute md:inline">/ EXPLORER</span>
-            <span
-              className={`hidden font-mono text-[8px] tracking-[0.18em] sm:inline ${
-                source === "indexer" ? "text-volt" : source === "connecting" ? "text-amber-300" : "text-mute"
-              }`}
-              title={source === "indexer" ? indexerUrl : "sim ledger"}
-            >
-              {source === "indexer" ? "INDEXER LIVE" : source === "connecting" ? "CONNECTING…" : "SIM LEDGER"}
-            </span>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-            <a href={SOCIALS.github} target="_blank" rel="noreferrer" aria-label="GitHub" className="text-mute transition-colors hover:text-volt">
-              <GithubIcon size={14} />
-            </a>
-            <a href="#/" className="hidden items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:text-volt sm:flex">
-              ← HOME
-            </a>
-            <a href={SOCIALS.x} target="_blank" rel="noreferrer" aria-label="X" className="text-mute transition-colors hover:text-volt">
-              <XIcon size={13} />
-            </a>
-            <a
-              href={liveConsoleHref({ indexer: indexerUrl || readIndexerUrl() || undefined })}
-              className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
-            >
-              OPEN APP
-              <ArrowUpRight size={11} />
-            </a>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        path="/ EXPLORER"
+        badge={
+          <span
+            className={`hidden font-mono text-[8px] tracking-[0.18em] sm:inline ${
+              source === "indexer" ? "text-volt" : source === "connecting" ? "text-amber-300" : "text-mute"
+            }`}
+            title={source === "indexer" ? indexerUrl : "sim ledger"}
+          >
+            {source === "indexer" ? "INDEXER LIVE" : source === "connecting" ? "CONNECTING…" : "SIM LEDGER"}
+          </span>
+        }
+        end={
+          <a
+            href={liveConsoleHref({ indexer: indexerUrl || readIndexerUrl() || undefined })}
+            className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
+          >
+            OPEN APP
+            <ArrowUpRight size={11} />
+          </a>
+        }
+      />
 
       <div className="border-b border-edge px-4 py-8 sm:px-6 sm:py-10 md:px-12">
         <div className="flex items-start gap-2.5 font-mono text-[8.5px] tracking-[0.16em] text-volt sm:items-center sm:gap-3 sm:text-[9.5px] sm:tracking-[0.28em]">
