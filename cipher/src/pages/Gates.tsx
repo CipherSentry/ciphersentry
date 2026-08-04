@@ -138,7 +138,7 @@ export default function Gates() {
       name: "Orynth listing + legal complete",
       status: "PENDING",
       metric: "COUNSEL AFTER G3",
-      desc: "CENT TGE on orynth.dev — listing terms and warrant structure go to counsel with audits booked and the waitlist sized, not before.",
+      desc: "CENT TGE on orynth.dev — listing terms and warrant structure go to counsel with audits booked and the waitlist sized, not before. Public pack: #/cent.",
     },
   ];
 
@@ -299,34 +299,34 @@ export default function Gates() {
             {/* freeze-hash anchor — light panel, never cream-on-void */}
             <div className="mt-6 border border-amber-600/35 bg-panel p-5">
               <div className="flex items-center justify-between font-mono text-[8.5px] tracking-[0.24em] text-mute">
-                <span>ENG-A FREEZE HASH — AUDIT ANCHOR</span>
-                <span className="text-amber-700">PENDING BROADCAST</span>
+                <span>SOURCE FREEZE — G3 / ORYNTH PACK</span>
+                <span className="text-volt">RECORDED</span>
               </div>
               <div className="mt-3 space-y-2 font-mono text-[10.5px]">
                 <div className="flex justify-between gap-6">
                   <span className="text-mute">SCOPE</span>
-                  <span className="text-mist">ESCROW.SOL + SETTLEMENTBATCHER.SOL</span>
+                  <span className="text-mist">cipher/contracts/src/**/*.sol</span>
+                </div>
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-6">
+                  <span className="shrink-0 text-mute">HASH</span>
+                  <span className="break-all text-mist">
+                    a5ab9e52103bdda839a7f2445526d1bc7f086e21ad526e221f87ea1d226be2de
+                  </span>
                 </div>
                 <div className="flex justify-between gap-6">
-                  <span className="text-mute">HASH</span>
-                  <span className="text-mute">sha256(contracts/) — computed at broadcast</span>
-                </div>
-                <div className="flex justify-between gap-6">
-                  <span className="text-mute">ANCHOR</span>
-                  <span className="text-mute">first batch root on Base-Sepolia · pending</span>
+                  <span className="text-mute">TGE VENUE</span>
+                  <span className="text-mist">ORYNTH · orynth.dev</span>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-3 border-t border-amber-600/25 pt-4">
-                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
-                  AUDIT PACK — DOC-06 →
+                <a href="#/cent" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  CENT / ORYNTH PACK →
                 </a>
-                <a
-                  href="https://github.com/CipherSentry/ciphersentry/blob/main/cipher/contracts/README.md"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt"
-                >
-                  /contracts/README.md →
+                <a href="#/docs/audit" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  AUDIT PACK →
+                </a>
+                <a href="#/docs/tokenomics" className="border border-edge2 px-4 py-2.5 font-mono text-[9px] tracking-[0.18em] text-mist transition-colors hover:border-volt/70 hover:text-volt">
+                  TOKENOMICS →
                 </a>
               </div>
             </div>

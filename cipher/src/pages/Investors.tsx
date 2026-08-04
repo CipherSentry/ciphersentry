@@ -38,7 +38,7 @@ const GATES: [string, string, string][] = [
   ["G2", "SLASHING LIVE + AUDITABLE", "SIM → CHAIN"],
   ["G3", "TWO AUDITS CLOSED", "ENG-A W1–3 · ENG-B W6–8"],
   ["G4", "60D EPOCH ACCRUAL AHEAD OF TGE", "ACCUMULATING"],
-  ["G5", "RH CHAIN TERMS + LEGAL", "PENDING"],
+  ["G5", "ORYNTH LISTING + LEGAL", "PENDING"],
 ];
 
 export default function Investors() {

@@ -20,6 +20,7 @@ const COLS: { h: string; links: [string, string][] }[] = [
     links: [
       ["Try the Flow", liveConsoleHref({ path: "/demo" })],
       ["Launch Gates", "#/gates"],
+      ["CENT / Orynth pack", "#/cent"],
       ["Task Explorer", "#/explorer"],
       ["Ops Console", liveConsoleHref()],
     ],
