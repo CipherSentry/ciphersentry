@@ -1,7 +1,9 @@
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import type { ComponentType } from "react";
 import Frame from "../components/Frame";
 import PageHeader from "../components/PageHeader";
+import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
+import { liveConsoleHref } from "../sdk/livePath";
 import AuditReadiness from "./AuditReadiness";
 import Manifesto from "./Manifesto";
 import Sdk from "./Sdk";
@@ -31,7 +33,38 @@ export default function DocsPage({ slug }: { slug: string | undefined }) {
     <div className="relative isolate min-h-screen bg-void font-display text-mist">
       <Frame />
 
-      <PageHeader path={`/ DOCS${doc ? ` / ${doc.title.toUpperCase()}` : ""}`} />
+      <PageHeader
+        path={`/ DOCS${doc ? ` / ${doc.title.toUpperCase()}` : ""}`}
+        end={
+          <>
+            <a
+              href={SOCIALS.github}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub — CipherSentry"
+              className="text-mute transition-colors hover:text-volt"
+            >
+              <GithubIcon size={14} />
+            </a>
+            <a
+              href={SOCIALS.x}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="X — @ciphersentry"
+              className="text-mute transition-colors hover:text-volt"
+            >
+              <XIcon size={13} />
+            </a>
+            <a
+              href={liveConsoleHref()}
+              className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
+            >
+              OPEN APP
+              <ArrowUpRight size={11} />
+            </a>
+          </>
+        }
+      />
 
       <div className="mx-auto grid max-w-[1240px] gap-x-10 gap-y-6 px-4 py-6 sm:gap-x-14 sm:gap-y-10 sm:px-6 sm:py-10 md:px-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-14">
         <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">

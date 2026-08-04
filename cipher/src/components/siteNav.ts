@@ -1,4 +1,4 @@
-/** Canonical site routes — shared by Header + PageHeader. */
+/** Canonical site routes — landing Header (hamburger + desktop center). */
 export const SITE_NAV = [
   { label: "THE PROTOCOL", href: "#/protocol" },
   { label: "DOCS", href: "#/docs" },

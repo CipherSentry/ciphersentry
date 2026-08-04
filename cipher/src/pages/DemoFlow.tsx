@@ -232,7 +232,7 @@ function Chrome({
       <Frame />
       <PageHeader
         path="/ TRY THE FLOW"
-        badge={
+        end={
           <span
             className={`block truncate font-mono text-[7.5px] tracking-[0.14em] sm:text-[8.5px] sm:tracking-[0.2em] ${
               nodeLive === false ? "text-red-400" : "text-volt"

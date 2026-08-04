@@ -2,6 +2,7 @@ import { ArrowUpRight, Check, Layers, Search, ShieldCheck, ShieldAlert, X } from
 import { useCallback, useEffect, useState } from "react";
 import Frame from "../components/Frame";
 import PageHeader from "../components/PageHeader";
+import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
 import { Tag } from "../app/ui";
 import { agentReceipts, proofRows, search, searchFromIndexer } from "./data";
 import type { ExBatch, Receipt } from "./data";
@@ -504,13 +505,39 @@ export default function ExplorerPage() {
           </span>
         }
         end={
-          <a
-            href={liveConsoleHref({ indexer: indexerUrl || readIndexerUrl() || undefined })}
-            className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
-          >
-            OPEN APP
-            <ArrowUpRight size={11} />
-          </a>
+          <>
+            <a
+              href={SOCIALS.github}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              className="text-mute transition-colors hover:text-volt"
+            >
+              <GithubIcon size={14} />
+            </a>
+            <a
+              href="#/"
+              className="hidden items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:text-volt sm:flex"
+            >
+              ← HOME
+            </a>
+            <a
+              href={SOCIALS.x}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="X"
+              className="text-mute transition-colors hover:text-volt"
+            >
+              <XIcon size={13} />
+            </a>
+            <a
+              href={liveConsoleHref({ indexer: indexerUrl || readIndexerUrl() || undefined })}
+              className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
+            >
+              OPEN APP
+              <ArrowUpRight size={11} />
+            </a>
+          </>
         }
       />
 

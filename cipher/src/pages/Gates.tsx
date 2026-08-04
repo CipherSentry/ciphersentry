@@ -2,6 +2,7 @@ import { ArrowUpRight, Check, KeyRound, Loader2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import Frame from "../components/Frame";
 import PageHeader from "../components/PageHeader";
+import { GithubIcon, SOCIALS, XIcon } from "../components/Social";
 import { Stepper, Tag } from "../app/ui";
 import { signRuling } from "../crypto/keys";
 import type { SignedRuling } from "../crypto/keys";
@@ -188,13 +189,39 @@ export default function Gates() {
       <PageHeader
         path="/ LAUNCH GATES"
         end={
-          <a
-            href={liveConsoleHref({ node: GATEWAY_URL })}
-            className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
-          >
-            OPEN APP
-            <ArrowUpRight size={11} />
-          </a>
+          <>
+            <a
+              href={SOCIALS.github}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub — CipherSentry"
+              className="text-mute transition-colors hover:text-volt"
+            >
+              <GithubIcon size={14} />
+            </a>
+            <a
+              href="#/"
+              className="hidden items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-mute transition-colors hover:text-volt sm:flex"
+            >
+              ← HOME
+            </a>
+            <a
+              href={SOCIALS.x}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="X — @ciphersentry"
+              className="text-mute transition-colors hover:text-volt"
+            >
+              <XIcon size={13} />
+            </a>
+            <a
+              href={liveConsoleHref({ node: GATEWAY_URL })}
+              className="flex min-h-9 items-center gap-1.5 border border-edge2 px-2.5 py-1.5 font-mono text-[9px] tracking-[0.16em] text-mute transition-colors hover:border-volt/70 hover:text-volt sm:px-3 sm:tracking-[0.2em]"
+            >
+              OPEN APP
+              <ArrowUpRight size={11} />
+            </a>
+          </>
         }
       />
 
