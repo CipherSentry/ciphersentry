@@ -76,16 +76,6 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
   {
     tag: "E-04",
     month: "JUNE 2026",
-    title: "Multi-Network & CENT",
-    items: [
-      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, Robinhood Chain CENT TGE — selector in the titlebar.",
-      "Tokenomics published: fixed supply, decaying verifier emissions, epoch-indexed vesting, five launch gates, Rule Zero.",
-      "Typed SDK with the live playground; backend architecture doc.",
-    ],
-  },
-  {
-    tag: "E-05",
-    month: "JULY 2026",
     title: "Keys, Bonds, and the Ledger",
     items: [
       "Real WebCrypto custody — ed25519/P-256 operator keys; rulings canonically signed and locally verified.",
@@ -95,14 +85,24 @@ const EPOCHS: { tag: string; month: string; title: string; items: string[] }[] =
     ],
   },
   {
-    tag: "E-06",
-    month: "AUGUST 2026",
+    tag: "E-05",
+    month: "JULY 2026",
     title: "Audit-Grade",
     items: [
       "Foundry ENG-A: Escrow + SettlementBatcher, invariant suite first (I-E1–I-E4, B-R1–B-R4) with adversarial fuzz.",
       "Audit Readiness pack: two engagements, contract-level threat models, election fixtures, severity rubric, timeline.",
       "Verifier daemon alpha — deterministic WASM sandbox, injected clock, frozen syscalls, signed recompute evidence.",
       "Indexer service — Postgres transitions, ClickHouse receipt graph, public proof API. Investors page.",
+    ],
+  },
+  {
+    tag: "E-06",
+    month: "AUGUST 2026",
+    title: "Multi-Network & CENT",
+    items: [
+      "Settlement rails: Base-Sepolia live, Base Mainnet V1.0, Robinhood Chain CENT TGE — selector in the titlebar.",
+      "Tokenomics published: fixed supply, decaying verifier emissions, epoch-indexed vesting, five launch gates, Rule Zero.",
+      "Typed SDK with the live playground; backend architecture doc.",
     ],
   },
   {
